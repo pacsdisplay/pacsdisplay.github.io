@@ -3,7 +3,6 @@
 <head>
 	<!-- Standard Meta -->
 	<meta charset="utf-8" />
-	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
 	<!-- Site Properities -->
@@ -12,98 +11,70 @@
 
 	<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700|Open+Sans:300italic,400,300,700' rel='stylesheet' type='text/css'>
 
-	<link rel="stylesheet" type="text/css" href="packaged/css/semantic.css">
 	<link rel="stylesheet" type="text/css" href="index.css">
-	<style>
-		a:link {color:#CCCCCC;}    /* unvisited link */
-		a:visited {color:#CCCCCC;} /* visited link */
-		a:hover {color:#CCCCCC;}   /* mouse over link */
-		a:active {color:#CCCCCC;}  /* selected link */
-	</style>
-
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.js"></script>
-	<script src="packaged/javascript/semantic.js"></script>
 
 </head>
-<body id="home">
+<body>
 
 <!-- Masthead -->
-<div class="ui inverted page grid overview segment">
-    <div class="ui two wide column"></div>
-	<div class="ui twelve wide column">
-		<div class="ui inverted vertically divided grid">
-			<div class="row">
-				<div class="left floated left aligned eight wide column">
-					<div class="header item">pacsDisplay</div>
-				</div>
-				<div class="right floated right aligned eight wide column">
-					<div class="header item">current version 5A beta 3b</div>
-				</div>
-			</div>
-			<div class="middle aligned row">
-				<div class="six wide center aligned column">
-					<img src="images/pdlogobw.png" width="200px">
-				</div>
-				<div class="nine wide column">
-					<h1 class="ui inverted header">
-					  pacsDisplay
-					</h1>
-						<p>Open source software for generating and installing DICOM grayscale LUTS, and for performing QC on calibrated monitors.</p>
-					<a class="large ui inverted basic button" href="https://github.com/pacsdisplay/pacsdisplay/archive/v5A-beta3b.zip">
-						<i class="download disk icon"></i>
-						Download for Windows (.zip)
-					</a>
-					<br><br>
-					<a class="large ui inverted basic button" href="fourofour.html">
-						<i class="code icon"></i>
-						Download Source Code (tcl)
-					</a>
-					<br><br>
-				</div>
+<div class="headerfooter" style="min-height:300px">
+	<div class="centeredtext mast">
+		<p 	style="padding-bottom:0.2rem; border-bottom: 1px solid #AAAAAA;">
+			pacsDisplay
+			<span style="float:right;">current version 5A beta</span>
+		</p>
+		<div>
+			<img class="topimage" src="images/pdlogobw.png">
+			<div>
+				<h1 class="cover">pacsDisplay</h1>
+				<p>Open source software for generating and installing DICOM grayscale LUTS, and for performing QC on calibrated monitors.</p>
+				<br>
+				<a href="https://github.com/pacsdisplay/pacsdisplay/archive/v5A-beta3b.zip">
+					Download for Windows (.zip)
+				</a>
+				<br><br>
+				<a href="fourofour.html">
+					Download Source Code (tcl)
+				</a>
+				<br><br>
 			</div>
 		</div>
 	</div>
 </div>
 
 <!-- Main content -->
-<div class="ui page grid overview segment">
-    <div class="ui two wide column"></div>
-	<div class="ui twelve wide column">
-		<br>
-		<h3 class="ui dividing header">Background</h3>
+<div class="section">
+	<div class="centeredtext">
+		<h3 class="divide">Background</h3>
 			<p>The applications in this software package include programs for generating and installing DICOM grayscale look up tables (LUTs), a program to display a grayscale quality control test pattern, and features to perform QC evaluations of calibrated monitors. The present package release supports Microsoft Windows XP (32 bit) and Windows 7 (32 and 64 bit)</p>
 			
 			<p>For monitor calibration, look up tables (LUTs) intended for the make and model of monitors used on your workstation need to be specified. The package distribution includes a LUT-Library with generic LUTs for various monitor models. This library is commonly searched to retrieve the required LUT. For monitor models that are not in the library, a gray palette needs to be obtained using one of the supported photometers. A LUT is then generated from the measured palette and a configuration file is  edited.</p>
 			
 			<p>For QC measures, the essential tools are distributed in a folder that does not require installation on a workstation. Typically this folder will be accessed from a USB memory device where a menu application is executed to select the desired application.</p>
 
-		<h3 class="ui dividing header">OS Support</h3>
+		<h3 class="divide">OS Support</h3>
 
 			<p>Package Release 5A now provides full support for installation and use on Microsoft Windows 7 operating systems. The location of the LUT-Library and configuration files that need to be edited has been changed to the C:/Users/Public folder to conform with the current Microsoft policy regarding files installed in the Program Files folder.</p>
 
-		<h3 class="ui dividing header">New Features</h3>
+		<h3 class="divide">New Features</h3>
 
 			<p>The xRite iOne Display Pro as been added to the photometer list. This modestly priced photometer is the currently recommended device for use with pacsDisplay programs. For this meter, color coordinates are now routinely obtained for all luminance measures. A meter application has been added that reports both illuminance and luminance as well as color coordinates. The meter application allows measurement of ambient illumination and ambient luminance. For quick QC validation of gray scale calibration, the white point color coordinates are now measure and gray tracking is reported.</p>
 
-		<h3 class="ui dividing header">Open Source</h3>
+		<h3 class="divide">Open Source</h3>
 
 			<p>The development of pacsDisplay applications began in 2002. The first public package, Release 3H, was organized in 2006 and made available on request under the Gnu general public license. Since then, Henry Ford Health System has made use of the programs for enterprise PACS workstation and within Radiology. Beginning with Package Release 5A, a more formal Open Source Project team is being formed with software distributed from an Open Source repository. The project roadmap includes expanded features for color calibration and ICC profile generations.</p>
-			
-		<br>
 	</div>
 </div>
 
+
 <!-- About and contact section -->
-<div class="ui inverted page grid overview segment">
-    <div class="ui two wide column"></div>
-	<div class="ui twelve wide column">
-		<br>
-		<h3 class="ui dividing header">Authors and Contributors</h3>
+<div class="headerfooter">
+	<div class="centeredtext mast">
+		<h3 class="divide">Authors and Contributors</h3>
 
 		<p>This work was primarily developed by Michael Flynn (<a href="https://github.com/mflynn57">@mflynn57</a>). Contributing developers are Philip Tchou and Nicholas Bevins (<a href="https://github.com/nickbevins">@nickbevins</a>).</p>
 		<br>
 
-	</div>
 </div>
   
 </body>

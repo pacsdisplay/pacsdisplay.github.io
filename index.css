@@ -4,17 +4,61 @@
 
 html,
 body {
-  font-size: 15px;
-  height: 100%;
+	font-size: 15px;
+	height: 100%;
 }
 
 body {
-  font-family: "Open Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-  background: #FFFFFF;
-  margin: 0px;
-  padding: 0px;
-  color: #555555;
-  text-rendering: optimizeLegibility;
-  min-width: 320px;
+	font-family: "Open Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+	background: #FFFFFF;
+	margin: 0%;
+	padding: 0px;
+	color: #555555;
+	text-rendering: optimizeLegibility;
 }
 
+h1.cover {
+	font-size: 30px;
+}
+
+.centeredtext {
+	margin-left: 20%;
+	margin-right: 20%;
+	min-width: 600px;
+}
+
+.mast {
+	color: #FFFFFF ;
+}
+
+.divide {
+	
+	padding-bottom: 0.2rem;
+	border-bottom: 1px solid #555555;
+}
+
+.divide.mast {
+	border-bottom: 1px solid #AAAAAA ;
+}
+
+.section {
+	padding: 1% 0%;
+}
+
+.headerfooter {
+	background: #222222 ;
+	color: #FFFFFFF ;
+	padding: 1% 0% ;
+}
+
+.topimage {
+	width: 200px;
+	height: 200px;
+	margin: 2% 5%;
+	float: left
+}
+
+a:link {color:#CCCCCC;} 	/* unvisited link */
+a:visited {color:#CCCCCC;} /* visited link */
+a:hover {color:#FFFFFF;}   /* mouse over link */
+a:active {color:#CCCCCC;}  /* selected link */
