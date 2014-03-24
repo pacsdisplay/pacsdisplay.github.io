@@ -10,7 +10,7 @@ body {
 
 body {
 	font-family: "Open Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
-	background: #FFFFFF;
+	background: #222222;
 	margin: 0%;
 	padding: 0px;
 	color: #555555;
@@ -45,17 +45,14 @@ h1.cover {
 	padding: 1% 0%;
 }
 
+.mainbody {
+	background: #FFFFFF;
+}
+
 .headerfooter {
 	background: #222222 ;
 	color: #FFFFFFF ;
 	padding: 1% 0% ;
-}
-
-.bottom {
-	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 0;
 }
 
 .topimage {
