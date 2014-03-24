@@ -51,6 +51,13 @@ h1.cover {
 	padding: 1% 0% ;
 }
 
+.bottom {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+
 .topimage {
 	width: 200px;
 	height: 200px;
