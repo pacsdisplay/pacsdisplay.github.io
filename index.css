@@ -21,18 +21,19 @@ h1.cover {
 	font-size: 30px;
 }
 
-.centeredtext {
-	margin-left: 20%;
-	margin-right: 20%;
-	min-width: 600px;
+.mastdivide {
+	padding-bottom:0.2rem;
+	border-bottom: 1px solid #AAAAAA;
 }
 
 .mast {
+	padding-left: 20%;
+	padding-right: 20%;
+	min-width: 600px;
 	color: #FFFFFF ;
 }
 
 .divide {
-	
 	padding-bottom: 0.2rem;
 	border-bottom: 1px solid #555555;
 }
@@ -46,6 +47,9 @@ h1.cover {
 }
 
 .mainbody {
+	padding-left: 20%;
+	padding-right: 20%;
+	min-width: 600px;
 	background: #FFFFFF;
 }
 
@@ -62,7 +66,20 @@ h1.cover {
 	float: left
 }
 
-a:link {color:#CCCCCC;} 	/* unvisited link */
-a:visited {color:#CCCCCC;} /* visited link */
-a:hover {color:#FFFFFF;}   /* mouse over link */
-a:active {color:#CCCCCC;}  /* selected link */
+.unblock {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+a:link, a:visited, a:active {
+	color:#CCCCCC;
+}
+
+a:hover {color:#FFFFFF;}
+
+
+.mainbody a, .mainbody a:link, .mainbody a:visited, .mainbody a:active {
+color: #666666
+}
+
+.mainbody a:hover {color: #111111}
