@@ -69,6 +69,9 @@ h1.cover {
 .unblock {
 	display: inline-block;
 	vertical-align: middle;
+	margin: 10px;
+	border-color: #F0F0F0;
+	border-style: solid;
 }
 
 a:link, a:visited, a:active {
