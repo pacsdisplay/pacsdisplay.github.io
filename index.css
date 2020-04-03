@@ -1,20 +1,22 @@
 /*******************************
             Global
 *******************************/
-
 html,
 body {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
 	font-size: 15px;
-	height: 100%;
 }
 
 body {
-	font-family: "Open Sans", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+	font-family: Arial, sans-serif;
 	background: #222222;
-	margin: 0%;
-	padding: 0px;
 	color: #555555;
 	text-rendering: optimizeLegibility;
+	text-align: justify;
+	text-justify: auto;
 }
 
 h1.cover {
@@ -72,6 +74,18 @@ h1.cover {
 	margin: 5px;
 	border-color: #F0F0F0;
 	border-style: solid;
+}
+
+.ambtest {
+	height: 100%;
+	padding: 0% 5%;
+	background: #000000;
+}
+
+.ambbox {
+	width: 5%;
+	padding-top: 100%;
+	background: #050505;
 }
 
 a:link, a:visited, a:active {
