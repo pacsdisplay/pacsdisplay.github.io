@@ -3,7 +3,7 @@
 <head>
 	<!-- Standard Meta -->
 	<meta name="keywords" content="pacsDisplay, Monitor Calibration, DICOM GSDF">
-	<meta name="description" content="Homepage for pacsDisplay, an open source software for generating and installing DICOM grayscale LUTs, and for performing QC on calibrated displays.">
+	<meta name="description" content="Homepage for pacsDisplay, an open source software for generating and installing DICOM grayscale LUTs, and for performing QC on DICOM-calibrated displays.">
 	<meta name="author" content="Nick Bevins, Mike Flynn">
 	<meta name="robots" content="index, follow">
 	
@@ -23,7 +23,7 @@
 	<div class="mast">
 		<p 	class="mastdivide">
 			pacsDisplay
-			<span style="float:right;">current version 5E</span>
+			<span style="float:right;">current version 5F</span>
 		</p>
 		<div>
 			<img class="topimage" src="images/pdlogobw.png" />
@@ -63,15 +63,17 @@
 
 	<h3 class="divide">New Features</h3>
 
-		<p>The X-Rite iOne Display Pro is now the recommended device for use with pacsDisplay programs. For this meter, color coordinates are now routinely obtained for all luminance measures. The i1meter application has been added to reports both illuminance and luminance as well as color coordinates. The meter application allows measurement of both illuminance and luminance. For quick QC validation of gray scale calibration with lumResponse, the white point color coordinates are now measured and gray tracking is reported along with GSDF conformance.</p>
+		<p>The X-Rite i1DisplayPro is now the recommended device for use with pacsDisplay programs. For this meter, color coordinates are now routinely obtained for all luminance measures. The i1meter application has been added to reports both illuminance and luminance as well as color coordinates. The i1meter application allows measurement of both illuminance and luminance. For quick QC validation of gray scale calibration with lumResponse, the white point color coordinates are now measured and gray tracking is reported along with DICOM GSDF conformance.</p>
 	
 		<p>Version 5E updates the gtest and iQC software and adds the ambtest program to the pdQC toolset. The gtest program is now resizeable for full-display assessment. The iQC program is updated with three sizes of the AAPM Report 270 QC test patterns (sQC and pQC). The ambtest software displays a mostly-black window with a small, low-contrast test object for a user to identify. If the object is not seen, the user may want to recalibrate their display or adjust the ambient lighting. The contrast of the object is adjustable through key bindings.</p>
+	
+		<p>Version 5F updates the spotread application (v2.3.0) to support more photometers.</p>
 
 	<h3 class="divide">Open Source</h3>
 
 		<p>The development of pacsDisplay applications began in 2002. The first public package, Release 3H, was organized in 2006 and made available on request under the Gnu general public license. Since then, Henry Ford Health System has made use of the programs for enterprise PACS workstation and within radiology. Beginning with Package Release 5A, a more formal Open Source Project effort is being formed with software distributed from an Open Source repository at GitHub. The project roadmap includes new features for color calibration and ICC profiles.</p>
 	
-		<p>Several tools in the current version use the spotread command line tool from <a href="https://www.argyllcms.com/">ArgyllCMS</a> to interface with photometers. If you have a meter supported by ArgyllCMS and would like to see it supported in pacsDisplay, please contact us. The authors of pacsDisplay are grateful to ArgyllCMS for the continued development of its product. If you find pacsDisplay helpful for your work, please consider supporting ArgyllCMS.</p>  
+		<p>Several tools in the current version use the spotread command line tool from <a href="https://www.argyllcms.com/">ArgyllCMS</a> to interface with photometers. If you have a meter supported by ArgyllCMS and would like to see it supported in pacsDisplay, please contact us. The authors of pacsDisplay are grateful to ArgyllCMS for the continued development of its product. If you find pacsDisplay helpful for your work, we strongly urge you to consider supporting ArgyllCMS.</p>  
 </div>
 
 
