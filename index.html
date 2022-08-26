@@ -23,7 +23,7 @@
 	<div class="mast">
 		<p 	class="mastdivide">
 			pacsDisplay
-			<span style="float:right;">current version 5F</span>
+			<span style="float:right;">current version 5G</span>
 		</p>
 		<div>
 			<img class="topimage" src="images/pdlogobw.png" />
@@ -55,19 +55,17 @@
 		
 		<p>For display calibration, look up tables (LUTs) intended for the make and model of displays used on your workstation need to be specified. The package distribution includes a LUT-Library with generic LUTs for various display models. This library is commonly searched to retrieve the required LUT. For display models that are not in the library, a gray palette needs to be obtained using a supported photometer. A LUT is then generated from the measured palette and a configuration file is edited.</p>
 		
-		<p>For QC measures, the essential tools are distributed in a folder that does not require installation. Typically this folder will be accessed from a USB memory device or network storage where a menu application is executed to select the desired application.</p>
+		<p>For QC measures, the essential tools are distributed in a folder that does not require installation (pdQC). Typically this folder will be accessed from a USB drive or network storage where a menu application is executed to select the desired application.</p>
 
-	<h3 class="divide">OS Support</h3>
-
-		<p>Package Release 5D now provides support for installation and use on Microsoft Windows 10 operating systems. The location of the LUT-Library and configuration files that need to be edited has been changed to the C:/Users/Public folder to conform with the current Microsoft policy regarding files installed in the Program Files folder.</p>
-
-	<h3 class="divide">New Features</h3>
+	<h3 class="divide">Features and Release Updates</h3>
 
 		<p>The X-Rite i1DisplayPro is now the recommended device for use with pacsDisplay programs. For this meter, color coordinates are now routinely obtained for all luminance measures. The i1meter application has been added to reports both illuminance and luminance as well as color coordinates. The i1meter application allows measurement of both illuminance and luminance. For quick QC validation of gray scale calibration with lumResponse, the white point color coordinates are now measured and gray tracking is reported along with DICOM GSDF conformance.</p>
 	
 		<p>Version 5E updates the gtest and iQC software and adds the ambtest program to the pdQC toolset. The gtest program is now resizeable for full-display assessment. The iQC program is updated with three sizes of the AAPM Report 270 QC test patterns (sQC and pQC). The ambtest software displays a mostly-black window with a small, low-contrast test object for a user to identify. If the object is not seen, the user may want to recalibrate their display or adjust the ambient lighting. The contrast of the object is adjustable through key bindings.</p>
 	
 		<p>Version 5F updates the spotread application (v2.3.0) to support more photometers.</p>
+	
+		<p>Version 5G introduces uniLum to the pdQC toolset. This application allows the user to collect uniformity data for one, three, or eighteen gray levels. The application automatically analyzes the results for both the MLD and LUDM values and allows the user to export the results for importing into other applications. In addition version 5G updates the ambtest application to use a bar pattern (rather than a circle) and allows the user to adjust by individual gray levels (rather than by percentage of maximum luminance). Lastly, version 5G makes a small change to the lumResponse save routine to eliminate unnecessary button clicks.</p>
 
 	<h3 class="divide">Open Source</h3>
 
