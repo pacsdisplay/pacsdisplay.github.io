@@ -91,7 +91,7 @@
 	
 	<h3 class="divide">Generating a lookup table (LUT)</h3>
 
-	<p>Now that you've confirmed operation of the program, generate a LUT for your specific monitor by evaluating the full palette of the display. After generation, load this LUT to your monitor by configuring the configLL.txt file. Once configured, the loading will take place automatically on start-up (so long as you haven't modified the startup menu).</p>
+	<p>Now that you've confirmed operation of the program, generate a LUT for your specific display by evaluating the full palette of the display. After generation, load this LUT to your display by configuring the configLL.txt file. Once configured, the loading will take place automatically on start-up (so long as you haven't modified the startup menu).</p>
 	
 	<video width="800" align="center" controls>
 		<source src="videos/lutGen.mp4" type="video/mp4">
@@ -105,7 +105,7 @@
 	
 	<h3 class="divide">Using lumResponse</h3>
 
-	<p>The lumResponse program can be used to evaluate the full palette of a display to generate a LUT, or it can be used to perform a QC check of the monitor for general testing.</p>
+	<p>The lumResponse program can be used to evaluate the full palette of a display to generate a LUT, or it can be used to perform a QC check of the display for general testing.</p>
 	
 	<video width="800" align="center" controls>
 		<source src="videos/lumResponse.mp4" type="video/mp4">
@@ -163,10 +163,24 @@
 	
 	<h3 class="divide">Using iQC</h3>
 
-	<p>The iQC pattern is the standard test pattern included with the installation. It allows for accurate qualitative evaluation of a monitor's GSDF conformance.</p>
+	<p>The iQC pattern is the standard test pattern included with the installation. It allows for accurate qualitative evaluation of a displays's GSDF conformance.</p>
 	
 	<video width="800" align="center" controls>
 		<source src="videos/iQC.mp4" type="video/mp4">
+		Your browser does not support HTML5 video.
+	</video>
+	
+	<br>
+	<a href="index.html">
+				Return to the main page
+	</a>
+	
+	<h3 class="divide">Using ambtest</h3>
+
+	<p>The ambtest application presents the user with a low-contrast bar pattern on a black background. If the ambient lighting and display calibration are appropriate, the user should see the bar pattern at the default settings. The contrast can be adjusted through key bindings. Clicking on the bat pattern displays a success message to confirm the user can resolve low-contrast objects at the lowest luminance levels.</p>
+	
+	<video width="800" align="center" controls>
+		<source src="videos/ambtest.mp4" type="video/mp4">
 		Your browser does not support HTML5 video.
 	</video>
 	
