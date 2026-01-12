@@ -193,24 +193,24 @@ URL PARAMETERS:
 Customize the test by adding parameters to the URL:
 
 ?contrast=N
- - Set initial gray level (0-255)
- - Example: ambient-test.html?contrast=10
+ - Set initial gray level (0-255) [default: 3]
+ - Example: ambtest.html?contrast=10
 
 ?lockcontrast (or ?lock)
  - Prevent users from changing contrast
  - Shows lock icon (🔒) next to contrast display
- - Example: ambient-test.html?lockcontrast
+ - Example: ambtest.html?lockcontrast
 
 ?email=address@example.com
  - Enable email sharing of results
  - Adds "Share Results" button to success/failure dialogs
  - Opens email with detailed test report
- - Example: ambient-test.html?email=admin@company.com
+ - Example: ambtest.html?email=admin@company.com
 
 COMBINED EXAMPLES:
- - ambient-test.html?contrast=5&lock&email=test@example.com
- - ambient-test.html?contrast=20&lockcontrast
- - ambient-test.html?email=results@company.com
+ - ambtest.html?contrast=5&lock&email=test@example.com
+ - ambtest.html?contrast=20&lockcontrast
+ - ambtest.html?email=results@company.com
             </div>
             <div class="modal-buttons">
                 <button class="modal-button" onclick="closeModal('helpModal')">Close</button>
