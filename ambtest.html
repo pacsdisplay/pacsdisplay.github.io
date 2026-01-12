@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pacsDisplay Ambient Light Verification</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: black;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        .toolbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .toolbar-item {
+            color: #666;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            pointer-events: auto;
+            user-select: none;
+        }
+
+        .toolbar-item:hover {
+            color: #999;
+        }
+
+        .help-icon {
+            font-size: 16px;
+        }
+
+        .contrast-display {
+            text-align: right;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 10% auto;
+            padding: 30px;
+            border: 2px solid #444;
+            width: 400px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            color: #d0d0d0;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .modal-message {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-button {
+            padding: 8px 20px;
+            border: 1px solid #555;
+            background-color: #2a2a2a;
+            color: #d0d0d0;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .modal-button:hover {
+            background-color: #3a3a3a;
+            border-color: #666;
+        }
+
+        .help-modal .modal-content {
+            width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="toolbar">
+        <div class="toolbar-item help-icon" id="helpBtn" title="Help">?</div>
+        <div class="toolbar-item" id="moveBtn" title="Move object to new random position">Move</div>
+        <div class="toolbar-item contrast-display" id="contrastDisplay" title="Left-click to increase, Right-click to decrease">Current Contrast: 3 GLs</div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Success!</div>
+            <div class="modal-message" id="successMessage"></div>
+            <div class="modal-buttons">
+                <button class="modal-button" onclick="closeModal('successModal')">Cancel</button>
+                <button class="modal-button" onclick="retryTest()">Retry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Failure Modal -->
+    <div id="failureModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Failure!</div>
+            <div class="modal-message">Low contrast object not found!
+
+Adjust ambient lighting or recalibrate display
+
+Select "Retry" to move the object and try again
+Select "Cancel" to close this message</div>
+            <div class="modal-buttons">
+                <button class="modal-button" onclick="closeModal('failureModal')">Cancel</button>
+                <button class="modal-button" onclick="retryTest()">Retry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal help-modal">
+        <div class="modal-content">
+            <div class="modal-title">Instructions - Ambient Luminance Settings Test</div>
+            <div class="modal-message">
+Please ensure the following:
+
+Ambient lighting set to reading levels
+ - Close/cover nearby windows
+ - Reduce overhead lighting
+ - Avoid lights reflecting on the display
+
+HOW TO USE:
+ - A low contrast vertical bar pattern object (100x100 pixels) is randomly positioned on the black screen
+ - Try to locate and click on the object
+ - If you click correctly: Success message appears
+ - If you miss: Failure message appears
+
+CONTROLS:
+ - Click "Move" to reposition the object
+ - Click the contrast display to increase contrast (or Shift+Left-Click anywhere)
+ - Right-click the contrast display to decrease contrast (or Shift+Right-Click anywhere)
+
+PATTERN DETAILS:
+ - Bar pattern: 6-pixel vertical period
+ - Initial contrast: 3 gray levels (out of 255)
+ - Object size: 100x100 pixels
+
+URL PARAMETERS:
+Customize the test by adding parameters to the URL:
+
+?contrast=N
+ - Set initial gray level (0-255)
+ - Example: ambient-test.html?contrast=10
+
+?lockcontrast (or ?lock)
+ - Prevent users from changing contrast
+ - Shows lock icon (🔒) next to contrast display
+ - Example: ambient-test.html?lockcontrast
+
+?email=address@example.com
+ - Enable email sharing of results
+ - Adds "Share Results" button to success/failure dialogs
+ - Opens email with detailed test report
+ - Example: ambient-test.html?email=admin@company.com
+
+COMBINED EXAMPLES:
+ - ambient-test.html?contrast=5&lock&email=test@example.com
+ - ambient-test.html?contrast=20&lockcontrast
+ - ambient-test.html?email=results@company.com
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button" onclick="closeModal('helpModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="modal" style="display: block;">
+        <div class="modal-content">
+            <div class="modal-title">Ambient Luminance Settings Test</div>
+            <div class="modal-message">Please ensure the following:
+
+Ambient lighting set to reading levels
+ - Close/cover nearby windows
+ - Reduce overhead lighting
+ - Avoid lights reflecting on the display</div>
+            <div class="modal-buttons">
+                <button class="modal-button" onclick="closeModal('welcomeModal')">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants
+        const OBJECT_WIDTH = 100;
+        const OBJECT_HEIGHT = 100;
+        const BAR_PERIOD = 6;
+
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const INITIAL_GRAY_LEVEL = parseInt(urlParams.get('contrast')) || 3;
+        const LOCK_CONTRAST = urlParams.has('lockcontrast') || urlParams.has('lock');
+        const SHARE_EMAIL = urlParams.get('email') || null;
+
+        // State
+        let canvas, ctx;
+        let grayLevel = INITIAL_GRAY_LEVEL;
+        let objectX = 0;
+        let objectY = 0;
+        let patternCanvas;
+        let debugMode = false; // Toggle with 'd' key
+
+        // Initialize
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // Create pattern canvas first
+            patternCanvas = document.createElement('canvas');
+            patternCanvas.width = OBJECT_WIDTH;
+            patternCanvas.height = OBJECT_HEIGHT;
+
+            // Generate initial pattern
+            updatePattern();
+
+            // Set canvas size (but don't draw yet)
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            window.addEventListener('resize', resizeCanvas);
+
+            // Position object randomly
+            positionObject();
+
+            // Event listeners
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            // Shift + click for contrast adjustment anywhere on canvas
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.shiftKey && !LOCK_CONTRAST) {
+                    if (e.button === 0) { // Left click
+                        changeContrast('up');
+                        e.preventDefault();
+                        e.stopPropagation();
+                    } else if (e.button === 2) { // Right click
+                        changeContrast('down');
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }
+            });
+
+            // Toolbar buttons
+            document.getElementById('helpBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('helpModal').style.display = 'block';
+            });
+
+            document.getElementById('moveBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                positionObject();
+            });
+
+            document.getElementById('contrastDisplay').addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!LOCK_CONTRAST) {
+                    changeContrast('up');
+                }
+            });
+
+            document.getElementById('contrastDisplay').addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!LOCK_CONTRAST) {
+                    changeContrast('down');
+                }
+            });
+
+            // Debug mode toggle with Shift+D key (secret feature)
+            document.addEventListener('keydown', (e) => {
+                if ((e.key === 'd' || e.key === 'D') && e.shiftKey) {
+                    debugMode = !debugMode;
+                    console.log('Debug mode:', debugMode);
+                    draw();
+                }
+            });
+
+            // Initial draw (pattern already created above)
+            draw();
+
+            // Log initial state
+            console.log('Initial object position:', objectX, objectY);
+            console.log('Canvas size:', canvas.width, canvas.height);
+            console.log('Pattern canvas created:', patternCanvas.width, 'x', patternCanvas.height);
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            draw();
+        }
+
+        function generateBarPattern(grayLevel) {
+            const pCtx = patternCanvas.getContext('2d');
+            const imageData = pCtx.createImageData(OBJECT_WIDTH, OBJECT_HEIGHT);
+            const data = imageData.data;
+
+            const halfPeriod = Math.floor(BAR_PERIOD / 2);
+
+            for (let y = 0; y < OBJECT_HEIGHT; y++) {
+                for (let x = 0; x < OBJECT_WIDTH; x++) {
+                    const idx = (y * OBJECT_WIDTH + x) * 4;
+
+                    // Vertical bars: alternate based on x position
+                    const value = (x % BAR_PERIOD) < halfPeriod ? 0 : grayLevel;
+
+                    data[idx] = value;     // R
+                    data[idx + 1] = value; // G
+                    data[idx + 2] = value; // B
+                    data[idx + 3] = 255;   // A
+                }
+            }
+
+            pCtx.putImageData(imageData, 0, 0);
+        }
+
+        function updatePattern() {
+            generateBarPattern(grayLevel);
+            const lockIndicator = LOCK_CONTRAST ? ' 🔒' : '';
+            document.getElementById('contrastDisplay').textContent = `Current Contrast: ${grayLevel} GLs${lockIndicator}`;
+        }
+
+        function positionObject() {
+            // Position in central 80% of screen
+            const edgePadding = 0.1; // 10% padding on each side = 80% usable area
+            const minX = canvas.width * edgePadding;
+            const maxX = canvas.width * (1 - edgePadding) - OBJECT_WIDTH;
+            const minY = canvas.height * edgePadding;
+            const maxY = canvas.height * (1 - edgePadding) - OBJECT_HEIGHT;
+
+            objectX = Math.random() * (maxX - minX) + minX;
+            objectY = Math.random() * (maxY - minY) + minY;
+
+            draw();
+        }
+
+        function draw() {
+            // Clear canvas (black background)
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw pattern object
+            ctx.drawImage(patternCanvas, objectX, objectY);
+
+            // Debug mode - draw red border around object
+            if (debugMode) {
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(objectX, objectY, OBJECT_WIDTH, OBJECT_HEIGHT);
+
+                // Also draw crosshair at center
+                ctx.strokeStyle = 'yellow';
+                ctx.beginPath();
+                ctx.moveTo(objectX + OBJECT_WIDTH/2 - 10, objectY + OBJECT_HEIGHT/2);
+                ctx.lineTo(objectX + OBJECT_WIDTH/2 + 10, objectY + OBJECT_HEIGHT/2);
+                ctx.moveTo(objectX + OBJECT_WIDTH/2, objectY + OBJECT_HEIGHT/2 - 10);
+                ctx.lineTo(objectX + OBJECT_WIDTH/2, objectY + OBJECT_HEIGHT/2 + 10);
+                ctx.stroke();
+            }
+        }
+
+        function handleCanvasClick(e) {
+            if (e.shiftKey) return; // Shift-click handled separately
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            // Check if click is within object bounds
+            if (x >= objectX && x <= objectX + OBJECT_WIDTH &&
+                y >= objectY && y <= objectY + OBJECT_HEIGHT) {
+                showSuccess();
+            } else {
+                showFailure();
+            }
+        }
+
+        function changeContrast(direction) {
+            if (direction === 'up' && grayLevel < 255) {
+                grayLevel++;
+                updatePattern();
+                draw();
+            } else if (direction === 'down' && grayLevel > 0) {
+                grayLevel--;
+                updatePattern();
+                draw();
+            }
+        }
+
+        function showSuccess() {
+            const message = `Low contrast object found!
+
+Ambient lighting appropriate for ${grayLevel} gray level contrast visualization
+
+Select "Retry" to move the object and try again
+Select "Cancel" to close this message`;
+
+            document.getElementById('successMessage').textContent = message;
+
+            // Add share button if email is provided
+            const buttonsDiv = document.getElementById('successModal').querySelector('.modal-buttons');
+            const existingShareBtn = buttonsDiv.querySelector('.share-button');
+            if (existingShareBtn) {
+                existingShareBtn.remove();
+            }
+
+            if (SHARE_EMAIL) {
+                const shareBtn = document.createElement('button');
+                shareBtn.className = 'modal-button share-button';
+                shareBtn.textContent = 'Share Results';
+                shareBtn.onclick = () => shareResults('success');
+                buttonsDiv.insertBefore(shareBtn, buttonsDiv.firstChild);
+            }
+
+            document.getElementById('successModal').style.display = 'block';
+        }
+
+        function showFailure() {
+            // Add share button if email is provided
+            const buttonsDiv = document.getElementById('failureModal').querySelector('.modal-buttons');
+            const existingShareBtn = buttonsDiv.querySelector('.share-button');
+            if (existingShareBtn) {
+                existingShareBtn.remove();
+            }
+
+            if (SHARE_EMAIL) {
+                const shareBtn = document.createElement('button');
+                shareBtn.className = 'modal-button share-button';
+                shareBtn.textContent = 'Share Results';
+                shareBtn.onclick = () => shareResults('failure');
+                buttonsDiv.insertBefore(shareBtn, buttonsDiv.firstChild);
+            }
+
+            document.getElementById('failureModal').style.display = 'block';
+        }
+
+        function shareResults(result) {
+            const timestamp = new Date().toLocaleString();
+            const subject = encodeURIComponent(`Ambient Light Test Results - ${result.toUpperCase()}`);
+
+            let body = `Ambient Light Test Results\n\n`;
+            body += `Test Date/Time: ${timestamp}\n`;
+            body += `Result: ${result === 'success' ? 'PASSED' : 'FAILED'}\n`;
+            body += `Gray Level Tested: ${grayLevel} (out of 255)\n`;
+            body += `\n`;
+
+            if (result === 'success') {
+                body += `The low contrast object was successfully detected.\n`;
+                body += `Ambient lighting is appropriate for ${grayLevel} gray level contrast visualization.\n`;
+            } else {
+                body += `The low contrast object was not detected.\n`;
+                body += `Ambient lighting may need adjustment or display recalibration is recommended.\n`;
+            }
+
+            body += `\nTest Parameters:\n`;
+            body += `- Object Size: ${OBJECT_WIDTH}x${OBJECT_HEIGHT} pixels\n`;
+            body += `- Pattern: Vertical bars (${BAR_PERIOD}-pixel period)\n`;
+            body += `- Contrast Level: ${grayLevel} gray levels\n`;
+
+            if (LOCK_CONTRAST) {
+                body += `- Contrast Setting: LOCKED\n`;
+            }
+
+            // System/Browser Information
+            body += `\nSystem Information:\n`;
+            body += `- Browser: ${navigator.userAgent}\n`;
+            body += `- Platform: ${navigator.platform}\n`;
+            body += `- Screen Resolution: ${screen.width}x${screen.height}\n`;
+            body += `- Screen Color Depth: ${screen.colorDepth}-bit\n`;
+            body += `- Pixel Ratio: ${window.devicePixelRatio}\n`;
+            body += `- Viewport Size: ${window.innerWidth}x${window.innerHeight}\n`;
+            body += `- Language: ${navigator.language}\n`;
+            body += `- Online Status: ${navigator.onLine ? 'Online' : 'Offline'}\n`;
+
+            // Additional display info if available
+            if (screen.pixelDepth) {
+                body += `- Pixel Depth: ${screen.pixelDepth}-bit\n`;
+            }
+
+            // Touch capability
+            body += `- Touch Support: ${('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ? 'Yes' : 'No'}\n`;
+
+            // Hardware concurrency (CPU cores)
+            if (navigator.hardwareConcurrency) {
+                body += `- CPU Cores: ${navigator.hardwareConcurrency}\n`;
+            }
+
+            // Memory (if available - Chrome/Edge)
+            if (navigator.deviceMemory) {
+                body += `- Device Memory: ${navigator.deviceMemory} GB\n`;
+            }
+
+            // Connection info (if available)
+            if (navigator.connection) {
+                body += `- Connection Type: ${navigator.connection.effectiveType || 'unknown'}\n`;
+            }
+
+            body += `\nTest Object Position:\n`;
+            body += `- X: ${Math.round(objectX)}, Y: ${Math.round(objectY)}\n`;
+            body += `- Canvas Size: ${canvas.width}x${canvas.height}\n`;
+
+            const mailtoLink = `mailto:${SHARE_EMAIL}?subject=${subject}&body=${encodeURIComponent(body)}`;
+            window.location.href = mailtoLink;
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function retryTest() {
+            closeModal('successModal');
+            closeModal('failureModal');
+            positionObject();
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
