@@ -107,7 +107,7 @@
     <!-- Help Modal -->
     <div id="helpModal" class="modal">
         <div class="modal-content">
-            <div class="modal-title">TG270-pQC Pattern - AAPM Report 270</div>
+            <div class="modal-title">TG270-pQC</div>
             <div class="modal-message">PATTERN DESCRIPTION:
 This pattern provides comprehensive evaluation of display performance based on AAPM Task Group 270 recommendations. It is based on the TG18-PQC design.
 
@@ -378,7 +378,7 @@ For a DICOM-conformant display, all modulation patterns should be visible across
         }
 
         function drawTopBottomBars(xOffset, sidew, barh, toph) {
-            const scaledSize = Math.floor(BASE_SIZE * scale);
+            const scaledSize = Math.round(BASE_SIZE * scale);
 
             // Top bar (gray level 64) - from 0 to toph
             const scaledToph = Math.round(toph * scale);
