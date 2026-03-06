@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pacsDisplay TG270-sQC Pattern</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: rgb(128, 128, 128);
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .help-icon {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #666;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .help-icon:hover {
+            opacity: 0.7;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 5% auto;
+            padding: 30px;
+            border: 2px solid #444;
+            width: 850px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            color: #d0d0d0;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .modal-message {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-button {
+            padding: 8px 20px;
+            border: 1px solid #555;
+            background-color: #2a2a2a;
+            color: #d0d0d0;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .modal-button:hover {
+            background-color: #3a3a3a;
+            border-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="help-icon" id="helpBtn" title="Help">?</div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">TG270-sQC Pattern - AAPM Report 270</div>
+            <div class="modal-message">PATTERN DESCRIPTION:
+This pattern provides a quick visual evaluation of display performance based on AAPM Task Group 270 recommendations.
+
+MAIN FEATURES:
+ - 18 grayscale squares (3 rows × 6 columns) covering gray levels 0-255
+ - Each square contains modulation patterns with 6-pixel vertical bars
+ - Upper-left sub-squares: -5 gray levels contrast (darker bars)
+ - Lower-right sub-squares: +5 gray levels contrast (lighter bars)
+ - Special cases: First square (GL 0) and last square (GL 255) use ±3 contrast
+
+LARGE SQUARES (bottom):
+ - Three 256×256 squares: Black (0), Mid-gray (128), White (255)
+ - For luminance measurements and uniformity assessment
+ - Can be used for bad pixel detection
+
+GRADIENT BAR (bottom):
+ - Continuous 0-255 gradient spanning full width
+ - Line patterns on right side verify pixel mapping
+ - Useful for detecting bit depth issues and contouring artifacts
+
+USAGE:
+For a DICOM-conformant display, all 18 modulation patterns should be equally visible. The corner patterns (upper-left of first square, lower-right of last square) have lower contrast (3 gray levels) and may only be visible on highest-performance displays.</div>
+            <div class="modal-buttons">
+                <button class="modal-button" onclick="closeModal('helpModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants from ImageJ script
+        const BASE_SIZE = 1024;
+        const BACKGROUND = 128;
+        const BAR_PERIOD = 6;
+
+        // Canvas and context
+        let canvas, ctx;
+        let scale = 1;
+
+        // Initialize
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // Disable image smoothing for crisp pixel rendering
+            ctx.imageSmoothingEnabled = false;
+
+            // Help button
+            document.getElementById('helpBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('helpModal').style.display = 'block';
+            });
+
+            // Resize handler
+            window.addEventListener('resize', resizeCanvas);
+
+            // Initial draw
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Set canvas to window size
+            canvas.width = width;
+            canvas.height = height;
+
+            // Disable image smoothing (must be set after canvas resize)
+            ctx.imageSmoothingEnabled = false;
+            ctx.webkitImageSmoothingEnabled = false;
+            ctx.mozImageSmoothingEnabled = false;
+            ctx.msImageSmoothingEnabled = false;
+
+            // Calculate scale based on height
+            scale = height / BASE_SIZE;
+
+            // Draw the pattern
+            drawPattern();
+        }
+
+        function drawPattern() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const patternWidth = BASE_SIZE * scale;
+            const xOffset = (width - patternWidth) / 2;
+
+            // Fill entire canvas with background
+            ctx.fillStyle = `rgb(${BACKGROUND}, ${BACKGROUND}, ${BACKGROUND})`;
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw title
+            drawTitle(xOffset, patternWidth);
+
+            // Draw 18 grayscale squares
+            drawGrayscaleSquares(xOffset);
+
+            // Draw large squares at bottom
+            drawLargeSquares(xOffset);
+
+            // Draw gradient
+            drawGradient(width, height);
+        }
+
+        function drawTitle(xOffset, patternWidth) {
+            const titleY = 32 * scale;
+            const color = BACKGROUND - 75;
+
+            ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+            ctx.font = `${18 * scale}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('TG270-sQC', xOffset + patternWidth / 2, titleY);
+        }
+
+        function drawGrayscaleSquares(xOffset) {
+            const iOffset = 1; // Row offset from ImageJ script
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 6; j++) {
+                    // Calculate gray level using ImageJ formula
+                    const grayLevel = (i * 6 + 2.5 - 2.5 * Math.pow(-1, i) + j * Math.pow(-1, i)) * 15;
+
+                    // Calculate position (round to integers for crisp rendering)
+                    const x = Math.round(xOffset + scale * (160 * j + 48));
+                    const y = Math.round(scale * (128 * (i + iOffset) + (i - 1) * 32));
+                    const size = Math.round(scale * 128);
+
+                    // Draw main square
+                    ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
+                    ctx.fillRect(x, y, size, size);
+
+                    // Draw label
+                    const labelColor = ((i * 6 + 2.5 - 2.5 * Math.pow(-1, i) + j * Math.pow(-1, i)) % 9) * 15 + 75;
+                    ctx.fillStyle = `rgb(${labelColor}, ${labelColor}, ${labelColor})`;
+                    ctx.font = `${12 * scale}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(Math.round(grayLevel), x + size / 2, y + 16 * scale);
+
+                    // Draw modulation patterns
+                    drawModulationPatterns(x, y, i, j, grayLevel);
+                }
+            }
+        }
+
+        function drawModulationPatterns(x, y, i, j, grayLevel) {
+            // Bar pattern subsquare is 32 pixels in pattern space, scale to screen
+            const scaledSubSquare = Math.round(32 * scale);
+
+            // Bar period is 6 pixels in SCREEN space (not pattern space)
+            const screenBarPeriod = 6;
+            const screenBarWidth = 3; // 50% duty cycle
+
+            // Calculate number of bars that fit in the scaled subsquare
+            const numBars = Math.ceil(scaledSubSquare / screenBarPeriod);
+
+            // Determine contrast values based on position
+            let upperContrast, lowerContrast;
+            if (i === 0 && j === 0) {
+                upperContrast = 3;
+                lowerContrast = 5;
+            } else if (i === 2 && j === 5) {
+                upperContrast = grayLevel - 5;
+                lowerContrast = grayLevel - 3;
+            } else {
+                upperContrast = grayLevel - 5;
+                lowerContrast = grayLevel + 5;
+            }
+
+            // Draw upper-left bar pattern
+            for (let barIndex = 0; barIndex < numBars; barIndex++) {
+                ctx.fillStyle = `rgb(${upperContrast}, ${upperContrast}, ${upperContrast})`;
+                const barX = Math.round(x + 16 * scale + barIndex * screenBarPeriod);
+                const barY = Math.round(y + 16 * scale);
+                ctx.fillRect(barX, barY, screenBarWidth, scaledSubSquare);
+            }
+
+            // Draw lower-right bar pattern
+            for (let barIndex = 0; barIndex < numBars; barIndex++) {
+                ctx.fillStyle = `rgb(${lowerContrast}, ${lowerContrast}, ${lowerContrast})`;
+                const barX = Math.round(x + 80 * scale + barIndex * screenBarPeriod);
+                const barY = Math.round(y + 80 * scale);
+                ctx.fillRect(barX, barY, screenBarWidth, scaledSubSquare);
+            }
+        }
+
+        function drawLargeSquares(xOffset) {
+            const kOffset = 4;
+            const squareSize = 256 * scale;
+
+            for (let k = 0; k < 3; k++) {
+                const grayLevel = k * 128;
+                const x = xOffset + scale * (128 + k * 256);
+                const y = scale * (128 * (kOffset + 1));
+
+                ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
+                ctx.fillRect(x, y, squareSize, squareSize);
+            }
+        }
+
+        function drawGradient(width, height) {
+            const gradientHeight = Math.floor(64 * scale);
+            const gradientY = height - gradientHeight;
+            const linePatternStart = width - 2 * 64 * scale;
+            const verticalPatternStart = width - 64 * scale;
+
+            // Draw horizontal gradient
+            const gradient = ctx.createLinearGradient(0, 0, width - 2 * 64 * scale, 0);
+            gradient.addColorStop(0, 'rgb(0, 0, 0)');
+            gradient.addColorStop(1, 'rgb(255, 255, 255)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, gradientY, width - 2 * 64 * scale, gradientHeight);
+
+            // Draw horizontal line pattern (1-pixel alternating black/white vertical lines)
+            const startX = Math.floor(linePatternStart);
+            const endX = Math.floor(verticalPatternStart);
+            for (let x = startX; x < endX; x++) {
+                const color = (x - startX) % 2 === 0 ? 0 : 255;
+                ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+                ctx.fillRect(x, Math.floor(gradientY), 1, Math.floor(gradientHeight));
+            }
+
+            // Draw vertical line pattern (1-pixel alternating black/white horizontal lines)
+            const startY = Math.floor(gradientY);
+            const endY = Math.floor(height);
+            for (let y = startY; y < endY; y++) {
+                const color = (y - startY) % 2 === 0 ? 0 : 255;
+                ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+                ctx.fillRect(Math.floor(verticalPatternStart), y, Math.floor(width - verticalPatternStart), 1);
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pacsDisplay TG270-pQC Pattern</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: rgb(0, 0, 0);
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .help-icon {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #666;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .help-icon:hover {
+            opacity: 0.7;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 5% auto;
+            padding: 30px;
+            border: 2px solid #444;
+            width: 850px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            color: #d0d0d0;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .modal-message {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-button {
+            padding: 8px 20px;
+            border: 1px solid #555;
+            background-color: #2a2a2a;
+            color: #d0d0d0;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .modal-button:hover {
+            background-color: #3a3a3a;
+            border-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="help-icon" id="helpBtn" title="Help">?</div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">TG270-pQC Pattern - AAPM Report 270</div>
+            <div class="modal-message">PATTERN DESCRIPTION:
+This pattern provides comprehensive evaluation of display performance based on AAPM Task Group 270 recommendations. It is based on the TG18-PQC design.
+
+MAIN FEATURES:
+ - 18 horizontal grayscale bars (0-255 in 15 gray level steps)
+ - Multiple modulation patterns at varying frequencies and contrasts
+ - High-contrast line pair patterns in top/bottom regions
+ - Vertical gradient bars with modulation for uniformity assessment
+
+MODULATION PATTERNS:
+ - Left region: Horizontal modulation at 4 frequencies (18, 12, 6, 4 pixels)
+   - Inner columns: 8 gray level contrast
+   - Outer columns: 2 gray level contrast
+ - Right region: Vertical modulation at 4 frequencies (4, 6, 12, 18 pixels)
+   - Inner columns: 8 gray level contrast
+   - Outer columns: 2 gray level contrast
+
+LINE PAIR PATTERNS (Top/Bottom):
+ - 6 line pair patterns at different frequencies (2, 4, 6 pixels)
+ - High contrast (0/128 or 128/255) for resolution assessment
+
+SIDE GRADIENTS:
+ - Full vertical gradients (0-255) with modulation strips
+ - For uniformity and gradient linearity evaluation
+
+USAGE:
+For a DICOM-conformant display, all modulation patterns should be visible across all gray levels. The line pair patterns test spatial resolution, while the side gradients assess uniformity and gradient reproduction.</div>
+            <div class="modal-buttons">
+                <button class="modal-button" onclick="closeModal('helpModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants from ImageJ script
+        const BASE_SIZE = 1024;
+
+        // Canvas and context
+        let canvas, ctx;
+        let scale = 1;
+
+        // Initialize
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // Disable image smoothing for crisp pixel rendering
+            ctx.imageSmoothingEnabled = false;
+
+            // Help button
+            document.getElementById('helpBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('helpModal').style.display = 'block';
+            });
+
+            // Resize handler
+            window.addEventListener('resize', resizeCanvas);
+
+            // Initial draw
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // Set canvas to window size
+            canvas.width = width;
+            canvas.height = height;
+
+            // Disable image smoothing (must be set after canvas resize)
+            ctx.imageSmoothingEnabled = false;
+            ctx.webkitImageSmoothingEnabled = false;
+            ctx.mozImageSmoothingEnabled = false;
+            ctx.msImageSmoothingEnabled = false;
+
+            // Calculate scale based on height
+            scale = height / BASE_SIZE;
+
+            // Draw the pattern
+            drawPattern();
+        }
+
+        function drawPattern() {
+            const width = canvas.width;
+            const height = canvas.height;
+            const patternWidth = BASE_SIZE * scale;
+            const xOffset = (width - patternWidth) / 2;
+
+            // Calculate dimensions based on pattern space
+            const sidew = Math.floor(BASE_SIZE / 1024 * 87);
+            const barh = Math.floor(BASE_SIZE / 1024 * 50);
+            const toph = Math.floor(BASE_SIZE / 1024 * 62);
+
+            // Fill entire canvas with black
+            ctx.fillStyle = 'rgb(0, 0, 0)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw horizontal bars (plain grayscale across entire center)
+            drawHorizontalBars(xOffset, sidew, barh, toph);
+
+            // Draw modulation patterns ONLY in specific columns on the sides
+            drawModulationColumns(xOffset, sidew, barh, toph);
+
+            // Draw top/bottom bars with line pairs
+            drawTopBottomBars(xOffset, sidew, barh, toph);
+
+            // Draw side gradients
+            drawSideGradients(xOffset, sidew);
+
+            // Draw title (last so it's on top)
+            drawTitle(xOffset, patternWidth);
+        }
+
+        function drawTitle(xOffset, patternWidth) {
+            const titleY = 32 * scale;
+
+            ctx.fillStyle = 'rgb(128, 128, 128)';
+            ctx.font = `${18 * scale}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('TG270-pQC', xOffset + patternWidth / 2, titleY);
+        }
+
+        function drawHorizontalBars(xOffset, sidew, barh, toph) {
+            const scaledSidew = Math.floor(sidew * scale);
+            const scaledSize = Math.ceil(BASE_SIZE * scale);
+
+            // Draw 18 horizontal bars
+            for (let i = 0; i < 18; i++) {
+                const grayLevel = i * 15;
+
+                // Calculate position from pattern space to avoid cumulative rounding errors
+                const y = Math.round((toph + i * barh) * scale);
+                const nextY = Math.round((toph + (i + 1) * barh) * scale);
+                const height = nextY - y;
+
+                ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
+                ctx.fillRect(
+                    xOffset + scaledSidew,
+                    y,
+                    scaledSize - 2 * scaledSidew,
+                    height
+                );
+            }
+        }
+
+        function drawModulationColumns(xOffset, sidew, barh, toph) {
+            const freqH = [18, 12, 6, 4];
+            const freqV = [4, 6, 12, 18];
+
+            // Horizontal modulation patterns (left side)
+            for (let i = 0; i < 4; i++) {
+                const freq = freqH[i];
+
+                // High contrast (8 gray levels) - columns 0-3
+                drawHorizontalModulationColumn(xOffset, sidew, barh, toph, i, freq, 4);
+
+                // Low contrast (2 gray levels) - columns 4-7
+                drawHorizontalModulationColumn(xOffset, sidew, barh, toph, i + 4, freq, 1);
+            }
+
+            // Vertical modulation patterns (right side)
+            for (let i = 0; i < 4; i++) {
+                const freq = freqV[i];
+
+                // Low contrast (2 gray levels) - columns 9-12
+                drawVerticalModulationColumn(xOffset, sidew, barh, toph, i + 9, freq, 1);
+
+                // High contrast (8 gray levels) - columns 13-16
+                drawVerticalModulationColumn(xOffset, sidew, barh, toph, i + 13, freq, 4);
+            }
+        }
+
+        function drawHorizontalModulationColumn(xOffset, sidew, barh, toph, colIndex, freq, contrast) {
+            const scaledSidew = Math.round(sidew * scale);
+
+            // Calculate column position from pattern space
+            const columnX = Math.round((xOffset / scale + sidew + colIndex * barh) * scale);
+            const columnWidth = Math.round((sidew + (colIndex + 1) * barh) * scale) - Math.round((sidew + colIndex * barh) * scale);
+
+            // freq is in SCREEN pixels, not pattern pixels
+            const screenPeriod = freq;
+            const screenBarWidth = freq / 2;
+
+            // Draw modulation for each of the 18 bars in this column
+            for (let bar = 0; bar < 18; bar++) {
+                const baseGray = bar * 15;
+
+                // Calculate bar position from pattern space
+                const barY = Math.round((toph + bar * barh) * scale);
+                const nextBarY = Math.round((toph + (bar + 1) * barh) * scale);
+                const barHeight = nextBarY - barY;
+
+                // Determine contrast adjustments for first and last bars
+                let darkContrast = -contrast;
+                let lightContrast = contrast;
+
+                if (bar === 0) {
+                    lightContrast += contrast;
+                } else if (bar === 17) {
+                    darkContrast -= contrast;
+                }
+
+                const darkGray = Math.max(0, Math.min(255, baseGray + darkContrast));
+                const lightGray = Math.max(0, Math.min(255, baseGray + lightContrast));
+
+                // Calculate how many bars fit in this bar height
+                const numBars = Math.ceil(barHeight / screenPeriod);
+
+                // Draw horizontal stripes in screen space
+                for (let barIndex = 0; barIndex < numBars; barIndex++) {
+                    // Dark stripe
+                    ctx.fillStyle = `rgb(${darkGray}, ${darkGray}, ${darkGray})`;
+                    ctx.fillRect(columnX, barY + barIndex * screenPeriod, columnWidth, screenBarWidth);
+
+                    // Light stripe
+                    ctx.fillStyle = `rgb(${lightGray}, ${lightGray}, ${lightGray})`;
+                    ctx.fillRect(columnX, barY + barIndex * screenPeriod + screenBarWidth, columnWidth, screenBarWidth);
+                }
+            }
+        }
+
+        function drawVerticalModulationColumn(xOffset, sidew, barh, toph, colIndex, freq, contrast) {
+            // Calculate column position from pattern space
+            const columnX = Math.round((xOffset / scale + sidew + colIndex * barh) * scale);
+            const columnWidth = Math.round((sidew + (colIndex + 1) * barh) * scale) - Math.round((sidew + colIndex * barh) * scale);
+
+            // freq is in SCREEN pixels, not pattern pixels
+            const screenPeriod = freq;
+            const screenBarWidth = freq / 2;
+
+            // Draw modulation for each of the 18 bars in this column
+            for (let bar = 0; bar < 18; bar++) {
+                const baseGray = bar * 15;
+
+                // Calculate bar position from pattern space
+                const barY = Math.round((toph + bar * barh) * scale);
+                const nextBarY = Math.round((toph + (bar + 1) * barh) * scale);
+                const barHeight = nextBarY - barY;
+
+                // Determine contrast adjustments for first and last bars
+                let darkContrast = -contrast;
+                let lightContrast = contrast;
+
+                if (bar === 0) {
+                    lightContrast += contrast;
+                } else if (bar === 17) {
+                    darkContrast -= contrast;
+                }
+
+                const darkGray = Math.max(0, Math.min(255, baseGray + darkContrast));
+                const lightGray = Math.max(0, Math.min(255, baseGray + lightContrast));
+
+                // Calculate how many bars fit in this column width
+                const numBars = Math.ceil(columnWidth / screenPeriod);
+
+                // Draw vertical stripes in screen space
+                for (let barIndex = 0; barIndex < numBars; barIndex++) {
+                    // Dark stripe
+                    ctx.fillStyle = `rgb(${darkGray}, ${darkGray}, ${darkGray})`;
+                    ctx.fillRect(columnX + barIndex * screenPeriod, barY, screenBarWidth, barHeight);
+
+                    // Light stripe
+                    ctx.fillStyle = `rgb(${lightGray}, ${lightGray}, ${lightGray})`;
+                    ctx.fillRect(columnX + barIndex * screenPeriod + screenBarWidth, barY, screenBarWidth, barHeight);
+                }
+            }
+        }
+
+        function drawTopBottomBars(xOffset, sidew, barh, toph) {
+            const scaledSize = Math.floor(BASE_SIZE * scale);
+
+            // Top bar (gray level 64) - from 0 to toph
+            const scaledToph = Math.round(toph * scale);
+            ctx.fillStyle = 'rgb(64, 64, 64)';
+            ctx.fillRect(xOffset, 0, scaledSize, scaledToph);
+
+            // Bottom bar (gray level 191) - starts where last horizontal bar ends
+            const bottomBarY = Math.round((toph + 18 * barh) * scale);
+            const bottomBarHeight = scaledSize - bottomBarY;
+            ctx.fillStyle = 'rgb(191, 191, 191)';
+            ctx.fillRect(xOffset, bottomBarY, scaledSize, bottomBarHeight);
+
+            const scaledBarh = Math.round(barh * scale);
+            const scaledSidew = Math.round(sidew * scale);
+
+            // Draw line pair patterns
+            const freqLP = [6, 4, 2, 2, 4, 6];
+            const topM = Math.round(toph / 2 * scale);
+
+            for (let i = 0; i < 6; i++) {
+                const freq = freqLP[i];
+                const colIndex = i < 3 ? (2 * i + 2) : (2 * i + 4);
+                const x = Math.round(xOffset + scaledSidew + colIndex * scaledBarh);
+
+                if (i < 3) {
+                    // Horizontal line pairs
+                    drawLinePairs(x, topM, scaledBarh, freq, true, false);
+                    drawLinePairs(x, scaledSize - topM, scaledBarh, freq, true, true);
+                } else {
+                    // Vertical line pairs
+                    drawLinePairs(x, topM, scaledBarh, freq, false, false);
+                    drawLinePairs(x, scaledSize - topM, scaledBarh, freq, false, true);
+                }
+            }
+        }
+
+        function drawLinePairs(x, centerY, barWidth, freq, isHorizontal, isBottom) {
+            const height = Math.floor(barWidth);
+            const y = Math.floor(centerY - height / 2);
+            const startX = Math.floor(x);
+            const width = Math.floor(barWidth);
+
+            if (isHorizontal) {
+                // Horizontal line pairs - iterate pixel by pixel
+                const startY = Math.floor(y);
+                const endY = Math.floor(y + height);
+                for (let py = startY; py < endY; py++) {
+                    const phase = (py - startY) % freq;
+                    const color = phase < freq / 2 ? (isBottom ? 128 : 128) : (isBottom ? 255 : 0);
+                    ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+                    ctx.fillRect(startX, py, width, 1);
+                }
+            } else {
+                // Vertical line pairs - iterate pixel by pixel
+                const endX = Math.floor(x + width);
+                for (let px = startX; px < endX; px++) {
+                    const phase = (px - startX) % freq;
+                    const color = phase < freq / 2 ? (isBottom ? 128 : 128) : (isBottom ? 255 : 0);
+                    ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
+                    ctx.fillRect(px, y, 1, height);
+                }
+            }
+        }
+
+        function drawSideGradients(xOffset, sidew) {
+            const scaledSidew = Math.ceil(sidew * scale);
+            const scaledSize = Math.round(BASE_SIZE * scale);
+
+            // Calculate strip boundaries from pattern space to avoid gaps
+            const stripStart = Math.floor((sidew / 2 - sidew / 4) * scale);
+            const stripEnd = Math.ceil((sidew / 2 + sidew / 4) * scale);
+
+            // Left side gradient - draw horizontal lines
+            for (let y = 0; y < scaledSize; y++) {
+                const grayLevel = Math.floor(y / (scaledSize - 1) * 1031 / 1024 * 255);
+                const modulation = Math.round(3 * Math.sin(y / (2 * scale)));
+
+                // Draw the entire gradient bar as one piece, then overlay modulation strip
+                ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
+                ctx.fillRect(xOffset, y, scaledSidew, 1);
+
+                // Draw modulation strip on top
+                const modulatedGray = Math.max(0, Math.min(255, grayLevel + modulation));
+                ctx.fillStyle = `rgb(${modulatedGray}, ${modulatedGray}, ${modulatedGray})`;
+                ctx.fillRect(xOffset + stripStart, y, stripEnd - stripStart, 1);
+            }
+
+            // Right side gradient - draw horizontal lines
+            for (let y = 0; y < scaledSize; y++) {
+                const grayLevel = Math.floor((scaledSize - 1 - y) / (scaledSize - 1) * 1031 / 1024 * 255);
+                const modulation = Math.round(3 * Math.sin(y / (1.5 * scale)));
+
+                const rightX = xOffset + scaledSize - scaledSidew;
+
+                // Draw the entire gradient bar as one piece, then overlay modulation strip
+                ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
+                ctx.fillRect(rightX, y, scaledSidew, 1);
+
+                // Draw modulation strip on top
+                const modulatedGray = Math.max(0, Math.min(255, grayLevel + modulation));
+                ctx.fillStyle = `rgb(${modulatedGray}, ${modulatedGray}, ${modulatedGray})`;
+                ctx.fillRect(rightX + stripStart, y, stripEnd - stripStart, 1);
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
