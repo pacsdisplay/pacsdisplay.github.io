@@ -3,13 +3,11 @@
 <head>
 	<!-- Standard Meta -->
 	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 	<!-- Site Properities -->
-	<title>pacsDisplay</title>
+	<title>pacsDisplay - How-to Videos</title>
 	<link rel="icon" href="images/pdbw.ico" type="image/x-icon">
-
-	<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700|Open+Sans:300italic,400,300,700' rel='stylesheet' type='text/css'>
 
 	<link rel="stylesheet" type="text/css" href="index.css">
 
@@ -17,23 +15,18 @@
 <body>
 
 <!-- Masthead -->
-<div class="headerfooter" style="min-height:300px">
+<div class="headerfooter header-hero">
 	<div class="mast">
-		<p 	class="mastdivide">
+		<p class="mastdivide">
 			pacsDisplay
-			<!-- Add flag to show this was for RSNA - not for use on general website
-			<span style="float:right;">RSNA 2014</span>
-			-->
 		</p>
 		<div>
-			<img class="topimage" src="images/pdlogobw.png" />
+			<img class="topimage" src="images/pdlogobw.png" alt="pacsDisplay logo" />
 			<div>
 				<h1 class="cover">pacsDisplay how-to videos</h1>
 				<p>Video descriptions on how to install and use the pacsDisplay package</p>
 				<br>
-				<a href="index.html">
-					Main page
-				</a>
+				<a href="index.html">Main page</a>
 				<br><br>
 			</div>
 		</div>
@@ -50,138 +43,125 @@
 	<h3 class="divide">Downloading pacsDisplay</h3>
 
 	<p>How to navigate and download the pacsDisplay applications from pacsDisplay.org site</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/downloading.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<video width="800" controls>
+			<source src="videos/downloading.mp4" type="video/mp4">
+			Your browser does not support HTML5 video.
+		</video>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">Installing pacsDisplay</h3>
 
 	<p>Now that you've got the .zip file, how to unload the software and install the applications on your machine.</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/install.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<video width="800" controls>
+			<source src="videos/install.mp4" type="video/mp4">
+			Your browser does not support HTML5 video.
+		</video>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">Testing the installation</h3>
 
 	<p>After the program has been installed, follow the instructions in this video to test the basic functionality of the software</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/demoLUT.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<video width="800" controls>
+			<source src="videos/demoLUT.mp4" type="video/mp4">
+			Your browser does not support HTML5 video.
+		</video>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">Generating a lookup table (LUT)</h3>
 
 	<p>Now that you've confirmed operation of the program, generate a LUT for your specific display by evaluating the full palette of the display. After generation, load this LUT to your display by configuring the configLL.txt file. Once configured, the loading will take place automatically on start-up (so long as you haven't modified the startup menu).</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/lutGen.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<video width="800" controls>
+			<source src="videos/lutGen.mp4" type="video/mp4">
+			Your browser does not support HTML5 video.
+		</video>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">Using lumResponse</h3>
 
 	<p>The lumResponse program can be used to evaluate the full palette of a display to generate a LUT, or it can be used to perform a QC check of the display for general testing.</p>
-	
-	<iframe width="801" height="801" src="https://www.youtube.com/embed/9tcMsih4Mvs" title="pacsDisplay lumResponse" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<iframe width="801" height="801" src="https://www.youtube.com/embed/9tcMsih4Mvs" title="pacsDisplay lumResponse" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">Using qcCheck</h3>
 
 	<p>QCcheck can be used to generate (and regenerate) plots of the calibrated luminance response. This allows for easy visualization of the conformance after a QC check.</p>
-	
-	<iframe width="800" height="800" src="https://www.youtube.com/embed/hk_elU5c5YA" title="pacsDisplay qcCheck" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<iframe width="800" height="800" src="https://www.youtube.com/embed/hk_elU5c5YA" title="pacsDisplay qcCheck" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	
 	<h3 class="divide">Using gtest</h3>
 
 	<p>The gtest program allows the user to dial in any RGB combination for viewing or measuring with a photometer.</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/gtest.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<video width="800" controls>
+			<source src="videos/gtest.mp4" type="video/mp4">
+			Your browser does not support HTML5 video.
+		</video>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">Using i1meter</h3>
 
 	<p>With i1meter, the user has access to the real-time read-out of the i1Display pro meter values. This includes luminance, illuminance, and colorimeter values.</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/i1meter.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<iframe width="800" height="800" src="https://www.youtube.com/embed/8rTQG2-1wqY" title="pacsDisplay i1meter" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	
 	<h3 class="divide">Using iQC</h3>
 
 	<p>The iQC pattern is the standard test pattern included with the installation. It allows for accurate qualitative evaluation of a displays's GSDF conformance.</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/iQC.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<video width="800" controls>
+			<source src="videos/iQC.mp4" type="video/mp4">
+			Your browser does not support HTML5 video.
+		</video>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">Using ambtest</h3>
 
 	<p>The ambtest application presents the user with a low-contrast bar pattern on a black background. If the ambient lighting and display calibration are appropriate, the user should see the bar pattern at the default settings. The contrast can be adjusted through key bindings. Clicking on the bat pattern displays a success message to confirm the user can resolve low-contrast objects at the lowest luminance levels.</p>
-	
-	<video width="800" align="center" controls>
-		<source src="videos/ambtest.mp4" type="video/mp4">
-		Your browser does not support HTML5 video.
-	</video>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<video width="800" controls>
+			<source src="videos/ambtest.mp4" type="video/mp4">
+			Your browser does not support HTML5 video.
+		</video>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">AAPM TG270 Test Patterns</h3>
 	<p>These videos show the details of the AAPM TG270-sQC and TG270-pQC test patterns. These patterns are now included in the iQC program of pacsDisplay. The details for how to access the patterns within the software are given in the iQC instructional video</p>
@@ -189,25 +169,22 @@
 	<h3 class="divide">AAPM TG270-sQC test pattern</h3>
 
 	<p>How to use the TG270-sQC pattern</p>
-	
-	<iframe width="1259" height="708" src="https://www.youtube.com/embed/uxXCqBl-Q_c" title="TG270-sQC Display Test Pattern" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
+
+	<div class="video-container">
+		<iframe width="1259" height="708" src="https://www.youtube.com/embed/uxXCqBl-Q_c" title="TG270-sQC Display Test Pattern" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 	
 	<h3 class="divide">AAPM TG270-pQC test pattern</h3>
 
 	<p>How to use the TG270-pQC pattern</p>
-	
-	<iframe width="1259" height="708" src="https://www.youtube.com/embed/GiOvXrFXS5o" title="TG270-pQC Display Test Pattern" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>	
-	
-	<br>
-	<a href="index.html">
-				Return to the main page
-	</a>
-	<br>
+
+	<div class="video-container">
+		<iframe width="1259" height="708" src="https://www.youtube.com/embed/GiOvXrFXS5o" title="TG270-pQC Display Test Pattern" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+	</div>
+
+	<a href="index.html">Return to the main page</a>
 </div>
 
   
