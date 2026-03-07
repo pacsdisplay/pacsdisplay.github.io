@@ -63,8 +63,6 @@ h1.cover {
 .mainbody {
 	padding-left: 15%;
 	padding-right: 15%;
-	max-width: 1400px;
-	margin: 0 auto;
 	background: var(--bg-light);
 }
 
