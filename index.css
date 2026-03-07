@@ -176,8 +176,11 @@ a:focus {
 	margin: 1rem 0;
 }
 
-.video-container video,
-.video-container iframe {
+.video-container video {
 	max-width: 100%;
 	height: auto;
+}
+
+.video-container iframe {
+	max-width: 100%;
 }
