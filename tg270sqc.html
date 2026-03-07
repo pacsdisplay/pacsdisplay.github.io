@@ -14,16 +14,17 @@
 
         body {
             background-color: rgb(128, 128, 128);
-            overflow: hidden;
+            overflow: auto;
             font-family: 'Courier New', monospace;
         }
 
         #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            display: block;
+            cursor: grab;
+        }
+
+        #canvas.panning {
+            cursor: grabbing;
         }
 
         .help-icon {
@@ -39,6 +40,22 @@
         }
 
         .help-icon:hover {
+            opacity: 0.7;
+        }
+
+        .reset-icon {
+            position: absolute;
+            top: 10px;
+            left: 35px;
+            color: #666;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .reset-icon:hover {
             opacity: 0.7;
         }
 
@@ -104,6 +121,7 @@
     <canvas id="canvas"></canvas>
 
     <div class="help-icon" id="helpBtn" title="Help">?</div>
+    <div class="reset-icon" id="resetBtn" title="Reset View">⟲</div>
 
     <!-- Help Modal -->
     <div id="helpModal" class="modal">
@@ -129,6 +147,17 @@ GRADIENT BAR (bottom):
  - Line patterns on right side verify pixel mapping
  - Useful for detecting bit depth issues and contouring artifacts
 
+CONTROLS:
+ - Click and drag: Pan the pattern in any direction
+ - Ctrl + Mouse wheel: Zoom in/out (1x to 10x)
+ - ⟲ button (top-left): Reset zoom and panning to default
+ - Window resize: Automatically resets view to fit new window size
+
+NOTES:
+ - Bar patterns maintain fixed 6-pixel period regardless of zoom
+ - Corner gradient patterns maintain fixed 2-pixel period
+ - Pattern scales to fit window height while maintaining aspect ratio
+
 USAGE:
 For a DICOM-conformant display, all 18 modulation patterns should be equally visible. The corner patterns (upper-left of first square, lower-right of last square) have lower contrast (3 gray levels) and may only be visible on highest-performance displays.</div>
             <div class="modal-buttons">
@@ -146,6 +175,10 @@ For a DICOM-conformant display, all 18 modulation patterns should be equally vis
         // Canvas and context
         let canvas, ctx;
         let scale = 1;
+        let zoomLevel = 1.0;
+        let isPanning = false;
+        let panStart = { x: 0, y: 0 };
+        let scrollOffset = { x: 0, y: 0 };
 
         // Initialize
         function init() {
@@ -161,20 +194,94 @@ For a DICOM-conformant display, all 18 modulation patterns should be equally vis
                 document.getElementById('helpModal').style.display = 'block';
             });
 
+            // Reset button
+            document.getElementById('resetBtn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                resetView();
+            });
+
             // Resize handler
             window.addEventListener('resize', resizeCanvas);
+
+            // Mouse wheel zoom (with Ctrl key)
+            canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+            // Mouse panning
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseleave', handleMouseUp);
 
             // Initial draw
             resizeCanvas();
         }
 
-        function resizeCanvas() {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
+        function handleWheel(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
 
-            // Set canvas to window size
-            canvas.width = width;
-            canvas.height = height;
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const newZoom = Math.max(1.0, Math.min(10.0, zoomLevel * delta));
+
+                if (newZoom !== zoomLevel) {
+                    zoomLevel = newZoom;
+
+                    // Rerender pattern at new size - scale width and height by zoom factor
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+                    canvas.width = viewportWidth * zoomLevel;
+                    canvas.height = viewportHeight * zoomLevel;
+
+                    // Recalculate scale based on zoomed height
+                    scale = (viewportHeight * zoomLevel) / BASE_SIZE;
+
+                    // Disable image smoothing
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.webkitImageSmoothingEnabled = false;
+                    ctx.mozImageSmoothingEnabled = false;
+                    ctx.msImageSmoothingEnabled = false;
+
+                    drawPattern();
+                }
+            }
+        }
+
+        function handleMouseDown(e) {
+            // Allow panning at all times
+            isPanning = true;
+            canvas.classList.add('panning');
+            panStart = { x: e.clientX - scrollOffset.x, y: e.clientY - scrollOffset.y };
+        }
+
+        function handleMouseMove(e) {
+            if (isPanning) {
+                scrollOffset.x = e.clientX - panStart.x;
+                scrollOffset.y = e.clientY - panStart.y;
+                drawPattern();
+            }
+        }
+
+        function handleMouseUp() {
+            if (isPanning) {
+                isPanning = false;
+                canvas.classList.remove('panning');
+            }
+        }
+
+        function resizeCanvas() {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Reset zoom and pan on window resize
+            zoomLevel = 1.0;
+            scrollOffset = { x: 0, y: 0 };
+
+            // Calculate base scale from height
+            scale = viewportHeight / BASE_SIZE;
+
+            // Canvas matches window size at 1x
+            canvas.width = viewportWidth;
+            canvas.height = viewportHeight;
 
             // Disable image smoothing (must be set after canvas resize)
             ctx.imageSmoothingEnabled = false;
@@ -182,47 +289,75 @@ For a DICOM-conformant display, all 18 modulation patterns should be equally vis
             ctx.mozImageSmoothingEnabled = false;
             ctx.msImageSmoothingEnabled = false;
 
-            // Calculate scale based on height
-            scale = height / BASE_SIZE;
-
             // Draw the pattern
+            drawPattern();
+        }
+
+        function resetView() {
+            zoomLevel = 1.0;
+            scrollOffset = { x: 0, y: 0 };
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // Reset to 1x zoom
+            canvas.width = viewportWidth;
+            canvas.height = viewportHeight;
+
+            // Recalculate scale for 1x zoom
+            scale = viewportHeight / BASE_SIZE;
+
+            // Disable image smoothing
+            ctx.imageSmoothingEnabled = false;
+            ctx.webkitImageSmoothingEnabled = false;
+            ctx.mozImageSmoothingEnabled = false;
+            ctx.msImageSmoothingEnabled = false;
+
             drawPattern();
         }
 
         function drawPattern() {
             const width = canvas.width;
             const height = canvas.height;
+
+            // Pattern is rendered at scale, then moved by scroll offset for panning
             const patternWidth = BASE_SIZE * scale;
-            const xOffset = (width - patternWidth) / 2;
+            const xOffset = (width - patternWidth) / 2 + scrollOffset.x;
+            const yOffset = scrollOffset.y;
+
+            // Save context state
+            ctx.save();
 
             // Fill entire canvas with background
             ctx.fillStyle = `rgb(${BACKGROUND}, ${BACKGROUND}, ${BACKGROUND})`;
             ctx.fillRect(0, 0, width, height);
 
             // Draw title
-            drawTitle(xOffset, patternWidth);
+            drawTitle(xOffset, yOffset, patternWidth, scale);
 
             // Draw 18 grayscale squares
-            drawGrayscaleSquares(xOffset);
+            drawGrayscaleSquares(xOffset, yOffset, scale);
 
             // Draw large squares at bottom
-            drawLargeSquares(xOffset);
+            drawLargeSquares(xOffset, yOffset, scale);
 
-            // Draw gradient
-            drawGradient(width, height);
+            // Draw gradient (based on canvas width and height)
+            drawGradient(width, height, yOffset, scale);
+
+            // Restore context state
+            ctx.restore();
         }
 
-        function drawTitle(xOffset, patternWidth) {
-            const titleY = 32 * scale;
+        function drawTitle(xOffset, yOffset, patternWidth, effectiveScale) {
+            const titleY = yOffset + 32 * effectiveScale;
             const color = BACKGROUND - 75;
 
             ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
-            ctx.font = `${18 * scale}px sans-serif`;
+            ctx.font = `${18 * effectiveScale}px sans-serif`;
             ctx.textAlign = 'center';
             ctx.fillText('TG270-sQC', xOffset + patternWidth / 2, titleY);
         }
 
-        function drawGrayscaleSquares(xOffset) {
+        function drawGrayscaleSquares(xOffset, yOffset, effectiveScale) {
             const iOffset = 1; // Row offset from ImageJ script
 
             for (let i = 0; i < 3; i++) {
@@ -231,9 +366,9 @@ For a DICOM-conformant display, all 18 modulation patterns should be equally vis
                     const grayLevel = (i * 6 + 2.5 - 2.5 * Math.pow(-1, i) + j * Math.pow(-1, i)) * 15;
 
                     // Calculate position (round to integers for crisp rendering)
-                    const x = Math.round(xOffset + scale * (160 * j + 48));
-                    const y = Math.round(scale * (128 * (i + iOffset) + (i - 1) * 32));
-                    const size = Math.round(scale * 128);
+                    const x = Math.round(xOffset + effectiveScale * (160 * j + 48));
+                    const y = Math.round(yOffset + effectiveScale * (128 * (i + iOffset) + (i - 1) * 32));
+                    const size = Math.round(effectiveScale * 128);
 
                     // Draw main square
                     ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
@@ -242,21 +377,21 @@ For a DICOM-conformant display, all 18 modulation patterns should be equally vis
                     // Draw label
                     const labelColor = ((i * 6 + 2.5 - 2.5 * Math.pow(-1, i) + j * Math.pow(-1, i)) % 9) * 15 + 75;
                     ctx.fillStyle = `rgb(${labelColor}, ${labelColor}, ${labelColor})`;
-                    ctx.font = `${12 * scale}px sans-serif`;
+                    ctx.font = `${12 * effectiveScale}px sans-serif`;
                     ctx.textAlign = 'center';
-                    ctx.fillText(Math.round(grayLevel), x + size / 2, y + 16 * scale);
+                    ctx.fillText(Math.round(grayLevel), x + size / 2, y + 16 * effectiveScale);
 
-                    // Draw modulation patterns
-                    drawModulationPatterns(x, y, i, j, grayLevel);
+                    // Draw modulation patterns (screen pixels stay fixed)
+                    drawModulationPatterns(x, y, i, j, grayLevel, effectiveScale);
                 }
             }
         }
 
-        function drawModulationPatterns(x, y, i, j, grayLevel) {
+        function drawModulationPatterns(x, y, i, j, grayLevel, effectiveScale) {
             // Bar pattern subsquare is 32 pixels in pattern space, scale to screen
-            const scaledSubSquare = Math.round(32 * scale);
+            const scaledSubSquare = Math.round(32 * effectiveScale);
 
-            // Bar period is 6 pixels in SCREEN space (not pattern space)
+            // Bar period is FIXED at 6 pixels in screen space regardless of zoom
             const screenBarPeriod = 6;
             const screenBarWidth = 3; // 50% duty cycle
 
@@ -279,48 +414,54 @@ For a DICOM-conformant display, all 18 modulation patterns should be equally vis
             // Draw upper-left bar pattern
             for (let barIndex = 0; barIndex < numBars; barIndex++) {
                 ctx.fillStyle = `rgb(${upperContrast}, ${upperContrast}, ${upperContrast})`;
-                const barX = Math.round(x + 16 * scale + barIndex * screenBarPeriod);
-                const barY = Math.round(y + 16 * scale);
+                const barX = Math.round(x + 16 * effectiveScale + barIndex * screenBarPeriod);
+                const barY = Math.round(y + 16 * effectiveScale);
                 ctx.fillRect(barX, barY, screenBarWidth, scaledSubSquare);
             }
 
             // Draw lower-right bar pattern
             for (let barIndex = 0; barIndex < numBars; barIndex++) {
                 ctx.fillStyle = `rgb(${lowerContrast}, ${lowerContrast}, ${lowerContrast})`;
-                const barX = Math.round(x + 80 * scale + barIndex * screenBarPeriod);
-                const barY = Math.round(y + 80 * scale);
+                const barX = Math.round(x + 80 * effectiveScale + barIndex * screenBarPeriod);
+                const barY = Math.round(y + 80 * effectiveScale);
                 ctx.fillRect(barX, barY, screenBarWidth, scaledSubSquare);
             }
         }
 
-        function drawLargeSquares(xOffset) {
+        function drawLargeSquares(xOffset, yOffset, effectiveScale) {
             const kOffset = 4;
-            const squareSize = 256 * scale;
+            const squareSize = 256 * effectiveScale;
 
             for (let k = 0; k < 3; k++) {
                 const grayLevel = k * 128;
-                const x = xOffset + scale * (128 + k * 256);
-                const y = scale * (128 * (kOffset + 1));
+                const x = xOffset + effectiveScale * (128 + k * 256);
+                const y = yOffset + effectiveScale * (128 * (kOffset + 1));
 
                 ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
                 ctx.fillRect(x, y, squareSize, squareSize);
             }
         }
 
-        function drawGradient(width, height) {
+        function drawGradient(width, height, yOffset, scale) {
             const gradientHeight = Math.floor(64 * scale);
-            const gradientY = height - gradientHeight;
-            const linePatternStart = width - 2 * 64 * scale;
-            const verticalPatternStart = width - 64 * scale;
+            // Position at bottom of the pattern (BASE_SIZE), moves with pattern
+            const patternHeight = BASE_SIZE * scale;
+            const gradientY = yOffset + patternHeight - gradientHeight;
 
-            // Draw horizontal gradient
-            const gradient = ctx.createLinearGradient(0, 0, width - 2 * 64 * scale, 0);
+            // Gradient based on canvas width (which scales with zoom)
+            const gradientStartX = scrollOffset.x;
+            const linePatternStart = gradientStartX + width - 2 * 64 * scale;
+            const verticalPatternStart = gradientStartX + width - 64 * scale;
+
+            // Draw horizontal gradient spanning full canvas width minus pattern areas
+            const gradientWidth = width - 2 * 64 * scale;
+            const gradient = ctx.createLinearGradient(gradientStartX, 0, gradientStartX + gradientWidth, 0);
             gradient.addColorStop(0, 'rgb(0, 0, 0)');
             gradient.addColorStop(1, 'rgb(255, 255, 255)');
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, gradientY, width - 2 * 64 * scale, gradientHeight);
+            ctx.fillRect(gradientStartX, gradientY, gradientWidth, gradientHeight);
 
-            // Draw horizontal line pattern (1-pixel alternating black/white vertical lines)
+            // Draw horizontal line pattern (FIXED at 2-pixel period in screen space)
             const startX = Math.floor(linePatternStart);
             const endX = Math.floor(verticalPatternStart);
             for (let x = startX; x < endX; x++) {
@@ -329,13 +470,13 @@ For a DICOM-conformant display, all 18 modulation patterns should be equally vis
                 ctx.fillRect(x, Math.floor(gradientY), 1, Math.floor(gradientHeight));
             }
 
-            // Draw vertical line pattern (1-pixel alternating black/white horizontal lines)
+            // Draw vertical line pattern (FIXED at 2-pixel period in screen space)
             const startY = Math.floor(gradientY);
-            const endY = Math.floor(height);
+            const endY = Math.floor(gradientY + gradientHeight);
             for (let y = startY; y < endY; y++) {
                 const color = (y - startY) % 2 === 0 ? 0 : 255;
                 ctx.fillStyle = `rgb(${color}, ${color}, ${color})`;
-                ctx.fillRect(Math.floor(verticalPatternStart), y, Math.floor(width - verticalPatternStart), 1);
+                ctx.fillRect(Math.floor(verticalPatternStart), y, Math.floor(gradientStartX + width - verticalPatternStart), 1);
             }
         }
 
