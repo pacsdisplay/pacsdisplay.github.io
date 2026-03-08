@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pacsDisplay Uniformity Scan</title>
+    <link rel="icon" href="images/pdbw.ico" type="image/x-icon">
+    <link rel="stylesheet" href="index.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body class="scan-body">
+    <canvas id="canvas" class="scan-canvas"></canvas>
+
+    <div class="scan-help-icon" id="helpBtn" title="Help">?</div>
+
+    <div class="scan-controls">
+        <input type="text" id="boxSizeInput" class="scan-box-size-input" value="300" maxlength="4" title="Box size in pixels" />
+        <select id="graySelect" class="scan-gray-select">
+            <option value="15">Gray 15</option>
+            <option value="120">Gray 120</option>
+            <option value="240">Gray 240</option>
+        </select>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="scan-modal">
+        <div class="scan-modal-content">
+            <div class="scan-modal-title">pacsDisplay Uniformity Scan</div>
+            <div class="scan-modal-message">CONTROLS:
+ - Mouse Wheel Down: Progress scanning box forward
+ - Mouse Wheel Up: Reverse scanning direction
+ - Box Size Input: Set box dimensions (pixels, square)
+ - Gray Dropdown: Select box gray level (15, 120, or 240)
+
+USAGE:
+ - Box starts in the upper left corner (default 300x300 pixels)
+ - Scroll down to move the box across the screen from left to right
+ - When reaching the right edge, box moves down gradually
+ - Then scans left, continuing in serpentine fashion
+ - Scrolling up reverses direction (including vertical movement)
+ - Background is always black (gray level 0)
+ - Use this tool to identify display non-uniformities
+
+URL PARAMETERS:
+ - ?size=N - Set initial box size (e.g., ?size=300)
+ - ?gray=N - Set initial gray level (e.g., ?gray=240)
+ - Example: scan.html?size=150&gray=15
+
+PURPOSE:
+ - Scan the entire display surface systematically
+ - Identify bad pixels and mura
+ - Check uniformity at different gray levels</div>
+            <div class="scan-modal-buttons">
+                <button class="scan-modal-button" onclick="closeModal('helpModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const INITIAL_BOX_SIZE = parseInt(urlParams.get('size')) || 300;
+        const INITIAL_GRAY_LEVEL = parseInt(urlParams.get('gray')) || 120;
+
+        // Constants
+        const STEP_SIZE = 100; // Horizontal step size
+
+        // State
+        let canvas, ctx;
+        let grayLevel = INITIAL_GRAY_LEVEL;
+        let boxX = 0;
+        let boxY = 0;
+        let boxSize = INITIAL_BOX_SIZE;
+        let boxWidth = boxSize;
+        let rowHeight = boxSize;
+        let isAnimating = false;
+
+        // Elements
+        const graySelect = document.getElementById('graySelect');
+        const boxSizeInput = document.getElementById('boxSizeInput');
+        const helpBtn = document.getElementById('helpBtn');
+
+        // Initialize
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            // Set initial values from URL parameters
+            graySelect.value = grayLevel;
+            boxSizeInput.value = boxSize;
+
+            // Initial draw
+            drawBox();
+
+            // Event listeners
+            canvas.addEventListener('wheel', handleWheel, { passive: false });
+            window.addEventListener('resize', handleResize);
+
+            // Gray level selector
+            graySelect.addEventListener('change', (e) => {
+                grayLevel = parseInt(e.target.value);
+                drawBox();
+            });
+
+            graySelect.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+
+            // Box size input
+            boxSizeInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+                boxSizeInput.select();
+            });
+
+            boxSizeInput.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+
+            boxSizeInput.addEventListener('blur', handleBoxSizeBlur);
+            boxSizeInput.addEventListener('keydown', handleBoxSizeKeydown);
+
+            // Help button
+            helpBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                document.getElementById('helpModal').style.display = 'block';
+            });
+        }
+
+        function handleBoxSizeBlur() {
+            const value = parseInt(boxSizeInput.value);
+            if (!isNaN(value) && value > 0 && value <= 2000) {
+                boxSize = value;
+                boxWidth = boxSize;
+                rowHeight = boxSize;
+                // Reset position to start
+                boxX = 0;
+                boxY = 0;
+                drawBox();
+            } else {
+                boxSizeInput.value = boxSize; // Reset to current value
+            }
+        }
+
+        function handleBoxSizeKeydown(e) {
+            if (e.key === 'Enter') {
+                boxSizeInput.blur();
+            } else if (e.key === 'Escape') {
+                boxSizeInput.value = boxSize; // Reset to current value
+                boxSizeInput.blur();
+            }
+        }
+
+        function drawBox() {
+            // Clear canvas (black background)
+            ctx.fillStyle = 'rgb(0, 0, 0)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the box using the selected gray level
+            const boxColor = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
+            ctx.fillStyle = boxColor;
+            ctx.fillRect(boxX, boxY, boxWidth, rowHeight);
+        }
+
+        function handleWheel(e) {
+            e.preventDefault();
+
+            if (isAnimating) return;
+
+            const direction = e.deltaY > 0 ? 1 : -1;
+
+            if (direction > 0) {
+                animateMove('forward');
+            } else {
+                animateMove('backward');
+            }
+        }
+
+        function animateMove(direction) {
+            isAnimating = true;
+
+            const targetPos = getNextPosition(direction);
+
+            if (targetPos === null) {
+                // Can't move in this direction
+                isAnimating = false;
+                return;
+            }
+
+            const startX = boxX;
+            const startY = boxY;
+            const endX = targetPos.x;
+            const endY = targetPos.y;
+            const duration = 150; // milliseconds
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Linear motion for speed
+                const easeProgress = progress;
+
+                boxX = startX + (endX - startX) * easeProgress;
+                boxY = startY + (endY - startY) * easeProgress;
+
+                drawBox();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // Snap to final position
+                    boxX = endX;
+                    boxY = endY;
+                    drawBox();
+                    isAnimating = false;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function getNextPosition(direction) {
+            const x = Math.round(boxX);
+            const y = Math.round(boxY);
+            const maxY = canvas.height - rowHeight;
+            const maxX = canvas.width - boxWidth;
+            const row = Math.floor(y / rowHeight);
+            const evenRow = row % 2 === 0;
+            const atRowBoundary = (y % rowHeight) === 0;
+            const atMaxYleft = y >= maxY && evenRow;
+            const atMaxYright = y >= maxY && !evenRow;
+
+            if (direction === 'forward') {
+                // At end - stop
+                if (atMaxYright && x >= maxX) return null;
+                if (atMaxYleft && x <= 0) return null;
+
+                // If between rows but NOT at maxY, continue Y down
+                if (!atRowBoundary && y < maxY) {
+                    const nextRowY = (row + 1) * rowHeight;
+                    return { x, y: Math.min(y + STEP_SIZE, nextRowY, maxY) };
+                }
+
+                // At row boundary OR at maxY - try horizontal
+                if (((evenRow && !atMaxYleft) || atMaxYright) && x < maxX) {
+                    return { x: Math.min(x + STEP_SIZE, maxX), y };
+                }
+                if (((!evenRow && !atMaxYright) || atMaxYleft) && x > 0) {
+                    return { x: Math.max(x - STEP_SIZE, 0), y };
+                }
+
+                // At edge - move Y down (if not already at maxY)
+                if (y >= maxY) return null;
+                const nextRowY = (row + 1) * rowHeight;
+                return { x, y: Math.min(y + STEP_SIZE, nextRowY, maxY) };
+            } else {
+                // Backward - exact reverse
+                if (x === 0 && y === 0) return null;
+
+                // If between rows, continue Y up
+                if (!atRowBoundary && !atMaxYleft && !atMaxYright) {
+                    const prevRowY = row * rowHeight;
+                    return { x, y: Math.max(y - STEP_SIZE, prevRowY, 0) };
+                }
+
+                // At row boundary - move X (reverse of forward)
+                if (((evenRow && !atMaxYleft) || atMaxYright) && x > 0) {
+                    return { x: Math.max(x - STEP_SIZE, 0), y };
+                }
+                if (((!evenRow && !atMaxYright) || atMaxYleft) && x < maxX) {
+                    return { x: Math.min(x + STEP_SIZE, maxX), y };
+                }
+
+                // Can't move X, must move Y
+                if (y <= 0) return null;
+                const targetY = (atMaxYleft || atMaxYright) ? Math.floor(y / rowHeight) * rowHeight : (row - 1) * rowHeight;
+                return { x, y: Math.max(y - STEP_SIZE, targetY, 0) };
+            }
+        }
+
+        function handleResize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            // Reset position if it's out of bounds
+            if (boxX + boxWidth > canvas.width) {
+                boxX = Math.max(0, canvas.width - boxWidth);
+            }
+            if (boxY + rowHeight > canvas.height) {
+                boxY = Math.max(0, canvas.height - rowHeight);
+            }
+
+            drawBox();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
