@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>pacsDisplay TG270-sQC</title>
     <link rel="icon" href="images/pdbw.ico" type="image/x-icon">
+    <link rel="stylesheet" href="index.css">
     <style>
         * {
             margin: 0;
@@ -25,95 +26,6 @@
 
         #canvas.panning {
             cursor: grabbing;
-        }
-
-        .help-icon {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #666;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 100;
-            user-select: none;
-        }
-
-        .help-icon:hover {
-            opacity: 0.7;
-        }
-
-        .reset-icon {
-            position: absolute;
-            top: 10px;
-            left: 35px;
-            color: #666;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 100;
-            user-select: none;
-        }
-
-        .reset-icon:hover {
-            opacity: 0.7;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-        }
-
-        .modal-content {
-            background-color: #1a1a1a;
-            margin: 5% auto;
-            padding: 30px;
-            border: 2px solid #444;
-            width: 850px;
-            max-height: 80vh;
-            overflow-y: auto;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            color: #d0d0d0;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        .modal-message {
-            line-height: 1.6;
-            margin-bottom: 20px;
-            white-space: pre-line;
-        }
-
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .modal-button {
-            padding: 8px 20px;
-            border: 1px solid #555;
-            background-color: #2a2a2a;
-            color: #d0d0d0;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-
-        .modal-button:hover {
-            background-color: #3a3a3a;
-            border-color: #666;
         }
     </style>
 </head>

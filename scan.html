@@ -35,6 +35,8 @@
             <div class="scan-modal-message">CONTROLS:
  - Mouse Wheel Down: Progress scanning box forward
  - Mouse Wheel Up: Reverse scanning direction
+ - Left-click anywhere: Increase gray level to next value
+ - Right-click anywhere: Decrease gray level to previous value
  - Box Size Input: Set box dimensions (pixels, square)
  - Gray Dropdown: Select box gray level (15, 120, or 240)
 
@@ -103,6 +105,8 @@ PURPOSE:
 
             // Event listeners
             canvas.addEventListener('wheel', handleWheel, { passive: false });
+            canvas.addEventListener('click', handleLeftClick);
+            canvas.addEventListener('contextmenu', handleRightClick);
             window.addEventListener('resize', handleResize);
 
             // Gray level selector
@@ -184,6 +188,30 @@ PURPOSE:
             }
         }
 
+        function handleLeftClick(e) {
+            e.preventDefault();
+
+            const grayLevels = [15, 120, 240];
+            const currentIndex = grayLevels.indexOf(grayLevel);
+            const nextIndex = (currentIndex + 1) % grayLevels.length;
+
+            grayLevel = grayLevels[nextIndex];
+            graySelect.value = grayLevel;
+            drawBox();
+        }
+
+        function handleRightClick(e) {
+            e.preventDefault();
+
+            const grayLevels = [15, 120, 240];
+            const currentIndex = grayLevels.indexOf(grayLevel);
+            const prevIndex = (currentIndex - 1 + grayLevels.length) % grayLevels.length;
+
+            grayLevel = grayLevels[prevIndex];
+            graySelect.value = grayLevel;
+            drawBox();
+        }
+
         function animateMove(direction) {
             isAnimating = true;
 
@@ -199,14 +227,14 @@ PURPOSE:
             const startY = boxY;
             const endX = targetPos.x;
             const endY = targetPos.y;
-            const duration = 150; // milliseconds
+            const duration = 200; // milliseconds - increased for more frames
             const startTime = performance.now();
 
             function animate(currentTime) {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
 
-                // Linear motion for speed
+                // Linear motion
                 const easeProgress = progress;
 
                 boxX = startX + (endX - startX) * easeProgress;

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>pacsDisplay Ambient Light Verification</title>
     <link rel="icon" href="images/pdbw.ico" type="image/x-icon">
+    <link rel="stylesheet" href="index.css">
     <style>
         * {
             margin: 0;
@@ -54,7 +55,8 @@
             color: #999;
         }
 
-        .help-icon {
+        .toolbar .help-icon {
+            position: static;
             font-size: 16px;
         }
 
@@ -62,66 +64,6 @@
             text-align: right;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-        }
-
-        .modal-content {
-            background-color: #1a1a1a;
-            margin: 10% auto;
-            padding: 30px;
-            border: 2px solid #444;
-            width: 400px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            color: #d0d0d0;
-        }
-
-        .modal-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        .modal-message {
-            line-height: 1.6;
-            margin-bottom: 20px;
-            white-space: pre-line;
-        }
-
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .modal-button {
-            padding: 8px 20px;
-            border: 1px solid #555;
-            background-color: #2a2a2a;
-            color: #d0d0d0;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-
-        .modal-button:hover {
-            background-color: #3a3a3a;
-            border-color: #666;
-        }
-
-        .help-modal .modal-content {
-            width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
     </style>
 </head>
 <body>
@@ -165,7 +107,7 @@ Select "Cancel" to close this message</div>
     <!-- Help Modal -->
     <div id="helpModal" class="modal help-modal">
         <div class="modal-content">
-            <div class="modal-title">Instructions - Ambient Luminance Settings Test</div>
+            <div class="modal-title">pacsDisplay Ambient Light Verification</div>
             <div class="modal-message">
 Please ensure the following:
 
@@ -175,20 +117,20 @@ Ambient lighting set to reading levels
  - Avoid lights reflecting on the display
 
 HOW TO USE:
- - A low contrast vertical bar pattern object (102x102 pixels) is randomly positioned on the black screen
+ - A low contrast bar pattern object is randomly positioned on the display
  - Try to locate and click on the object
  - If you click correctly: Success message appears
  - If you miss: Failure message appears
 
 CONTROLS:
  - Click "Move" to reposition the object
- - Click the contrast display to increase contrast (or Shift+Left-Click anywhere)
- - Right-click the contrast display to decrease contrast (or Shift+Right-Click anywhere)
+ - Left-click the contrast display to increase (or shift+left anywhere)
+ - Right-click the contrast display to decrease (or shift+right anywhere)
 
 PATTERN DETAILS:
  - Bar pattern: 6-pixel vertical period
  - Initial contrast: 3 gray levels (out of 255)
- - Object size: 100x100 pixels
+ - Object size: 102x102 pixels
 
 URL PARAMETERS:
 Customize the test by adding parameters to the URL:
@@ -445,7 +387,8 @@ Ambient lighting set to reading levels
         function showSuccess() {
             const message = `Low contrast object found!
 
-Ambient lighting appropriate for ${grayLevel} gray level contrast visualization
+Ambient lighting appropriate for ${grayLevel} gray
+level contrast visualization
 
 Select "Retry" to move the object and try again
 Select "Cancel" to close this message`;
