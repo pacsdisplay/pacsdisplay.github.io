@@ -176,10 +176,12 @@ Licensed under GNU General Public License v3.0
         <div class="scan-modal-content">
             <div class="scan-modal-title">pacsDisplay Uniformity Scan</div>
             <div class="scan-modal-message">CONTROLS:
- - Mouse Wheel Down: Progress scanning box forward
- - Mouse Wheel Up: Reverse scanning direction
- - Left-click anywhere: Increase gray level to next value
- - Right-click anywhere: Decrease gray level to previous value
+ - Mouse Wheel Down / Right Arrow: Progress scanning box forward
+ - Mouse Wheel Up / Left Arrow: Reverse scanning direction
+ - Space: Toggle auto-play forward (stops at end or on scroll/arrow key)
+ - Shift+Space: Toggle auto-play backward
+ - Left-click / Up Arrow: Increase gray level to next value
+ - Right-click / Down Arrow: Decrease gray level to previous value
  - Box Size Input: Set box dimensions (pixels, square)
  - Gray Dropdown: Select box gray level (15, 120, or 240)
 
@@ -224,6 +226,9 @@ PURPOSE:
         let boxWidth = boxSize;
         let rowHeight = boxSize;
         let isAnimating = false;
+        let isAutoPlaying = false;
+        let autoPlayDirection = 'forward';
+        let heldKeyDirection = null;
 
         // Elements
         const graySelect = document.getElementById('graySelect');
@@ -251,6 +256,8 @@ PURPOSE:
             canvas.addEventListener('click', handleLeftClick);
             canvas.addEventListener('contextmenu', handleRightClick);
             window.addEventListener('resize', handleResize);
+            window.addEventListener('keydown', handleKeydown);
+            window.addEventListener('keyup', handleKeyup);
 
             // Gray level selector
             graySelect.addEventListener('change', (e) => {
@@ -317,8 +324,62 @@ PURPOSE:
             ctx.fillRect(boxX, boxY, boxWidth, rowHeight);
         }
 
+        function handleKeydown(e) {
+            // Don't fire when typing in inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (isAutoPlaying) {
+                    stopAutoPlay();
+                } else {
+                    heldKeyDirection = null;
+                    autoPlayDirection = e.shiftKey ? 'backward' : 'forward';
+                    isAutoPlaying = true;
+                    autoPlayStep();
+                }
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                stopAutoPlay();
+                if (!heldKeyDirection) {
+                    heldKeyDirection = 'forward';
+                    if (!isAnimating) heldKeyStep();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                stopAutoPlay();
+                if (!heldKeyDirection) {
+                    heldKeyDirection = 'backward';
+                    if (!isAnimating) heldKeyStep();
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const grayLevels = [15, 120, 240];
+                const currentIndex = grayLevels.indexOf(grayLevel);
+                const nextIndex = (currentIndex + 1) % grayLevels.length;
+                grayLevel = grayLevels[nextIndex];
+                graySelect.value = grayLevel;
+                drawBox();
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const grayLevels = [15, 120, 240];
+                const currentIndex = grayLevels.indexOf(grayLevel);
+                const prevIndex = (currentIndex - 1 + grayLevels.length) % grayLevels.length;
+                grayLevel = grayLevels[prevIndex];
+                graySelect.value = grayLevel;
+                drawBox();
+            }
+        }
+
+        function handleKeyup(e) {
+            if (e.key === 'ArrowRight' && heldKeyDirection === 'forward') heldKeyDirection = null;
+            else if (e.key === 'ArrowLeft' && heldKeyDirection === 'backward') heldKeyDirection = null;
+        }
+
         function handleWheel(e) {
             e.preventDefault();
+            stopAutoPlay();
+            heldKeyDirection = null;
 
             if (isAnimating) return;
 
@@ -355,7 +416,25 @@ PURPOSE:
             drawBox();
         }
 
-        function animateMove(direction) {
+        function stopAutoPlay() {
+            isAutoPlaying = false;
+        }
+
+        function autoPlayStep() {
+            if (!isAutoPlaying) return;
+            animateMove(autoPlayDirection, () => {
+                if (isAutoPlaying) autoPlayStep();
+            });
+        }
+
+        function heldKeyStep() {
+            if (!heldKeyDirection) return;
+            animateMove(heldKeyDirection, () => {
+                if (heldKeyDirection) heldKeyStep();
+            });
+        }
+
+        function animateMove(direction, onComplete) {
             isAnimating = true;
 
             const targetPos = getNextPosition(direction);
@@ -363,6 +442,9 @@ PURPOSE:
             if (targetPos === null) {
                 // Can't move in this direction
                 isAnimating = false;
+                isAutoPlaying = false;
+                heldKeyDirection = null;
+                if (onComplete) onComplete();
                 return;
             }
 
@@ -393,6 +475,7 @@ PURPOSE:
                     boxY = endY;
                     drawBox();
                     isAnimating = false;
+                    if (onComplete) onComplete();
                 }
             }
 
