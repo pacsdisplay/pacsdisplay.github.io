@@ -245,7 +245,12 @@ USAGE:
  - Use this tool to evaluate display gray scale
  - Current gray level shown in top right (zero-padded)
  - Step size controls increment/decrement amount
- - Grid overlay helps assess uniformity across display</div>
+ - Grid overlay helps assess uniformity across display
+
+URL PARAMETERS:
+ - ?gray=N - Set initial gray level (0-255) [default: 120]
+ - ?step=N - Set initial step size (1, 5, or 15) [default: 15]
+ - Example: grays.html?gray=128&step=5</div>
             <div class="modal-buttons">
                 <button class="modal-button" onclick="closeModal('helpModal')">Close</button>
             </div>
@@ -253,9 +258,14 @@ USAGE:
     </div>
 
     <script>
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const INITIAL_GRAY_LEVEL = parseInt(urlParams.get('gray')) || 120;
+        const INITIAL_STEP_SIZE = parseInt(urlParams.get('step')) || 15;
+
         // State
-        let grayLevel = 120;
-        let stepSize = 15;
+        let grayLevel = INITIAL_GRAY_LEVEL;
+        let stepSize = INITIAL_STEP_SIZE;
         let gridVisible = false;
 
         // Elements
@@ -274,6 +284,9 @@ USAGE:
 
         // Initialize
         function init() {
+            // Set initial values from URL parameters
+            stepSelect.value = stepSize;
+
             updateBackground();
             positionGridLines();
 
