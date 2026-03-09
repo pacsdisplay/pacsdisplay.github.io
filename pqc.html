@@ -237,6 +237,16 @@ For a DICOM-conformant display, all modulation patterns should be visible across
                 const newZoom = Math.max(1.0, Math.min(10.0, zoomLevel * delta));
 
                 if (newZoom !== zoomLevel) {
+                    const mouseX = e.clientX;
+                    const mouseY = e.clientY;
+
+                    // Pattern-space coordinate under the mouse cursor before zoom
+                    const patternWidth = BASE_SIZE * scale;
+                    const xOffset = (canvas.width - patternWidth) / 2 + scrollOffset.x;
+                    const yOffset = scrollOffset.y;
+                    const patternX = (mouseX - xOffset) / scale;
+                    const patternY = (mouseY - yOffset) / scale;
+
                     zoomLevel = newZoom;
 
                     // Rerender pattern at new size - scale width and height by zoom factor
@@ -247,6 +257,12 @@ For a DICOM-conformant display, all modulation patterns should be visible across
 
                     // Recalculate scale based on zoomed height
                     scale = (viewportHeight * zoomLevel) / BASE_SIZE;
+
+                    // Adjust scroll offset so the point under the cursor stays fixed
+                    const newXOffset = mouseX - patternX * scale;
+                    const newYOffset = mouseY - patternY * scale;
+                    scrollOffset.x = newXOffset - (canvas.width - BASE_SIZE * scale) / 2;
+                    scrollOffset.y = newYOffset;
 
                     // Disable image smoothing
                     ctx.imageSmoothingEnabled = false;

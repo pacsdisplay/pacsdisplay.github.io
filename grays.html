@@ -250,7 +250,9 @@ USAGE:
 URL PARAMETERS:
  - ?gray=N - Set initial gray level (0-255) [default: 120]
  - ?step=N - Set initial step size (1, 5, or 15) [default: 15]
- - Example: grays.html?gray=128&step=5</div>
+ - ?grid=true/false - Set initial grid state [default: false]
+ - Example: grays.html?gray=128&step=5
+ - Example: grays.html?step=15&grid=true</div>
             <div class="modal-buttons">
                 <button class="modal-button" onclick="closeModal('helpModal')">Close</button>
             </div>
@@ -262,11 +264,12 @@ URL PARAMETERS:
         const urlParams = new URLSearchParams(window.location.search);
         const INITIAL_GRAY_LEVEL = parseInt(urlParams.get('gray')) || 120;
         const INITIAL_STEP_SIZE = parseInt(urlParams.get('step')) || 15;
+        const INITIAL_GRID = urlParams.get('grid') === 'true';
 
         // State
         let grayLevel = INITIAL_GRAY_LEVEL;
         let stepSize = INITIAL_STEP_SIZE;
-        let gridVisible = false;
+        let gridVisible = INITIAL_GRID;
 
         // Elements
         const background = document.getElementById('background');
@@ -289,6 +292,7 @@ URL PARAMETERS:
 
             updateBackground();
             positionGridLines();
+            if (gridVisible) gridOverlay.classList.add('active');
 
             // Background click handlers
             background.addEventListener('click', handleBackgroundClick);
