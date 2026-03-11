@@ -500,7 +500,7 @@ Ambient lighting set to reading levels
         }
 
         function changeContrast(direction) {
-            if (direction === 'up' && grayLevel < 255) {
+            if (direction === 'up' && baseLevel + grayLevel < 255) {
                 grayLevel++;
                 updatePattern();
                 draw();
