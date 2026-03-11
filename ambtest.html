@@ -48,7 +48,7 @@ Licensed under GNU General Public License v3.0
         }
 
         .toolbar-item {
-            color: #666;
+            color: var(--toolbar-text, #666);
             font-size: 12px;
             font-weight: bold;
             cursor: pointer;
@@ -57,7 +57,7 @@ Licensed under GNU General Public License v3.0
         }
 
         .toolbar-item:hover {
-            color: #999;
+            color: var(--toolbar-text-hover, #999);
         }
 
         .toolbar .help-icon {
@@ -455,6 +455,13 @@ Ambient lighting set to reading levels
             ctx.fillStyle = `rgb(${bg},${bg},${bg})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // Toolbar text: fixed GL offset from background, hover adds additional contrast
+            const textVal = baseLevel > 127 ? baseLevel - 100 : baseLevel + 100;
+            const hoverVal = baseLevel > 127 ? baseLevel - 150 : baseLevel + 150;
+            const toolbar = document.querySelector('.toolbar');
+            toolbar.style.setProperty('--toolbar-text', `rgb(${textVal},${textVal},${textVal})`);
+            toolbar.style.setProperty('--toolbar-text-hover', `rgb(${hoverVal},${hoverVal},${hoverVal})`);
+
             // Draw pattern object at integer coordinates to avoid sub-pixel antialiasing
             ctx.imageSmoothingEnabled = false;
             ctx.drawImage(patternCanvas, Math.round(objectX), Math.round(objectY));
@@ -497,7 +504,7 @@ Ambient lighting set to reading levels
                 grayLevel++;
                 updatePattern();
                 draw();
-            } else if (direction === 'down' && grayLevel > 0) {
+            } else if (direction === 'down' && grayLevel > 1) {
                 grayLevel--;
                 updatePattern();
                 draw();
