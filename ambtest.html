@@ -152,7 +152,7 @@ Licensed under GNU General Public License v3.0
     <div class="toolbar">
         <div class="toolbar-item help-icon" id="helpBtn" title="Help">?</div>
         <div class="toolbar-item" id="moveBtn" title="Move object to new random position">Move</div>
-        <div class="toolbar-item contrast-display" id="contrastDisplay" title="Left-click to increase, Right-click to decrease">Current Contrast: 3 GLs</div>
+        <div class="toolbar-item contrast-display" id="contrastDisplay" title="Shift+click to change contrast | Alt+click to shift base level">Contrast: 3 GLs</div>
     </div>
 
     <!-- Success Modal -->
@@ -204,8 +204,14 @@ HOW TO USE:
 
 CONTROLS:
  - Click "Move" to reposition the object
- - Left-click the contrast display to increase (or shift+left anywhere)
- - Right-click the contrast display to decrease (or shift+right anywhere)
+ - Up Arrow: increase contrast
+ - Down Arrow: decrease contrast
+ - Left/Right Arrow: shift base level (background + object together)
+ - Left-click the contrast display to increase contrast
+ - Right-click the contrast display to decrease contrast
+ - Shift+left-click anywhere: increase contrast
+ - Alt+left-click anywhere: shift base level up
+ - Alt+right-click anywhere: shift base level down
 
 PATTERN DETAILS:
  - Bar pattern: 6-pixel vertical period
@@ -272,6 +278,7 @@ Ambient lighting set to reading levels
         // State
         let canvas, ctx;
         let grayLevel = INITIAL_GRAY_LEVEL;
+        let baseLevel = 0;
         let objectX = 0;
         let objectY = 0;
         let patternCanvas;
@@ -301,8 +308,12 @@ Ambient lighting set to reading levels
             // Event listeners
             canvas.addEventListener('click', handleCanvasClick);
             canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('contextmenu', (e) => {
+                if (e.shiftKey || e.altKey) e.preventDefault();
+            });
 
             // Shift + click for contrast adjustment anywhere on canvas
+            // Alt + click for base level adjustment (shifts background and object together)
             canvas.addEventListener('mousedown', (e) => {
                 if (e.shiftKey && !LOCK_CONTRAST) {
                     if (e.button === 0) { // Left click
@@ -311,6 +322,16 @@ Ambient lighting set to reading levels
                         e.stopPropagation();
                     } else if (e.button === 2) { // Right click
                         changeContrast('down');
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                } else if (e.altKey && !LOCK_CONTRAST) {
+                    if (e.button === 0) { // Alt + left click
+                        changeBaseLevel('up');
+                        e.preventDefault();
+                        e.stopPropagation();
+                    } else if (e.button === 2) { // Alt + right click
+                        changeBaseLevel('down');
                         e.preventDefault();
                         e.stopPropagation();
                     }
@@ -343,12 +364,28 @@ Ambient lighting set to reading levels
                 }
             });
 
-            // Debug mode toggle with Shift+D key (secret feature)
+            // Click anywhere on help or welcome modal to dismiss
+            document.getElementById('helpModal').addEventListener('click', () => closeModal('helpModal'));
+            document.getElementById('welcomeModal').addEventListener('click', () => closeModal('welcomeModal'));
+
+            // Keyboard shortcuts
             document.addEventListener('keydown', (e) => {
                 if ((e.key === 'd' || e.key === 'D') && e.shiftKey) {
                     debugMode = !debugMode;
                     console.log('Debug mode:', debugMode);
                     draw();
+                } else if (e.key === 'ArrowUp' && !LOCK_CONTRAST) {
+                    changeContrast('up');
+                    e.preventDefault();
+                } else if (e.key === 'ArrowDown' && !LOCK_CONTRAST) {
+                    changeContrast('down');
+                    e.preventDefault();
+                } else if (e.key === 'ArrowRight' && !LOCK_CONTRAST) {
+                    changeBaseLevel('up');
+                    e.preventDefault();
+                } else if (e.key === 'ArrowLeft' && !LOCK_CONTRAST) {
+                    changeBaseLevel('down');
+                    e.preventDefault();
                 }
             });
 
@@ -379,7 +416,7 @@ Ambient lighting set to reading levels
                     const idx = (y * OBJECT_WIDTH + x) * 4;
 
                     // Vertical bars: alternate based on x position
-                    const value = (x % BAR_PERIOD) < halfPeriod ? 0 : grayLevel;
+                    const value = (x % BAR_PERIOD) < halfPeriod ? baseLevel : baseLevel + grayLevel;
 
                     data[idx] = value;     // R
                     data[idx + 1] = value; // G
@@ -394,7 +431,8 @@ Ambient lighting set to reading levels
         function updatePattern() {
             generateBarPattern(grayLevel);
             const lockIndicator = LOCK_CONTRAST ? ' 🔒' : '';
-            document.getElementById('contrastDisplay').textContent = `Current Contrast: ${grayLevel} GLs${lockIndicator}`;
+            const baseIndicator = baseLevel > 0 ? `Base: ${baseLevel} | ` : '';
+            document.getElementById('contrastDisplay').textContent = `${baseIndicator}Contrast: ${grayLevel} GLs${lockIndicator}`;
         }
 
         function positionObject() {
@@ -412,12 +450,14 @@ Ambient lighting set to reading levels
         }
 
         function draw() {
-            // Clear canvas (black background)
-            ctx.fillStyle = 'black';
+            // Clear canvas with base level background
+            const bg = baseLevel;
+            ctx.fillStyle = `rgb(${bg},${bg},${bg})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw pattern object
-            ctx.drawImage(patternCanvas, objectX, objectY);
+            // Draw pattern object at integer coordinates to avoid sub-pixel antialiasing
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(patternCanvas, Math.round(objectX), Math.round(objectY));
 
             // Debug mode - draw red border around object
             if (debugMode) {
@@ -437,7 +477,7 @@ Ambient lighting set to reading levels
         }
 
         function handleCanvasClick(e) {
-            if (e.shiftKey) return; // Shift-click handled separately
+            if (e.shiftKey || e.altKey) return; // Modified clicks handled separately
 
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
@@ -459,6 +499,18 @@ Ambient lighting set to reading levels
                 draw();
             } else if (direction === 'down' && grayLevel > 0) {
                 grayLevel--;
+                updatePattern();
+                draw();
+            }
+        }
+
+        function changeBaseLevel(direction) {
+            if (direction === 'up' && baseLevel + grayLevel < 255) {
+                baseLevel++;
+                updatePattern();
+                draw();
+            } else if (direction === 'down' && baseLevel > 0) {
+                baseLevel--;
                 updatePattern();
                 draw();
             }
@@ -520,6 +572,7 @@ Select "Cancel" to close this message`;
             body += `Test Date/Time: ${timestamp}\n`;
             body += `Result: ${result === 'success' ? 'PASSED' : 'FAILED'}\n`;
             body += `Gray Level Tested: ${grayLevel} (out of 255)\n`;
+            body += `Base Level: ${baseLevel} (out of 255)\n`;
             body += `\n`;
 
             if (result === 'success') {
@@ -534,6 +587,7 @@ Select "Cancel" to close this message`;
             body += `- Object Size: ${OBJECT_WIDTH}x${OBJECT_HEIGHT} pixels\n`;
             body += `- Pattern: Vertical bars (${BAR_PERIOD}-pixel period)\n`;
             body += `- Contrast Level: ${grayLevel} gray levels\n`;
+            body += `- Base Level: ${baseLevel}\n`;
 
             if (LOCK_CONTRAST) {
                 body += `- Contrast Setting: LOCKED\n`;
