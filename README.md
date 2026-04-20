@@ -1,4 +1,4 @@
-# pacsDisplay Web Tools
+# pacsDisplay Web Tools (pdweb)
 
 Browser-based display quality control tools for DICOM-calibrated displays.
 
@@ -45,20 +45,25 @@ Comprehensive display evaluation based on the TG18-PQC design, per AAPM Report 2
 Tests whether ambient lighting conditions are appropriate for diagnostic reading.
 
 **How it works:**
-- A low-contrast bar pattern object (6 px period, default 3 GL contrast) is randomly placed on the display
+- A low-contrast bar pattern object (6 px period, default 3 GL contrast) is randomly placed in the central 80% of the display
 - The user tries to locate and click the object
 - Success/failure is reported; results can optionally be shared via email
 
 **Controls:**
-- Left-click the contrast display (or Shift+left-click anywhere) to increase contrast
-- Right-click (or Shift+right-click) to decrease contrast
+- Left-click the contrast display to increase contrast; right-click to decrease
+- Shift+left-click anywhere: increase contrast
+- Shift+right-click anywhere: decrease contrast
+- Alt+left-click anywhere: shift base level up
+- Alt+right-click anywhere: shift base level down
+- Up/Down Arrow: increase/decrease contrast
+- Left/Right Arrow: shift base level down/up
 - "Move" button to reposition the object
 
 **URL parameters:**
 | Parameter | Description | Default |
 |---|---|---|
 | `?contrast=N` | Initial contrast (0–255) | 3 |
-| `?lockcontrast` | Prevent contrast changes | — |
+| `?lockcontrast` (or `?lock`) | Prevent contrast changes | — |
 | `?email=addr` | Enable email result sharing | — |
 
 ---
@@ -68,8 +73,8 @@ Tests whether ambient lighting conditions are appropriate for diagnostic reading
 Full-screen uniform gray level display for evaluating grayscale response and uniformity.
 
 **Controls:**
-- Left-click anywhere: increase gray level by step size
-- Right-click anywhere: decrease gray level by step size
+- Left-click anywhere / Scroll up / Up Arrow: increase gray level by step size
+- Right-click anywhere / Scroll down / Down Arrow: decrease gray level by step size
 - Click the number input to type a value directly (0–255)
 - Dropdown to select step size (1, 5, or 15)
 - ⌗ button to toggle a 3×3 grid overlay for uniformity assessment
