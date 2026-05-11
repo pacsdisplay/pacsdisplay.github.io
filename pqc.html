@@ -272,9 +272,8 @@ For a DICOM-conformant display, all modulation patterns should be visible across
 
                     // Adjust scroll offset so the point under the cursor stays fixed
                     const newXOffset = mouseX - patternX * scale;
-                    const newYOffset = mouseY - patternY * scale;
                     scrollOffset.x = newXOffset - (canvas.width - BASE_SIZE * scale) / 2;
-                    scrollOffset.y = newYOffset;
+                    scrollOffset.y = 0;
 
                     // Disable image smoothing
                     ctx.imageSmoothingEnabled = false;
