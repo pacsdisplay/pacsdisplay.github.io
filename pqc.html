@@ -255,7 +255,7 @@ For a DICOM-conformant display, all modulation patterns should be visible across
                     // Pattern-space coordinate under the mouse cursor before zoom
                     const patternWidth = BASE_SIZE * scale;
                     const xOffset = (canvas.width - patternWidth) / 2 + scrollOffset.x;
-                    const yOffset = scrollOffset.y;
+                    const yOffset = Math.floor(scrollOffset.y);
                     const patternX = (mouseX - xOffset) / scale;
                     const patternY = (mouseY - yOffset) / scale;
 
@@ -362,7 +362,7 @@ For a DICOM-conformant display, all modulation patterns should be visible across
             // Pattern is rendered at scale, then moved by scroll offset for panning
             const patternWidth = BASE_SIZE * scale;
             const xOffset = (width - patternWidth) / 2 + scrollOffset.x;
-            const yOffset = scrollOffset.y;
+            const yOffset = Math.floor(scrollOffset.y);
 
             // Calculate dimensions based on pattern space
             const sidew = Math.floor(BASE_SIZE / 1024 * 87);
