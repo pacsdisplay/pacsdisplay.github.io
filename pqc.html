@@ -146,8 +146,8 @@ Implementation licensed under GNU General Public License v3.0
     </div>
 
     <!-- Help Modal -->
-    <div id="helpModal" class="modal">
-        <div class="modal-content">
+    <div id="helpModal" class="modal" onclick="closeModal('helpModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-title">TG270-pQC</div>
             <div class="modal-message">PATTERN DESCRIPTION:
 This pattern provides comprehensive evaluation of display performance based on AAPM Report 270 recommendations. It is based on the TG18-PQC design.

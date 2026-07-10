@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<!--
+pacsDisplay TG18-QC Test Pattern
+Copyright (c) 2026 Nicholas Bevins
+Part of the pacsDisplay project (https://pacsdisplay.org)
+
+Pattern design based on AAPM TG18 OIQ specifications (without Cx patterns).
+Implementation licensed under GNU General Public License v3.0
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pacsDisplay TG18-QC</title>
+    <link rel="icon" href="images/pdbw.ico" type="image/x-icon">
+    <style>
+        /* Reset and base */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: rgb(128,128,128); overflow: hidden; font-family: 'Courier New', monospace; }
+
+        /* Full-window canvas */
+        #canvas { display: block; cursor: grab; }
+        #canvas.panning { cursor: grabbing; }
+
+        /* Floating UI buttons */
+        .btn { position: absolute; top: 10px; color: #111; font-size: 16px; font-weight: bold; cursor: pointer; z-index: 100; user-select: none; }
+        .btn:hover { opacity: 0.7; }
+
+        /* Modal overlay and content */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); }
+        .modal-content { background-color: #1a1a1a; margin: 5% auto; padding: 30px; border: 2px solid #444; width: fit-content; max-width: 850px; min-width: 400px; max-height: 80vh; overflow-y: auto; border-radius: 8px; font-family: 'Courier New', monospace; color: #d0d0d0; }
+        .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        .modal-message { line-height: 1.6; margin-bottom: 20px; white-space: pre-line; }
+        .modal-buttons { display: flex; justify-content: flex-end; }
+        .modal-button { padding: 8px 20px; border: 1px solid #555; background-color: #2a2a2a; color: #d0d0d0; cursor: pointer; font-family: 'Courier New', monospace; font-size: 12px; }
+        .modal-button:hover { background-color: #3a3a3a; border-color: #666; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <!-- Floating UI buttons -->
+    <div class="btn" id="helpBtn" style="left:10px" title="Help">?</div>
+    <div class="btn" id="resetBtn" style="left:35px" title="Reset View">⟲</div>
+
+    <!-- DPI scaling warning: shown on load if devicePixelRatio !== 1 -->
+    <div id="dpiModal" class="modal" onclick="document.getElementById('dpiModal').style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-title">Display Scaling Detected</div>
+            <div class="modal-message">Your OS is applying pixel scaling to this browser. The bar patterns of this test pattern may not be displayed at the correct frequency.</div>
+            <div class="modal-buttons"><button class="modal-button" onclick="document.getElementById('dpiModal').style.display='none'">Ok</button></div>
+        </div>
+    </div>
+
+    <!-- Help modal -->
+    <div id="helpModal" class="modal" onclick="document.getElementById('helpModal').style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-title">TG18-QC</div>
+            <div class="modal-message">PATTERN DESCRIPTION:
+This pattern provides visual evaluation of display performance based on the AAPM TG18 OIQ specification (without Cx patterns). It scales to fill the browser window using a 102-pixel grid pitch referenced to a 1024-pixel base.
+
+GRAY STEPS:
+ - 16 cells covering gray levels 8–248 in equal steps (16 gray levels)
+ - Include low-contrast corner patches (±4 gray levels)
+ - Black cell (0): centered 50% sub-patch at gray 13
+ - White cell (255): centered 50% sub-patch at gray 242
+
+LUMINANCE RAMPS:
+ - Left ramp: 255 (top) → 0 (bottom)
+ - Right ramp: 0 (top) → 255 (bottom)
+
+WINDOW RESPONSE BANDS (above gray step grid):
+ - Outer band: black over white
+ - Inner strips: white over black
+ - For evaluating video signal artifacts
+
+QUALITY CONTROL PANELS (below gray step grid):
+ - Three regions: black (0), mid-gray (128), white (255)
+ - Each contains "QUALITY CONTROL" text with per-letter contrast
+ - Q = ±14 gray levels, decreasing by 1 to L = ±1 gray level
+
+CROSSTALK SECTION (above window bands):
+ - White band over black band
+ - For evaluating inter-pixel crosstalk and glare
+
+SPATIAL RESOLUTION FEATURES:
+ - 5 instances: center and four window corners
+ - Left half: high contrast (0/255)
+ - Right half: low contrast (128/130)
+ - Each half has 4 quadrants: vertical 1px, vertical 2px, horizontal 1px, horizontal 2px
+ - Bar pitch is fixed in screen pixels regardless of zoom level
+
+CONTROLS:
+ - Click and drag: Pan
+ - Ctrl + Mouse wheel: Zoom (1x–10x)
+ - ⟲: Reset view
+ - Window resize: Auto-reset
+
+NOTES:
+ - Bar pattern periods may be affected by OS display scaling (DPI ≠ 1)
+ - Pattern scales to fit the smaller window dimension
+ - Corner spatial resolution features remain fixed to window corners at all zoom levels</div>
+            <div class="modal-buttons"><button class="modal-button" onclick="document.getElementById('helpModal').style.display='none'">Close</button></div>
+        </div>
+    </div>
+
+    <script>
+        // Pattern base size in pattern pixels; baseScale maps this to screen pixels
+        const BASE = 1024;
+        // Background gray level (mid-gray)
+        const BG = 128;
+
+        // Canvas state
+        let canvas, ctx, baseScale, zoomLevel = 1.0, panX = 0, panY = 0;
+        let isPanning = false, panStartX = 0, panStartY = 0;
+
+        // Effective scale = base scale × zoom level
+        function getScale() { return baseScale * zoomLevel; }
+
+        // Set up event listeners and do initial draw
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            window.addEventListener('resize', resize);
+            canvas.addEventListener('wheel', handleWheel, { passive: false });
+
+            // Pan via click+drag
+            canvas.addEventListener('mousedown', e => {
+                isPanning = true;
+                canvas.classList.add('panning');
+                panStartX = e.clientX - panX;
+                panStartY = e.clientY - panY;
+            });
+            canvas.addEventListener('mousemove', e => {
+                if (!isPanning) return;
+                panX = e.clientX - panStartX;
+                panY = e.clientY - panStartY;
+                draw();
+            });
+            const endPan = () => { isPanning = false; canvas.classList.remove('panning'); };
+            canvas.addEventListener('mouseup', endPan);
+            canvas.addEventListener('mouseleave', endPan);
+
+            document.getElementById('helpBtn').addEventListener('click', e => {
+                e.stopPropagation();
+                document.getElementById('helpModal').style.display = 'block';
+            });
+            document.getElementById('resetBtn').addEventListener('click', e => {
+                e.stopPropagation();
+                zoomLevel = 1.0; panX = 0; panY = 0;
+                baseScale = Math.min(canvas.width, canvas.height) / BASE;
+                ctx.imageSmoothingEnabled = false;
+                ctx.webkitImageSmoothingEnabled = false;
+                draw();
+            });
+
+            resize();
+        }
+
+        // Ctrl+scroll zoom, anchored to the mouse position
+        function handleWheel(e) {
+            if (!e.ctrlKey) return;
+            e.preventDefault();
+            const newZoom = Math.max(1.0, Math.min(10.0, zoomLevel * (e.deltaY > 0 ? 0.9 : 1.1)));
+            if (newZoom === zoomLevel) return;
+            const scale = getScale();
+            const cx = canvas.width / 2 + panX, cy = canvas.height / 2 + panY;
+            // Pattern-space point under the mouse cursor
+            const patX = (e.clientX - cx) / scale, patY = (e.clientY - cy) / scale;
+            zoomLevel = newZoom;
+            const newScale = getScale();
+            // Adjust pan so the same pattern point stays under the cursor
+            panX = e.clientX - canvas.width / 2 - patX * newScale;
+            panY = e.clientY - canvas.height / 2 - patY * newScale;
+            ctx.imageSmoothingEnabled = false;
+            ctx.webkitImageSmoothingEnabled = false;
+            draw();
+        }
+
+        // Fit canvas to viewport and reset zoom/pan
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            baseScale = Math.min(canvas.width, canvas.height) / BASE;
+            zoomLevel = 1.0;
+            panX = 0; panY = 0;
+            ctx.imageSmoothingEnabled = false;
+            ctx.webkitImageSmoothingEnabled = false;
+            draw();
+        }
+
+        // 6×6 gray step grid (row 0 = top, col 0 = left)
+        // Values are gray levels 0–255; 128 = mid-gray (no low-contrast corners)
+        // Bottom row: 0 and 255 get centered 50% sub-patches (13 and 242)
+        const GRID = [
+            [ 88, 104, 120, 136, 152, 168],
+            [ 72, 128, 128, 128, 128, 184],
+            [ 56, 128, 128, 128, 128, 200],
+            [ 40, 128, 128, 128, 128, 216],
+            [ 24, 128, 128, 128, 128, 232],
+            [  8,   0, 128, 128, 255, 248]
+        ];
+
+        // Fill a rectangle with alternating bar stripes.
+        // dir: 'v' = vertical bars, 'h' = horizontal bars
+        // pitch: bar half-period in screen pixels (fixed, does not scale with zoom)
+        function fillBars(x1, y1, x2, y2, dir, pitch, lo, hi) {
+            if (dir === 'v') {
+                for (let x = x1; x < x2; x++) {
+                    const c = Math.floor((x - x1) / pitch) % 2 === 0 ? hi : lo;
+                    ctx.fillStyle = `rgb(${c},${c},${c})`;
+                    ctx.fillRect(x, y1, 1, y2 - y1);
+                }
+            } else {
+                for (let y = y1; y < y2; y++) {
+                    const c = Math.floor((y - y1) / pitch) % 2 === 0 ? hi : lo;
+                    ctx.fillStyle = `rgb(${c},${c},${c})`;
+                    ctx.fillRect(x1, y, x2 - x1, 1);
+                }
+            }
+        }
+
+        // Draw a spatial resolution feature at grid position (col, row).
+        // The feature is 2 cells wide × 1 cell tall (top-left corner at col, row).
+        // Left half:  high contrast (0/255), 4 quadrants: v-1px, v-2px, h-1px, h-2px
+        // Right half: low contrast (128/130), same quadrant layout
+        // Surrounded by a 1px gray-64 border with 191 outer grid lines restored
+        function drawSpatialRes(col, row) {
+            const scale = getScale();
+            const W = canvas.width, H = canvas.height;
+            const pitch = 102 * scale;          // grid cell size in screen pixels
+            const scx = W / 2 + panX;           // pattern center X in screen space
+            const scy = H / 2 + panY;           // pattern center Y in screen space
+
+            // Feature bounding box in screen pixels
+            const fx1  = Math.round(scx + col       * pitch);
+            const fy1  = Math.round(scy + row       * pitch);
+            const fx2  = Math.round(scx + (col + 2) * pitch);
+            const fy2  = Math.round(scy + (row + 1) * pitch);
+            const fMid = Math.round(scx + (col + 1) * pitch);  // divider between halves
+
+            // Fill entire area with gray-64 (becomes the visible border after bars are drawn)
+            ctx.fillStyle = 'rgb(64,64,64)';
+            ctx.fillRect(fx1, fy1, fx2 - fx1, fy2 - fy1);
+
+            // High contrast half (left): quadrant midpoints
+            const fmy = Math.round((fy1 + fy2) / 2);   // vertical midpoint
+            const lmx = Math.round((fx1 + fMid) / 2);  // horizontal midpoint of left half
+            fillBars(fx1, fy1, lmx,  fmy,  'v', 1, 0, 255);   // top-left:     vert 1px
+            fillBars(lmx, fy1, fMid, fmy,  'v', 2, 0, 255);   // top-right:    vert 2px
+            fillBars(fx1, fmy, lmx,  fy2,  'h', 1, 0, 255);   // bottom-left:  horiz 1px
+            fillBars(lmx, fmy, fMid, fy2,  'h', 2, 0, 255);   // bottom-right: horiz 2px
+
+            // Low contrast half (right): quadrant midpoints
+            const rmx = Math.round((fMid + fx2) / 2);  // horizontal midpoint of right half
+            fillBars(fMid, fy1, rmx, fmy,  'v', 1, 128, 130);  // top-left:     vert 1px
+            fillBars(rmx,  fy1, fx2, fmy,  'v', 2, 128, 130);  // top-right:    vert 2px
+            fillBars(fMid, fmy, rmx, fy2,  'h', 1, 128, 130);  // bottom-left:  horiz 1px
+            fillBars(rmx,  fmy, fx2, fy2,  'h', 2, 128, 130);  // bottom-right: horiz 2px
+
+            // 1px gray-64 inner border — drawn over bars to create a symmetric surround
+            ctx.fillStyle = 'rgb(64,64,64)';
+            ctx.fillRect(fx1 + 1, fy1 + 1, fx2 - fx1 - 2, 1);  // top inner edge
+            ctx.fillRect(fx1 + 1, fy2 - 1, fx2 - fx1 - 2, 1);  // bottom inner edge
+            ctx.fillRect(fx1 + 1, fy1 + 1, 1, fy2 - fy1 - 2);  // left inner edge
+            ctx.fillRect(fx2 - 1, fy1 + 1, 1, fy2 - fy1 - 2);  // right inner edge
+
+            // Restore outer boundary grid lines (191)
+            ctx.fillStyle = 'rgb(191,191,191)';
+            ctx.fillRect(fx1, fy1, 1, fy2 - fy1);       // left
+            ctx.fillRect(fx2, fy1, 1, fy2 - fy1);       // right
+            ctx.fillRect(fx1, fy1, fx2 - fx1, 1);       // top
+            ctx.fillRect(fx1, fy2, fx2 - fx1, 1);       // bottom
+        }
+
+        function draw() {
+            const W = canvas.width, H = canvas.height;
+            const scale = getScale();
+            // Pattern center in screen space (shifts with pan)
+            const cx = W / 2 + panX, cy = H / 2 + panY;
+            // Grid cell pitch in screen pixels
+            const pitch = 102 * scale;
+
+            // --- Background ---
+            ctx.fillStyle = `rgb(${BG},${BG},${BG})`;
+            ctx.fillRect(0, 0, W, H);
+
+            // --- Gray step cells (6×6 grid centered on origin) ---
+            // Low-contrast corner patches: ±4 gray at 10px (scaled) squares
+            // Special: v=0 → centered 50% sub-patch at 13; v=255 → sub-patch at 242
+            const csz = Math.max(1, Math.round(10 * scale));
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    const v = GRID[row][col];
+                    const x  = Math.round(cx + (col - 3) * pitch);
+                    const y  = Math.round(cy + (row - 3) * pitch);
+                    const x2 = Math.round(cx + (col - 2) * pitch);
+                    const y2 = Math.round(cy + (row - 2) * pitch);
+                    const w = x2 - x, h = y2 - y;
+
+                    // Main cell fill
+                    ctx.fillStyle = `rgb(${v},${v},${v})`;
+                    ctx.fillRect(x, y, w, h);
+
+                    if (v === 0) {
+                        // Centered 50% sub-patch at gray 13 (near-black visibility check)
+                        const sw = Math.round(w / 2), sh = Math.round(h / 2);
+                        ctx.fillStyle = 'rgb(13,13,13)';
+                        ctx.fillRect(x + Math.round((w - sw) / 2), y + Math.round((h - sh) / 2), sw, sh);
+                    } else if (v === 255) {
+                        // Centered 50% sub-patch at gray 242 (near-white visibility check)
+                        const sw = Math.round(w / 2), sh = Math.round(h / 2);
+                        ctx.fillStyle = 'rgb(242,242,242)';
+                        ctx.fillRect(x + Math.round((w - sw) / 2), y + Math.round((h - sh) / 2), sw, sh);
+                    } else if (v !== 128) {
+                        // Low-contrast corner patches: upper-right and lower-left = v+4, upper-left and lower-right = v-4
+                        const hi = Math.min(255, v + 4), lo = Math.max(0, v - 4);
+                        ctx.fillStyle = `rgb(${lo},${lo},${lo})`;
+                        ctx.fillRect(x, y, csz, csz);           // upper-left: v-4
+                        ctx.fillStyle = `rgb(${hi},${hi},${hi})`;
+                        ctx.fillRect(x2 - csz, y, csz, csz);    // upper-right: v+4
+                        ctx.fillStyle = `rgb(${hi},${hi},${hi})`;
+                        ctx.fillRect(x, y2 - csz, csz, csz);    // lower-left: v+4
+                        ctx.fillStyle = `rgb(${lo},${lo},${lo})`;
+                        ctx.fillRect(x2 - csz, y2 - csz, csz, csz); // lower-right: v-4
+                    }
+                }
+            }
+
+            // --- Crosshatch grid (gray 191, 1px lines, 102px pitch from center) ---
+            ctx.fillStyle = 'rgb(191,191,191)';
+            for (let x = cx; x <= W; x += pitch) ctx.fillRect(Math.round(x), 0, 1, H);
+            for (let x = cx - pitch; x >= 0; x -= pitch) ctx.fillRect(Math.round(x), 0, 1, H);
+            for (let y = cy; y <= H; y += pitch) ctx.fillRect(0, Math.round(y), W, 1);
+            for (let y = cy - pitch; y >= 0; y -= pitch) ctx.fillRect(0, Math.round(y), W, 1);
+
+            // --- Luminance ramps (drawn after grid to avoid interruptions) ---
+            // Left ramp: col -5 to -4, 255 at top → 0 at bottom (centered at x=-4.5)
+            // Right ramp: col 4 to 5, 0 at top → 255 at bottom (centered at x=+4.5)
+            // Both 75% of cell width
+            const rampTop = Math.round(cy + (-2.5) * pitch);
+            const rampBot = Math.round(cy + ( 2.5) * pitch);
+            const rampH   = rampBot - rampTop;
+            const rampW   = Math.round(0.75 * pitch);
+            const lcx = Math.round(cx + (-4.5) * pitch);
+            const lx1 = lcx - Math.floor(rampW / 2), lx2 = lcx + Math.ceil(rampW / 2);
+            const rcx = Math.round(cx + 4.5 * pitch);
+            const rx1 = rcx - Math.floor(rampW / 2), rx2 = rcx + Math.ceil(rampW / 2);
+            for (let py = 0; py < rampH; py++) {
+                const gl = Math.round(255 * (1 - py / (rampH - 1)));
+                ctx.fillStyle = `rgb(${gl},${gl},${gl})`;
+                ctx.fillRect(lx1, rampTop + py, lx2 - lx1, 1);
+                const gr = Math.round(255 * py / (rampH - 1));
+                ctx.fillStyle = `rgb(${gr},${gr},${gr})`;
+                ctx.fillRect(rx1, rampTop + py, rx2 - rx1, 1);
+            }
+
+            // --- QUALITY CONTROL panels (y=3 to y=4, merged cells) ---
+            // Three 2-cell-wide panels: black(-3 to -1), mid-gray(-1 to 1), white(1 to 3)
+            // Internal grid lines suppressed; boundary lines restored at 191
+            const mTop = Math.round(cy + 3 * pitch), mBot = Math.round(cy + 4 * pitch);
+            const mH = mBot - mTop;
+            const panels = [
+                { x1: Math.round(cx + (-3) * pitch), x2: Math.round(cx + (-1) * pitch), bg: 0,   sign:  1 },
+                { x1: Math.round(cx + (-1) * pitch), x2: Math.round(cx + ( 1) * pitch), bg: 128, sign:  1 },
+                { x1: Math.round(cx + ( 1) * pitch), x2: Math.round(cx + ( 3) * pitch), bg: 255, sign: -1 }
+            ];
+            panels.forEach(({ x1, x2, bg }) => {
+                ctx.fillStyle = `rgb(${bg},${bg},${bg})`;
+                ctx.fillRect(x1, mTop, x2 - x1, mH);
+            });
+            // Restore panel boundary lines only (suppress internal lines)
+            ctx.fillStyle = 'rgb(191,191,191)';
+            [-3, -1, 1, 3].forEach(col => ctx.fillRect(Math.round(cx + col * pitch), mTop, 1, mH));
+            ctx.fillRect(0, mTop, W, 1);
+            ctx.fillRect(0, mBot, W, 1);
+
+            // --- Window response bands (above 6x6 grid, x=-4 to x=4) ---
+            // Black band: y=-3.25 to y=-3; white band: y=-3.5 to y=-3.25
+            const wBandX1 = Math.round(cx + (-4) * pitch);
+            const wBandX2 = Math.round(cx + ( 4) * pitch);
+            const wBandW  = wBandX2 - wBandX1;
+            const blackBandTop = Math.round(cy + (-3.25) * pitch);
+            const blackBandBot = Math.round(cy + (-3)    * pitch);
+            const whiteBandTop = Math.round(cy + (-3.5)  * pitch);
+            const whiteBandBot = Math.round(cy + (-3.25) * pitch);
+            ctx.fillStyle = 'rgb(0,0,0)';
+            ctx.fillRect(wBandX1, blackBandTop, wBandW, blackBandBot - blackBandTop);
+            ctx.fillStyle = 'rgb(255,255,255)';
+            ctx.fillRect(wBandX1, whiteBandTop, wBandW, whiteBandBot - whiteBandTop);
+            // Restore outer verticals and the y=-3 grid line
+            ctx.fillStyle = 'rgb(191,191,191)';
+            ctx.fillRect(wBandX1, whiteBandTop, 1, blackBandBot - whiteBandTop);
+            ctx.fillRect(wBandX2, whiteBandTop, 1, blackBandBot - whiteBandTop);
+            ctx.fillRect(0, blackBandBot, W, 1);
+
+            // --- Inner strips (x=-2 to x=2, overlaid on window bands) ---
+            // White: y=-3.25 to y=-3.125; Black: y=-3.375 to y=-3.25
+            const iBandX1 = Math.round(cx + (-2) * pitch);
+            const iBandX2 = Math.round(cx + ( 2) * pitch);
+            const iBandW  = iBandX2 - iBandX1;
+            const iWhiteTop = Math.round(cy + (-3.25)  * pitch);
+            const iWhiteBot = Math.round(cy + (-3.125) * pitch);
+            const iBlackTop = Math.round(cy + (-3.375) * pitch);
+            const iBlackBot = Math.round(cy + (-3.25)  * pitch);
+            ctx.fillStyle = 'rgb(255,255,255)';
+            ctx.fillRect(iBandX1, iWhiteTop, iBandW, iWhiteBot - iWhiteTop);
+            ctx.fillStyle = 'rgb(0,0,0)';
+            ctx.fillRect(iBandX1, iBlackTop, iBandW, iBlackBot - iBlackTop);
+
+            // --- Info box: merged cell (-1,2) to (1,3) ---
+            // Background 128, inner x=0 grid line suppressed, boundary restored
+            const ibx1 = Math.round(cx + (-1) * pitch);
+            const ibx2 = Math.round(cx + ( 1) * pitch);
+            const iby1 = Math.round(cy + 2 * pitch);
+            const iby2 = Math.round(cy + 3 * pitch);
+            ctx.fillStyle = `rgb(${BG},${BG},${BG})`;
+            ctx.fillRect(ibx1, iby1, ibx2 - ibx1, iby2 - iby1);
+            ctx.fillStyle = 'rgb(191,191,191)';
+            ctx.fillRect(ibx1, iby1, 1, iby2 - iby1);
+            ctx.fillRect(ibx2, iby1, 1, iby2 - iby1);
+            ctx.fillRect(ibx1, iby1, ibx2 - ibx1, 1);
+            ctx.fillRect(ibx1, iby2, ibx2 - ibx1, 1);
+
+            // Info text: dimmed, centered vertically in the box
+            const infoLines = ['Based on TG18-OIQ', '(scaled)', 'pdweb'];
+            const infoFontSize = Math.max(6, Math.round(16 * scale));
+            ctx.font = `${infoFontSize}px sans-serif`;
+            ctx.textBaseline = 'alphabetic';
+            ctx.textAlign = 'center';
+            const infoLineH = infoFontSize * 1.3;
+            const infoBlockH = infoLines.length * infoLineH;
+            const infoCX = (ibx1 + ibx2) / 2;
+            const infoCY = (iby1 + iby2) / 2;
+            const infoStartY = infoCY - infoBlockH / 2 + infoFontSize;
+            const dimC = BG - 30;
+            ctx.fillStyle = `rgb(${dimC},${dimC},${dimC})`;
+            infoLines.forEach((line, i) => ctx.fillText(line, infoCX, infoStartY + i * infoLineH));
+            ctx.textAlign = 'left';
+
+            // --- "QUALITY CONTROL" text in panels ---
+            // Each letter uses a different contrast level: Q=±14 down to L=±1
+            // Black panel: bg + contrast (lighter); White panel: bg - contrast (darker)
+            const words = ['QUALITY', 'CONTROL'];
+            const contrasts = [14,13,12,11,10,9,8,7,6,5,4,3,2,1];
+            const fontSize = Math.max(8, Math.round(23 * scale));
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = 'alphabetic';
+            const lineH = fontSize * 1.3;
+            const textBlockH = 2 * lineH;
+
+            panels.forEach(({ x1, x2, bg, sign }) => {
+                const panelCX = (x1 + x2) / 2;
+                const panelCY = (mTop + mBot) / 2;
+                const line1Y = panelCY - textBlockH / 2 + fontSize;
+                const line2Y = line1Y + lineH;
+
+                words.forEach((word, wi) => {
+                    const lineY = wi === 0 ? line1Y : line2Y;
+                    const letterOffset = wi * 7;
+                    // Measure total word width for centering
+                    let totalW = 0;
+                    for (const ch of word) totalW += ctx.measureText(ch).width;
+                    let charX = panelCX - totalW / 2;
+                    for (let i = 0; i < word.length; i++) {
+                        const cv = Math.max(0, Math.min(255, bg + sign * contrasts[letterOffset + i]));
+                        ctx.fillStyle = `rgb(${cv},${cv},${cv})`;
+                        ctx.fillText(word[i], charX, lineY);
+                        charX += ctx.measureText(word[i]).width;
+                    }
+                });
+            });
+
+            // --- Crosstalk section (above window bands) ---
+            // White band: y=-5 to y=-4.5; Black band: y=-4.5 to y=-4; x=-2.75 to x=2.75
+            const ctX1 = Math.round(cx + (-2.75) * pitch);
+            const ctX2 = Math.round(cx + ( 2.75) * pitch);
+            const ctY1 = Math.round(cy + (-5)    * pitch);
+            const ctYm = Math.round(cy + (-4.5)  * pitch);
+            const ctY2 = Math.round(cy + (-4)    * pitch);
+            // White and black background fills
+            ctx.fillStyle = 'rgb(255,255,255)';
+            ctx.fillRect(ctX1, ctY1, ctX2 - ctX1, ctYm - ctY1);
+            ctx.fillStyle = 'rgb(0,0,0)';
+            ctx.fillRect(ctX1, ctYm, ctX2 - ctX1, ctY2 - ctYm);
+
+            // Crosstalk lines: black, in white region, right edge at x=-0.125, going left
+            // Centered at y=-4.75, each line 3 pattern px tall, spaced 3 pattern px apart
+            const ctThick   = Math.max(1, Math.ceil(3 * scale));
+            const ctCenterY = Math.round(cy + (-4.75) * pitch);
+            const ctStartX  = Math.round(cx + (-0.125) * pitch);  // right edge of lines
+            const ctLines   = [
+                { len: 256, yOff: -12 },
+                { len: 128, yOff:  -9 },
+                { len:  64, yOff:  -6 },
+                { len:  32, yOff:  -3 },
+                { len:  16, yOff:   0 },
+                { len:   8, yOff:   3 },
+                { len:   4, yOff:   6 },
+                { len:   2, yOff:   9 },
+                { len:   1, yOff:  12 },
+            ];
+            const ctEndX = Math.round(cx + (0.125) * pitch);  // left edge of right-side lines
+            ctx.fillStyle = 'rgb(0,0,0)';
+            ctLines.forEach(({ len, yOff }) => {
+                const lw    = Math.round(len * scale);
+                const lineY = ctCenterY + Math.round(yOff * scale);
+                ctx.fillRect(ctStartX - lw, lineY, lw, ctThick);  // left side
+                ctx.fillRect(ctEndX,         lineY, lw, ctThick);  // right side
+            });
+
+            // Black box: white lines, centered at y=-4.25, longest at bottom
+            // Negate yOff so len=256 maps to +12 (bottom) and len=1 maps to -12 (top)
+            const ctCenterY2 = Math.round(cy + (-4.25) * pitch);
+            ctx.fillStyle = 'rgb(255,255,255)';
+            ctLines.forEach(({ len, yOff }) => {
+                const lw    = Math.round(len * scale);
+                const lineY = ctCenterY2 + Math.round(-yOff * scale);
+                ctx.fillRect(ctStartX - lw, lineY, lw, ctThick);  // left side
+                ctx.fillRect(ctEndX,         lineY, lw, ctThick);  // right side
+            });
+
+            // --- Spatial resolution features ---
+            // Each feature: 2 cells wide × 1 cell tall, gray-64 border,
+            // left half = high contrast (0/255), right half = low contrast (128/130),
+            // 4 quadrants each: vert-1px, vert-2px, horiz-1px, horiz-2px bars
+
+            // Center instance: (-1,-0.5) to (1,0.5)
+            drawSpatialRes(-1, -0.5);
+
+            // Corner instances: fixed pattern coordinates based on base scale only,
+            // so they remain anchored to the window corners regardless of zoom/pan
+            const spB = 13 * baseScale;         // 13 pattern pixels from window edge
+            const pB  = 102 * baseScale;         // cell pitch at base scale
+            const tlCol = (spB - W / 2) / pB;
+            const tlRow = (spB - H / 2) / pB;
+            const brCol = (W / 2 - spB) / pB - 2;
+            const brRow = (H / 2 - spB) / pB - 1;
+            drawSpatialRes(tlCol, tlRow);        // top-left
+            drawSpatialRes(brCol, tlRow);        // top-right
+            drawSpatialRes(tlCol, brRow);        // bottom-left
+            drawSpatialRes(brCol, brRow);        // bottom-right
+        }
+
+        window.addEventListener('load', () => {
+            init();
+            // Warn if OS display scaling is active (bars may not render at correct pitch)
+            if (window.devicePixelRatio !== 1) {
+                document.getElementById('dpiModal').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
