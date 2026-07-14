@@ -4,7 +4,7 @@ pacsDisplay TG18-OIQ (QC) Test Pattern
 Copyright (c) 2026 Nicholas Bevins
 Part of the pacsDisplay project (https://pacsdisplay.org)
 
-Pattern design based on AAPM TG18 OIQ specifications (TG18-QC without Cx patterns).
+Pattern design based on AAPM TG18-OIQ specifications (TG18-QC without Cx patterns).
 Implementation licensed under GNU General Public License v3.0
 -->
 <html lang="en">
@@ -57,13 +57,13 @@ Implementation licensed under GNU General Public License v3.0
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-title">TG18-OIQ</div>
             <div class="modal-message">PATTERN DESCRIPTION:
-This pattern provides visual evaluation of display performance based on the AAPM TG18 OIQ specification (without Cx patterns). It scales to fill the browser window using a 102-pixel grid pitch referenced to a 1024-pixel base.
+This pattern provides visual evaluation of display performance based on the AAPM TG18-OIQ specification (equivalent to TG18-QC without Cx patterns). It scales to fill the browser window using a 102-pixel grid pitch referenced to a 1024x1024 pattern.
 
 GRAY STEPS:
- - 16 cells covering gray levels 8–248 in equal steps (16 gray levels)
+ - 16 cells covering gray levels 8–248 in equal steps (16 gray levels per step)
  - Include low-contrast corner patches (±4 gray levels)
- - Black cell (0): centered 50% sub-patch at gray 13
- - White cell (255): centered 50% sub-patch at gray 242
+ - Black cell (0): centered 50% sub-patch at gray 13 (+5%)
+ - White cell (255): centered 50% sub-patch at gray 242 (-5%)
 
 LUMINANCE RAMPS:
  - Left ramp: 255 (top) → 0 (bottom)
@@ -81,13 +81,13 @@ QUALITY CONTROL PANELS (below gray step grid):
 
 CROSSTALK SECTION (above window bands):
  - White band over black band
- - For evaluating inter-pixel crosstalk and glare
+ - For evaluating pixel crosstalk
 
 SPATIAL RESOLUTION FEATURES:
  - 5 instances: center and four window corners
  - Left half: high contrast (0/255)
  - Right half: low contrast (128/130)
- - Each half has 4 quadrants: vertical 1px, vertical 2px, horizontal 1px, horizontal 2px
+ - Each half has 4 quadrants: vertical 2 px/lp, vertical 4 px/lp, horizontal 2 px/lp, horizontal 4 px/lp
  - Bar pitch is fixed in screen pixels regardless of zoom level
 
 CONTROLS:
@@ -97,9 +97,8 @@ CONTROLS:
  - Window resize: Auto-reset
 
 NOTES:
- - Bar pattern periods may be affected by OS display scaling (DPI ≠ 1)
- - Pattern scales to fit the smaller window dimension
- - Corner spatial resolution features remain fixed to window corners at all zoom levels</div>
+ - Bar pattern periods may be affected by OS display scaling (warning message displayed at pattern load)
+ - Pattern scales to fit the window dimensions</div>
             <div class="modal-buttons"><button class="modal-button" onclick="document.getElementById('helpModal').style.display='none'">Close</button></div>
         </div>
     </div>
