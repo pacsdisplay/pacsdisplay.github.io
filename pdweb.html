@@ -244,7 +244,7 @@
   .seqreadout .y{font-size:20px;font-weight:700}
   .seqreadout .u{color:var(--muted);font-size:19px}
   .seqbtns{display:flex;gap:6px;flex-wrap:wrap}
-  /* External runs: the local screen is not under test, so the patch is hidden outright rather
+  /* External acquisitions: the local screen is not under test, so the patch is hidden outright rather
      than repurposed - a lit 10 cm square beside the display being measured is stray light in the
      room and implies the wrong panel is the subject. #extStage takes its place, sized so the
      countdown is readable from arm's length at the meter. */
@@ -562,7 +562,7 @@
         </ul>
         <p>Levels dimmer than max(5 cd/m², 1% of full white) are discarded first, as the report specifies, and
         the number kept is reported. AAPM Report No. 196 sets no pass/fail limits; it notes only that AAPM
-        TG18 uses 0.01 as a spatial uniformity limit. Comparing 𝒯<sub>2</sub> across runs is only meaningful
+        TG18 uses 0.01 as a spatial uniformity limit. Comparing 𝒯<sub>2</sub> across acquisitions is only meaningful
         at equal sampling - finer steps mean smaller gaps between neighbors, so a 52 or 256 point run produces
         a smaller 𝒯<sub>2</sub> than an 18 point run of the same display.</p>
 
@@ -701,7 +701,7 @@
           <li><b>Scale</b> defaults to <b>Auto</b>, which fits the color range to this run's own largest
           deviation. That is what makes a small gradient visible at all, and it also means a good display
           fills the palette exactly as dramatically as a bad one. <b>The colors show shape, not
-          severity, and are not comparable between runs.</b> Use a fixed scale to compare displays by eye;
+          severity, and are not comparable between acquisitions.</b> Use a fixed scale to compare displays by eye;
           use the numbers to judge either.</li>
         </ul>
 
@@ -1234,7 +1234,7 @@ Public License instead of this License.</pre>
          else is suppressed, so panel loading reflects the gray level under test. -->
     <div class="patchwrap" id="patchStage">
       <div id="patch"></div>
-      <!-- External runs only (see #patchStage.ext): tells the operator which patch is next and
+      <!-- External acquisitions only (see #patchStage.ext): tells the operator which patch is next and
            how long they have to get there. Replaces the gray patch, which has no meaning when
            the display under test is driven by another machine. -->
       <div class="extstage" id="extStage">
@@ -1377,7 +1377,7 @@ Public License instead of this License.</pre>
         <!-- nine .unicell children plus the target marker are built in JS -->
         <div class="unimark" id="uniMark" hidden></div>
       </div>
-      <!-- External runs only (see #uniStage.ext): tells the operator which position is next and
+      <!-- External acquisitions only (see #uniStage.ext): tells the operator which position is next and
            how long they have to get there. Replaces the grid, which has no meaning when the
            display under test is driven by another machine. -->
       <div class="extstage" id="uniExtStage">
@@ -1386,7 +1386,7 @@ Public License instead of this License.</pre>
         <div class="hint" id="uniExtHint">-</div>
         <div class="prev" id="uniExtPrev"></div>
       </div>
-      <div class="unilabel" id="uniLabel">Runs are made full screen or full window</div>
+      <div class="unilabel" id="uniLabel">Data collection uses full screen or full window</div>
       <div class="seqreadout"><span class="y" id="uniY">-</span> <span class="u">cd/m²</span>
         &nbsp;·&nbsp; u', v' <span id="uniUV">-, -</span></div>
       <div class="fsstatus" id="uniStatus"></div>
@@ -1553,7 +1553,7 @@ async function sleepWhile(ms,alive,step=50){
 }
 
 /* Same contract as sleepWhile, plus a per-step callback carrying the milliseconds remaining.
-   External runs use it to drive the countdown the operator moves against. The wait is a plain
+   External acquisitions use it to drive the countdown the operator moves against. The wait is a plain
    duration measured from the moment it starts - which is when the previous measurement finished -
    so the operator always gets the whole interval to move, regardless of how long the meter took. */
 async function sleepTicking(ms,alive,onTick,step=50){
@@ -1664,7 +1664,7 @@ const Y_FLOOR=0.01;
 
 /* Shared so the live capture path and Re-analyze on an imported run word this identically. meta.clamped and
    meta.clampedAt survive import, so the warning they explain has to survive too. Accepts either the DDL list
-   or a bare count, because runs exported before clampedAt existed carry only the count.
+   or a bare count, because data acquistions exported before clampedAt existed carry only the count.
 
    Naming the levels matters: a clamp at DDL 0 is a display black-level property, but a clamp part-way up the
    ramp is not - on an external run it almost always means the probe was off the panel or still moving, and
@@ -2326,7 +2326,7 @@ function setDisconnectedUI(note){
 }
 
 /* ---- diffuser cover tracking ----
-   Argyll runs a background thread polling get_diffpos and raises an event on change
+   Argyll uses a background thread polling get_diffpos and raises an event on change
    (i1d3.c:2896-2917). Same idea on a timer, so the pill is already correct before the
    operator presses Read rather than only reporting a mismatch after a failed attempt.
    Skipped whenever a measurement is in flight - commands serialize, but there is no
@@ -2483,7 +2483,7 @@ const BG_READS=3;                    // background reads at DDL 0 before the ram
    constant without ever being the brightest thing on a dark screen. */
 const FS_CONTRAST=60, FS_FLIP=128;
 
-/* ---- external-display runs ----
+/* ---- external-display data acquistions ----
    No patch is painted and nothing here drives the display under test: the operator moves the
    probe across patches on another machine's screen while the run reads on a fixed interval. */
 /* Move delay: the operator's window to reposition the probe, or to advance the pattern on an
@@ -2537,7 +2537,7 @@ async function enterStageFullscreen(el){
 async function exitStageFullscreen(){
   if(document.fullscreenElement){ try{ await document.exitFullscreen(); }catch(e){} }
 }
-/* External runs never enter fullscreen, so a stray fullscreenchange from anywhere else on the
+/* External acquisitions never enter fullscreen, so a stray fullscreenchange from anywhere else on the
    page must not kill one - and the panel-loading explanation would be wrong for them anyway.
    A uniformity run loses more than loading when the stage collapses: the nine cells move, so
    the remaining positions would be measured somewhere other than where they are labeled. */
@@ -2733,7 +2733,7 @@ const seq={ on:false, external:false, lastRun:null,
        A failure here aborts before the ramp: with fewer than BG_READS the cLR cannot carry
        its stabilization block, and a black reading that will not complete is a fault worth
        stopping for rather than measuring around.
-       EXTERNAL runs get one interval to seat the probe on the external display's black patch,
+       EXTERNAL acquisitions get one interval to seat the probe on the external display's black patch,
        then take all BG_READS plus the DDL 0 ramp point back to back - they are the same patch,
        so making the operator wait an interval between them would only add dead time. */
     const background=[];
@@ -2876,8 +2876,8 @@ const seq={ on:false, external:false, lastRun:null,
         `T2 ${a.tg.T2.toFixed(4)} · T2max ${a.tg.T2max.toFixed(4)}  (${a.tg.n} of ${a.tg.nTotal} levels)`,"ok");
   }
 };
-/* Runs on an opened stage wait for an explicit go. Opening the stage relocates and resizes
-   the pattern, and the operator still has to seat the photometer against it - starting
+/* Data acquisitions on an opened stage wait for an explicit go. Opening the stage relocates and 
+   resizes the pattern, and the operator still has to seat the photometer against it - starting
    straight away would fold that handling time into the first measurement, which is exactly
    the reading you least want to doubt. Space or the Go button starts; Esc cancels (on a
    fullscreen presentation the browser also leaves fullscreen on Esc, which resolves this the
@@ -2919,7 +2919,7 @@ function armFullscreenStart(n){
 }
 
 /* Fullscreen is entered here rather than inside seq.run() so the request still carries
-   the click's user activation. External runs skip all of it: fullscreen exists to control panel
+   the click's user activation. External acquisitions skip all of it: fullscreen exists to control panel
    loading on the display being measured, and on an external run that display is not this one. */
 async function startSeq(n,opts={}){
   if(seq.on) return;
@@ -3845,7 +3845,7 @@ const UNI_READ=UNI_POS.map((_,k)=>k)
    the pattern. */
 const MOVE_DELAY_UNI_DEF=2;        // seconds to move the probe between positions
 const UNI_FALLBACK_ASPECT=16/9;    // when a run carries no recorded stage aspect
-const UNI_IDLE_LABEL="Runs are made full screen or full window";
+const UNI_IDLE_LABEL="Data acquistions are made full screen or full window";
 
 /* ---- stage ---- */
 const grayCss=g=>{ const v=Math.max(0,Math.min(255,Math.round(g))); return `rgb(${v},${v},${v})`; };
@@ -3989,11 +3989,11 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
        window rather than the screen, and env.screen would describe the wrong rectangle. Only
        the map uses it, to draw the measured area in its own proportions.
        stagePx keeps the size the ratio was taken from, which the ratio alone cannot recover:
-       full window exists so the operator can measure a defined area, and two runs of different
+       full window exists so the operator can measure a defined area, and two acquisitions of different
        areas on one display share an aspect while measuring different regions at different cell
        sizes. It also lets a reader check a full-screen run against env.screen.
        CSS pixels, as getBoundingClientRect reports them - dpr travels alongside so device
-       pixels are recoverable, and browser zoom is folded into both. Null for external runs for
+       pixels are recoverable, and browser zoom is folded into both. Null for external acquisitions for
        the same reason stageAspect is: pdweb does not drive that display. */
     const box=$("uniGrid").getBoundingClientRect();
     const stageAspect=(!ext && box.height>0) ? box.width/box.height : null;
@@ -4179,7 +4179,7 @@ document.addEventListener("keydown",e=>{
 });
 
 /* The stage is opened here rather than inside uni.run() so a fullscreen request still carries
-   the click's user activation. External runs skip all of it: the stage exists to present the
+   the click's user activation. External acquisitions skip all of it: the stage exists to present the
    pattern, and on an external run the pattern is on another machine. */
 async function startUni(key,opts={}){
   if(uni.on||seq.on) return;
@@ -4580,7 +4580,7 @@ function renderUniMap(a){
       `between them. Median ${r.med.toFixed(3)} cd/m² (L' = L + L_amb (${a.Lamb} cd/m²)). `+
       (scSel.value==="auto"
         ? `Scale is fitted to this level, ±${scale.toFixed(1)}%: it shows the shape of the `+
-          `non-uniformity, not its severity, and is not comparable between runs.`
+          `non-uniformity, not its severity, and is not comparable between acquisitions.`
         : `Scale fixed at ±${scale.toFixed(1)}%.`);
     noteEl.innerHTML=note.replace("L_amb","L<sub>amb</sub>");
     wrap.chartMeta.note=note;
@@ -4674,7 +4674,7 @@ function buildUniTSV(run){
     `# tab backgrounded during run: ${m.backgrounded?"yes":"no"}`,
     `# positions are listed in analysis order: UL UC UR / CL CC CR / LL LC LR`,
   ];
-  /* The measured area, when pdweb drove the display. Absent on external runs rather than
+  /* The measured area, when pdweb drove the display. Absent on external acquisitions rather than
      written as a zero or a guess - see stagePx at capture. It belongs directly under the
      pattern line, which it qualifies; located by that line rather than by a fixed index, so
      inserting a header above it cannot silently move it somewhere else. */
