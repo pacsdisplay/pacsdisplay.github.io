@@ -1,4 +1,4 @@
-# pacsDisplay Web Tools (pdweb)
+# pdweb
 
 Browser-based display quality control tools for DICOM-calibrated displays.
 
