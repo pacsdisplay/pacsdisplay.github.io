@@ -117,7 +117,14 @@
   .log .e{color:var(--err)}.log .ok{color:var(--ok)}.log .t{color:var(--muted)}.log .w{color:var(--warn)}.log .m{color:#d7dbe0}
   /* Recessed inline chip. .kbd and .helpdoc code differ only in the details below. */
   code,.kbd{font-family:var(--mono);background:var(--field);padding:1px 5px;border-radius:4px;font-size:12px}
-  .modewrap{display:flex;gap:10px;align-items:end;margin-bottom:10px;flex-wrap:wrap}
+  .modewrap{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+  /* Inline field: label beside its control instead of above it (the label{} default).
+     Each user below adds only its own sizing; the shape lives here. */
+  .quantwrap,.lambwrap,.dispwrap,.unihopt{display:flex;align-items:center;gap:7px}
+  .quantwrap label,.lambwrap label,.dispwrap label,.unihopt label{margin:0;white-space:nowrap}
+  /* Meter quantity: wraps the label back above the select once the row runs out of room. */
+  .quantwrap{flex-wrap:wrap;flex:1 1 320px;max-width:470px}
+  .quantwrap select{flex:1 1 240px;width:auto}
   details.adv,details.diagx{margin-top:10px}
   details.adv summary,details.diagx summary{cursor:pointer;color:var(--muted);font-size:12px;user-select:none;margin-bottom:8px}
   .cardtop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
@@ -128,8 +135,6 @@
   .instr-row .kv{margin:0}
   .seqhead{display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:2px}
   .headopts{display:flex;align-items:center;gap:14px}
-  .lambwrap{display:flex;align-items:center;gap:7px}
-  .lambwrap label{margin:0;white-space:nowrap}
   .lambwrap input{width:64px;text-align:right}
   .chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:0;
     cursor:pointer;user-select:none;white-space:nowrap}
@@ -217,8 +222,7 @@
   /* Analysis toolbar. Sits directly under the card heading: the run's identity and what can
      be done with it are settled before the numbers start. */
   .anlbar{display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
-  .dispwrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .dispwrap label{margin:0;white-space:nowrap}
+  .dispwrap{flex-wrap:wrap}
   .dispwrap input{width:210px}
   .hint{color:var(--faint);font-weight:400;font-size:12px}
   .exportrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -284,10 +288,8 @@
   .unimark::after{content:"";width:min(200px,55%);aspect-ratio:1;border-radius:50%;
     border:6px solid currentColor}
   .unilabel{font-family:var(--mono);font-size:13px;color:var(--muted)}
-  /* Header selects: same inline label-then-control shape as .lambwrap, but sized to their
-     option text rather than to a number field. */
-  .unihopt{display:flex;align-items:center;gap:7px}
-  .unihopt label{margin:0;white-space:nowrap;font-size:12px;color:var(--muted)}
+  /* Header selects: the shared inline-field shape, sized to their option text
+     rather than to a number field. */
   .unihopt select{width:auto;margin:0;padding:5px 6px;font-size:12px}
   /* Full window sits above the sticky header (z-index 10) and below the help modal (20), so
      an accidental Help while armed still comes to the front rather than opening underneath. */
@@ -1140,10 +1142,10 @@ Public License instead of this License.</pre>
   <div class="card" id="view-meter">
     <h2>Measurement</h2>
     <div class="modewrap">
-      <div style="min-width:240px">
-        <label>Quantity / mode</label>
+      <div class="quantwrap">
+        <label for="quant">Quantity / mode</label>
         <select id="quant">
-          <option value="auto">Auto - detect cover position</option>
+          <option value="auto">Auto → detect cover position</option>
           <option value="lum">Luminance (cd/m²) → cover off</option>
           <option value="ill">Illuminance (lux) → cover on</option>
         </select>
@@ -1155,16 +1157,7 @@ Public License instead of this License.</pre>
       <button id="btnCont" disabled>Continuous</button>
       <button id="btnCopyVal" disabled>Copy</button>
     </div>
-    <div class="msg" id="meterMsg"></div>
-    <div class="readout"><span class="big" id="val">-</span><span class="unit" id="valUnit">cd/m²</span></div>
-    <div class="kv" style="grid-template-columns:180px 1fr">
-      <span class="k">Chromaticity u', v' (x, y)</span><span class="v" id="chrom">-</span>
-      <span class="k">XYZ</span><span class="v" id="xyz">-</span>
-    </div>
-    <details class="diagx">
-      <summary>Diagnostics</summary>
-      <div class="diag" id="diag">Raw sensor frequencies (pre-matrix) and measurement detail appear here after a read.</div>
-    </details>
+
     <details class="adv">
       <summary>Advanced settings</summary>
       <div class="row">
@@ -1178,6 +1171,17 @@ Public License instead of this License.</pre>
         <div style="max-width:110px"><label>Averages</label><input id="navg" value="2"></div>
         <div style="max-width:150px"><label>Scale factor</label><input id="scale" value="1.0"></div>
       </div>
+    </details>
+
+    <div class="msg" id="meterMsg"></div>
+    <div class="readout"><span class="big" id="val">-</span><span class="unit" id="valUnit">cd/m²</span></div>
+    <div class="kv" style="grid-template-columns:180px 1fr">
+      <span class="k">Chromaticity u', v' (x, y)</span><span class="v" id="chrom">-</span>
+      <span class="k">XYZ</span><span class="v" id="xyz">-</span>
+    </div>
+    <details class="diagx">
+      <summary>Diagnostics</summary>
+      <div class="diag" id="diag">Raw sensor frequencies (pre-matrix) and measurement detail appear here after a read.</div>
     </details>
   </div>
 
@@ -4387,8 +4391,8 @@ function renderUniConformance(a){
   $("uniConfNote").innerHTML =
     `LUDM is the largest deviation of any position from the median of the nine; MLD is the `+
     `spread between the brightest and darkest. Both use L' = L + L<sub>amb</sub> and are computed `+
-    `separately at each gray level. The mean Δu'v' is the panel mean is chromaticity <i>uniformity</i>`+
-    `ref Δu'v' is how far the panel sits from the intended white point. The matrices below report`+
+    `separately at each gray level. The mean Δu'v' is the panel mean is chromaticity <i>uniformity</i>. `+
+    `The ref Δu'v' is how far the panel sits from the reference white point. The matrices below report `+
     `measured luminance L in cd/m².`;
   $("uniConf").style.display="";
   $("uniConf").open=true;
