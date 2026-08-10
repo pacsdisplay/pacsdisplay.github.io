@@ -465,7 +465,7 @@
         <h3>Collecting data</h3>
         <ul>
           <li>Choose <b>18</b>, <b>52</b>, or <b>256</b> point. The 18 point test lands on exactly the levels
-          of the TG18-LN test pattern set (every 15 gray levels: DDL 0, 15, 30,..., 255), which is also the
+          of the TG18-LN test pattern set (every 15 gray levels: DDL 0, 15, 30, ..., 255), which is also the
           same sampling AAPM Report No. 196 uses. The 52 and 256 point tests give a finer curve (at
           proportionally more time and typically with increased noise). AAPM No. Report 270 recommends using
           52 points when available. <b>Note:</b> take care when using more points against the typical 10% and
@@ -481,7 +481,7 @@
           data collection.</li>
           <ul>
             <li><b>Ext 18</b> uses the TG18-LN levels. <b>Ext 11</b> uses the eleven gray steps of the
-            <b>SMPTE</b> pattern, 25.5 gray levels apart and rounded (DDL 0, 26, 51, 77 … 255).</li>
+            <b>SMPTE</b> pattern, 25.5 gray levels apart and rounded (DDL 0, 26, 51, 77, ..., 255).</li>
             <li>Display the matching pattern on the external display before starting.</li>
             <li>The data acquistiion process gives you one interval to seat the probe on the <b>DDL 0 (black)</b>
             patch, then takes four readings there back to back without pausing - three background readings
@@ -1675,7 +1675,7 @@ const Y_FLOOR=0.01;
    telling that operator to raise their black level sends them the wrong way entirely. */
 const clampWarning=(at,external)=>{
   const list=Array.isArray(at)?at:null, n=list?list.length:at;
-  const where=list?` at DDL ${list.slice(0,12).join(", ")}${list.length>12?` … (+${list.length-12} more)`:""}`:"";
+  const where=list?` at DDL ${list.slice(0,12).join(", ")}${list.length>12?` ... (+${list.length-12} more)`:""}`:"";
   const high=list?list.filter(d=>d>0):[];
   return `${n} point(s)${where} measured below ${Y_FLOOR} cd/m² and were clamped to ${Y_FLOOR} to keep the analysis finite. `+
     (high.length && external
@@ -1687,7 +1687,7 @@ const clampWarning=(at,external)=>{
    external run it is far more often a reading taken while the probe was between patches. */
 const reversalWarning=(rev,external)=>
   `${rev.length} level(s) read darker than the level below: `+
-  `${rev.slice(0,6).map(r=>`DDL ${r.from}→${r.to}`).join(", ")}${rev.length>6?` … (+${rev.length-6} more)`:""}. `+
+  `${rev.slice(0,6).map(r=>`DDL ${r.from}→${r.to}`).join(", ")}${rev.length>6?` ... (+${rev.length-6} more)`:""}. `+
   (external
     ? `On an external run this usually means the reading was taken while the probe was moving, or on the wrong patch.`
     : `A monotonic ramp should never do this - check the display for a calibration or LUT fault.`);
@@ -1707,11 +1707,11 @@ function lFromJ(j){ let lo=GSDF_LMIN,hi=GSDF_LMAX;
   return Math.sqrt(lo*hi); }
 
 /* ===== GSDF conformance analysis =====
-   Inputs: pts=[{ddl,Y,x,y,up,vp}]  (Y = measured display luminance, cd/m²)
+   Inputs: pts=[{ddl,Y,x,y,up,vp}]  (Y = measured display luminance L, cd/m²)
            background=[{Y,...}]     (stabilization reads at DDL 0, folded into L'min)
    Definitions per pacsDisplay:
-     L'   = Y + L_amb  (combined luminance)
-     L'min           = mean(stabilization reads, darkest step) + L_amb   (evalQClr)
+     L'              = Y + L_amb  (combined luminance)
+     L'min           = mean(stabilization reads, darkest step) + L_amb
      Total JNDs      = j(L'max) − j(L'min)              (DICOM GSDF forward j(L))
      Mean JND/GL     = Total JNDs / (GLmax − GLmin)
      JND/GL error    = per-interval (Δj/ΔGL) vs uniform target (Mean JND/GL)
@@ -1721,27 +1721,25 @@ function lFromJ(j){ let lo=GSDF_LMIN,hi=GSDF_LMAX;
                        both = (L1−L2)/avg(L1,L2)/Δj_target
      Ambience ratio  = L_amb / L_min            (L_min = measured Y at GLmin)
      Luminance ratio = L'max / L'min
-     Max ref Δu'v'       = max |(u',v') − ref| over points with Y ≥ color floor
+     Max ref Δu'v'   = max |(u',v') − ref| over points with Y ≥ color floor
                        (raw measured luminance, as in TG196 - see below)
 */
-/* ---- AAPM Report No. 196 gray tracking metrics ----
-   Badano et al., "Technical Note: Gray tracking in medical color displays - A report of Task Group 196", Med
-   Phys 43(7):4017-4022 (2016). "TG196" below is shorthand for the same report; the full name is what the
-   user-facing prose uses.
+/* ---- AAPM Report No. 196 gray tracking metrics ---- Badano et al., "Technical Note: Gray tracking in
+   medical color displays - A report of Task Group 196", Med Phys 43(7):4017-4022 (2016). "TG196" below is
+   shorthand for the same report; the full name is what the user-facing text uses.
 
-     T1     mean Δu'v' from each retained level to the display's own full white   (Eq 1, 2)
-     T2     mean Δu'v' between consecutive retained levels                        (Eq 3, 4)
-     T1max  the largest of those white-referenced distances                       (Eq 5)
-     T2max  the largest of those consecutive-step distances                       (Eq 5)
+     T1     mean Δu'v' from each retained level to the display's own full white   (Eq 1, 2) T2     mean Δu'v'
+     between consecutive retained levels                        (Eq 3, 4) T1max  the largest of those
+     white-referenced distances                       (Eq 5) T2max  the largest of those consecutive-step
+     distances                       (Eq 5)
 
-   The reference is the display's own full white, NOT the D65/D50 selector that maxDuv uses. TG196 measures
-   whether the ramp holds one consistent color; a display can track gray perfectly while sitting well off D65,
-   and these metrics are deliberately blind to that.
+   The reference is the display's own full white, NOT the D65/D50/custom selector that maxDuv uses. TG196
+   measures whether the ramp holds one consistent color; a display can track gray perfectly while sitting well
+   off D65, and these metrics are deliberately blind to that.
 
    Discard rule (Sec. 4): keep only levels whose luminance exceeds max(5 cd/m², 1% of full-white luminance).
    Colorimeter chromaticity near black is mostly noise, and the report excludes it rather than letting it
-   swamp the averages. Raw measured luminance is used, not L' - L_amb is a property of the room, not of the
-   display whose gray tracking is being characterized.
+   swamp the averages. Raw measured luminance L is used, not L'.
 
    Both means divide by N-1, N being the retained count: T1 has one fewer term because full white is not
    compared against itself, T2 because N levels form N-1 consecutive pairs.
@@ -1988,7 +1986,7 @@ class I1D3{
   }
   async unlock(){
     if((await this.lockStatus())===0){ log("device reports unlocked - skipping key search","ok"); return true; }
-    log("device is locked - running unlock…");
+    log("device is locked - running unlock...");
     for(let ix=0;ix<KEYS.length;ix++){
       const chal=await this.cmd(CC.lockchal,new Uint8Array(64),1000);
       const resp=this.unlockResponse(KEYS[ix],chal);
@@ -2066,10 +2064,10 @@ class I1D3{
   }
   async bringUp(){
     if(!(await this.unlock())) throw new Error("unlock failed - no key matched");
-    log("reading internal EEPROM…");
+    log("reading internal EEPROM...");
     this.decodeInternal(await this.readIntEE(0,256));
     log(`serial ${this.serial||"(none)"}, vers ${this.vers||"?"}`, this.serial?"ok":"w");
-    log(`reading external EEPROM (${EXTEE_LEN} B, retry-protected)…`);
+    log(`reading external EEPROM (${EXTEE_LEN} B, retry-protected)...`);
     this.decodeSensors(await this.readExtEE(0,EXTEE_LEN));
     this.computeCalMatrices();
     if(!this.calLooksValid())
@@ -2368,7 +2366,7 @@ if(HAS_HID){
 $("btnConnect").onclick=async()=>{
   try{
     clearMsg("meterMsg");
-    $("statePill").innerHTML=`<span class="pill warn">connecting…</span>`;
+    $("statePill").innerHTML=`<span class="pill warn">connecting...</span>`;
     await dev.connect();
     const info=await dev.getInfo(); log(`getinfo → "${info}"`,"ok");
     log(`device VID:PID 0x${dev.dev.vendorId.toString(16)}:0x${dev.dev.productId.toString(16)}`);
@@ -2509,7 +2507,7 @@ const REVERSAL_LFLOOR=0.2,          // cd/m², noise floor: reversals below this
    passes null and the stage shows "measuring", so a slow adaptive read never looks like a hang. */
 function setExtCount(msLeft){
   const el=$("extCount");
-  if(msLeft==null){ el.textContent="measuring…"; el.className="count reading"; return; }
+  if(msLeft==null){ el.textContent="measuring..."; el.className="count reading"; return; }
   el.textContent=`${Math.max(0,msLeft/1000).toFixed(1)} s`;
   el.className="count";
 }
@@ -2620,7 +2618,7 @@ function renderConformance(a){
      18-point run of the same display. Say so whenever the sampling is not the TG18-LN set
      the report is written against. */
   $("confNote").textContent = (a.tg && !a.tg.insufficient && a.n!==18)
-    ? `AAPM Report No. 196 is defined on the 18-level TG18-LN set (DDL 0, 15, 30 … 255). This `+
+    ? `AAPM Report No. 196 is defined on the 18-level TG18-LN set (DDL 0, 15, 30, ..., 255). This `+
       `run has ${a.n} levels, so T2 and T2max are not comparable with values from an 18-point `+
       `run. T1 and T1max are unaffected.`
     : "";
@@ -2670,9 +2668,9 @@ const seq={ on:false, external:false, lastRun:null,
     const levels=ddlLevels(n);
     const started=new Date();
     log(ext
-      ? `luminance response ${n}-point EXTERNAL: DDLs ${levels[0]}…${levels[levels.length-1]} `+
+      ? `luminance response ${n}-point EXTERNAL: DDLs ${levels[0]}...${levels[levels.length-1]} `+
         `(${levels.length} steps), ${(intervalMs/1000).toFixed(1)} s interval, L_amb ${Lamb} cd/m²`
-      : `luminance response ${n}-point: DDLs ${levels[0]}…${levels[levels.length-1]} (${levels.length} steps), L_amb ${Lamb} cd/m²`,"m");
+      : `luminance response ${n}-point: DDLs ${levels[0]}...${levels[levels.length-1]} (${levels.length} steps), L_amb ${Lamb} cd/m²`,"m");
     if(ext && $("seqFull").checked)
       log("external run: Full screen ignored - the local screen is not the display under test","m");
 
@@ -2846,7 +2844,7 @@ const seq={ on:false, external:false, lastRun:null,
       if(stopped) why.push(`Run stopped after ${results.length} of ${levels.length} points.`);
       if(missing.length) why.push(
         `${missing.length} level(s) have no valid measurement: DDL ${missing.slice(0,12).join(", ")}`+
-        `${missing.length>12?` … (+${missing.length-12} more)`:""}.`);
+        `${missing.length>12?` ... (+${missing.length-12} more)`:""}.`);
       why.push("Conformance analysis needs a measurement at every requested level, so it was not run. The captured points are still available.");
       showMsg("seqMsg",why,"warn");
       log(`luminance response incomplete - ${results.length}/${levels.length} points; analysis skipped`,"w");
@@ -3911,7 +3909,7 @@ function setUniReadout(Y,up,vp){
 }
 function setUniExtCount(msLeft){
   const el=$("uniExtCount");
-  if(msLeft==null){ el.textContent="measuring…"; el.className="count reading"; return; }
+  if(msLeft==null){ el.textContent="measuring..."; el.className="count reading"; return; }
   el.textContent=`${Math.max(0,msLeft/1000).toFixed(1)} s`;
   el.className="count";
 }
@@ -3976,7 +3974,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     const levels=uniLevels(key);
     const started=new Date();
     const lvlText=levels.length>3
-      ? `DDL ${levels[0]}…${levels[levels.length-1]} (${levels.length} levels)`
+      ? `DDL ${levels[0]}...${levels[levels.length-1]} (${levels.length} levels)`
       : `DDL ${levels.join(", ")}`;
     log(ext
       ? `uniformity EXTERNAL: ${UNI_N} positions, ${lvlText}, `+
