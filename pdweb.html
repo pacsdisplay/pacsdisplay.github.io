@@ -65,68 +65,84 @@
      (.modal is display:flex, .helpdoc is block). Without the override, source order
      decides whether the [hidden] attribute actually hides them. */
   [hidden]{display:none!important}
+  /* ---- UI scale ----
+     A fine-pitch diagnostic panel (12 MP at 100% OS scaling) reports devicePixelRatio 1, so the
+     browser has no idea its pixels are a third the linear size of the 96 DPI reference pixel and
+     every px below renders tiny. This scales the interface without touching the measurement
+     surfaces.
+     The mechanism is the root font size: `zoom` on <html> would also scale #patch and #uniGrid,
+     which is exactly wrong - their size in cm IS the measured area, recorded in the Luni header
+     (see stagePx). Sizes in px are unaffected by a root font-size change, so declaring the scale
+     here and expressing only the type scale in rem keeps the two apart by construction: the
+     stages stay in cm/vw/%, and no rule that sizes them is written in rem.
+     Percentages of 16px are used rather than a unitless factor so the value in the settings file
+     reads as what the operator chose. */
+  html{font-size:calc(16px * var(--uiscale,1))}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    background:var(--bg);color:var(--text);line-height:1.45}
+    background:var(--bg);color:var(--text);line-height:1.45;font-size:.8125rem}
   header{position:sticky;top:0;z-index:10;padding:10px 20px;border-bottom:1px solid var(--edge);
     background:var(--panel2);display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
-  .brand{font-size:18px;font-weight:700;letter-spacing:.2px}
+  .brand{font-size:1.125rem;font-weight:700;letter-spacing:.2px}
   nav{grid-column:2;justify-self:center;display:flex;gap:8px}
   .modebtn{background:transparent;color:var(--muted);border:1px solid var(--edge);border-radius:6px;
-    padding:6px 16px;font-weight:600;font-size:13px;cursor:pointer}
+    padding:6px 16px;font-weight:600;font-size:0.8125rem;cursor:pointer}
   .modebtn.active{background:var(--btn-active);color:var(--text);border-color:#565e69}
-  main{max-width:720px;margin:0 auto;padding:18px 20px}
+  /* The content column tracks the type: at 45rem it stays the same number of characters wide at
+     every scale, so raising the scale enlarges the text rather than reflowing the cards. The
+     advanced rows are laid out against this width (see .advrow). */
+  main{max-width:45rem;margin:0 auto;padding:18px 20px}
   .card{background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:14px;margin-bottom:14px}
   /* The one uppercase label style: card headings and the modal heading. */
-  .card h2,summary.cardhead,.modal-head h2{margin:0;font-size:12.5px;letter-spacing:.4px;
+  .card h2,summary.cardhead,.modal-head h2{margin:0;font-size:0.78125rem;letter-spacing:.4px;
     text-transform:uppercase;color:var(--muted);font-weight:700}
   .card h2,summary.cardhead{margin-bottom:10px}
   summary.cardhead{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}
   summary.cardhead::-webkit-details-marker{display:none}
-  summary.cardhead::before{content:"\25BE";font-size:13px;line-height:1;color:var(--muted);transition:transform .15s}
+  summary.cardhead::before{content:"\25BE";font-size:0.8125rem;line-height:1;color:var(--muted);transition:transform .15s}
   details:not([open])>summary.cardhead{margin-bottom:0}
   details:not([open])>summary.cardhead::before{transform:rotate(-90deg)}
   /* One button appearance throughout.*/
   button{background:var(--btn);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:8px 14px;
-    font-weight:700;cursor:pointer;font-size:14px;margin:0 6px 0 0}
+    font-weight:700;cursor:pointer;font-size:0.875rem;margin:0 6px 0 0}
   button:disabled{opacity:.4;cursor:not-allowed}
-  #btnCont{min-width:112px}   /* label toggles Continuous/Stop - pin it so the row can't reflow */
-  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
+  #btnCont{min-width:7rem}   /* label toggles Continuous/Stop - pin it so the row can't reflow */
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:700}
   .pill.ok{background:rgba(var(--ok-rgb),.15);color:var(--ok)}
   .pill.warn{background:rgba(var(--warn-rgb),.15);color:var(--warn)}
   .pill.err{background:rgba(var(--err-rgb),.18);color:var(--err)}
   .pill.info{background:rgba(139,145,153,.18);color:#c6cbd1}
   /* Inline card messages. The log panel is collapsed by default, so anything the
      operator must act on (cover position, incomplete run, GSDF domain) shows here too. */
-  .msg{margin:10px 0 0;padding:8px 11px;border-radius:6px;font-size:13px;display:none}
+  .msg{margin:10px 0 0;padding:8px 11px;border-radius:6px;font-size:0.8125rem;display:none}
   .msg.show{display:block}
   .msg.warn{background:rgba(var(--warn-rgb),.12);border:1px solid rgba(var(--warn-rgb),.35);color:#e8c477}
   .msg.err {background:rgba(var(--err-rgb),.12);border:1px solid rgba(var(--err-rgb),.35);color:#e58b87}
   .msg.ok  {background:rgba(var(--ok-rgb),.12);border:1px solid rgba(var(--ok-rgb),.35);color:#7fd3a6}
   .msg ul{margin:5px 0 0;padding-left:18px}.msg li{margin:2px 0}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,select{background:var(--field);border:1px solid var(--edge);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px;width:100%}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.row>div{flex:1;min-width:110px}
+  label{display:block;font-size:0.75rem;color:var(--muted);margin-bottom:4px}
+  input,select{background:var(--field);border:1px solid var(--edge);color:var(--text);border-radius:6px;padding:8px 10px;font-size:0.8125rem;width:100%}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.row>div{flex:1;min-width:6.875rem}
   .readout{display:flex;align-items:baseline;gap:9px;margin:10px 0}
-  .big{font-family:var(--mono);font-size:44px;font-weight:700;letter-spacing:-1px}
-  .unit{color:var(--muted);font-size:19px}
-  .kv{display:grid;grid-template-columns:70px 1fr;gap:3px 10px;font-size:13px}
+  .big{font-family:var(--mono);font-size:2.75rem;font-weight:700;letter-spacing:-1px}
+  .unit{color:var(--muted);font-size:1.1875rem}
+  .kv{display:grid;grid-template-columns:4.375rem 1fr;gap:3px 10px;font-size:0.8125rem}
   .kv .k{color:var(--muted)}.kv .v{font-family:var(--mono)}
-  .diag{color:#767c85;font-size:12px;font-family:var(--mono);margin-top:8px}
+  .diag{color:#767c85;font-size:0.75rem;font-family:var(--mono);margin-top:8px}
   .log{background:var(--field);border:1px solid var(--edge);border-radius:6px;padding:10px;margin-top:10px;
-    font-family:var(--mono);font-size:12px;height:190px;overflow-y:auto;white-space:pre-wrap}
+    font-family:var(--mono);font-size:0.75rem;height:15.8rem;overflow-y:auto;white-space:pre-wrap}
   .log .e{color:var(--err)}.log .ok{color:var(--ok)}.log .t{color:var(--muted)}.log .w{color:var(--warn)}.log .m{color:#d7dbe0}
   /* Recessed inline chip. .kbd and .helpdoc code differ only in the details below. */
-  code,.kbd{font-family:var(--mono);background:var(--field);padding:1px 5px;border-radius:4px;font-size:12px}
+  code,.kbd{font-family:var(--mono);background:var(--field);padding:1px 5px;border-radius:4px;font-size:0.75rem}
   .modewrap{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
   /* Inline field: label beside its control instead of above it (the label{} default).
      Each user below adds only its own sizing; the shape lives here. */
   .quantwrap,.lambwrap,.dispwrap,.unihopt{display:flex;align-items:center;gap:7px}
   .quantwrap label,.lambwrap label,.dispwrap label,.unihopt label{margin:0;white-space:nowrap}
   /* Meter quantity: wraps the label back above the select once the row runs out of room. */
-  .quantwrap{flex-wrap:wrap;flex:1 1 320px;max-width:470px}
-  .quantwrap select{flex:1 1 240px;width:auto}
+  .quantwrap{flex-wrap:wrap;flex:1 1 20rem;max-width:29.375rem}
+  .quantwrap select{flex:1 1 15rem;width:auto}
   details.adv,details.diagx{margin-top:10px}
-  details.adv summary,details.diagx summary{cursor:pointer;color:var(--muted);font-size:12px;user-select:none;margin-bottom:8px}
+  details.adv summary,details.diagx summary{cursor:pointer;color:var(--muted);font-size:0.75rem;user-select:none;margin-bottom:8px}
   .cardtop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
   .cardtop h2{margin:0}
   .status-right{display:flex;gap:8px;align-items:center}
@@ -135,23 +151,23 @@
   .instr-row .kv{margin:0}
   .seqhead{display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:2px}
   .headopts{display:flex;align-items:center;gap:14px}
-  .lambwrap input{width:64px;text-align:right}
-  .chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:0;
+  .lambwrap input{width:4rem;text-align:right}
+  .chk{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted);margin:0;
     cursor:pointer;user-select:none;white-space:nowrap}
   .chk input{width:auto;margin:0}
-  .advrow{gap:8px}                      /* tighter than .row so six fields clear 720px */
-  /* .row>div carries min-width:110px, which beats max-width and forces a wrap at six
+  .advrow{gap:8px}                      /* tighter than .row so six fields clear the 45rem column */
+  /* .row>div carries a min-width, which beats max-width and forces a wrap at six
      fields. Release it here so the per-field max-widths above actually apply. */
   .advrow>div{min-width:0}
   .advrow label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .advrow input,.advrow select{padding:8px 6px}
-  .placeholder{color:var(--muted);font-size:13px;padding:2px 0 4px}
+  .placeholder{color:var(--muted);font-size:0.8125rem;padding:2px 0 4px}
   /* ---- instructions modal ----
      One authored block per mode, both sitting as static markup in the document so the prose
      can be edited without touching JS and without an innerHTML path existing at all.
      Hiding is by the [hidden] attribute; the global reset above makes it stick. */
   .headright{grid-column:3;justify-self:end}
-  .helpbtn{margin:0;padding:6px 14px;font-size:13px;font-weight:600}
+  .helpbtn{margin:0;padding:6px 14px;font-size:0.8125rem;font-weight:600}
   .modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;
     justify-content:center;padding:20px}
   .modal-back{position:absolute;inset:0;background:rgba(8,9,11,.72)}
@@ -160,9 +176,9 @@
   .modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
     padding:12px 16px;border-bottom:1px solid var(--edge)}
   .modal-body{overflow:auto;padding:14px 16px 18px}
-  .iconbtn{margin:0;padding:4px 10px;font-size:13px;line-height:1.2}
-  .helpdoc{font-size:13px}
-  .helpdoc h3{font-size:13px;margin:16px 0 5px;color:var(--text)}
+  .iconbtn{margin:0;padding:4px 10px;font-size:0.8125rem;line-height:1.2}
+  .helpdoc{font-size:0.8125rem}
+  .helpdoc h3{font-size:0.8125rem;margin:16px 0 5px;color:var(--text)}
   .helpdoc h3:first-child{margin-top:0}
   .helpdoc p,.helpdoc ul{margin:0 0 8px;color:#c2c7cd}
   .helpdoc ul{padding-left:18px}
@@ -173,7 +189,7 @@
   .helpdoc .lead{color:var(--muted)}
   /* Verbatim license text: pre-wrap keeps the original line breaks but still wraps, so the
      modal never scrolls sideways. */
-  .gpl{font-family:var(--mono);font-size:11px;line-height:1.45;color:#9aa1a9;background:var(--field);
+  .gpl{font-family:var(--mono);font-size:0.6875rem;line-height:1.45;color:#9aa1a9;background:var(--field);
     border:1px solid var(--edge);border-radius:6px;padding:12px;margin:0;white-space:pre-wrap}
   .quote{border-left:2px solid var(--edge);padding:2px 0 2px 10px;margin:0 0 8px;color:#a8aeb6}
   /* footer */
@@ -184,13 +200,18 @@
      modal (20) - a run or a dialog should cover it, not compete with it. */
   .cfgdock{position:fixed;right:14px;bottom:14px;z-index:9;display:flex;gap:6px;align-items:center;
     background:rgba(30,32,36,.94);border:1px solid var(--edge);border-radius:8px;padding:6px 8px}
-  .cfgdock button{margin:0;padding:6px 10px;font-size:12px}
-  .cfgdock .lbl{color:var(--faint);font-size:11px;font-weight:700;letter-spacing:.3px;
+  .cfgdock button{margin:0;padding:6px 10px;font-size:0.75rem}
+  .cfgdock .lbl{color:var(--faint);font-size:0.6875rem;font-weight:700;letter-spacing:.3px;
     text-transform:uppercase;padding:0 2px}
+  /* The scale control sits in the dock with the other cross-mode settings. Its own select has to
+     opt out of the global width:100% - the dock is a flex row, not a form column. */
+  .cfgdock .uiscale{margin:0;color:var(--faint);font-size:0.6875rem;font-weight:700;
+    letter-spacing:.3px;text-transform:uppercase;padding:0 0 0 4px;white-space:nowrap}
+  .cfgdock select{width:auto;margin:0;padding:5px 6px;font-size:0.75rem}
   /* The footer is the one thing the dock can cover, so it gets clearance at the narrow widths
      where the two would otherwise overlap. */
   @media (max-width:900px){ .cfgdock{right:8px;bottom:8px} .sitefoot{padding-bottom:64px} }
-  .sitefoot{max-width:720px;margin:0 auto;padding:0 20px 26px;color:var(--faint);font-size:11.5px;
+  .sitefoot{max-width:45rem;margin:0 auto;padding:0 20px 26px;color:var(--faint);font-size:0.71875rem;
     line-height:1.6;display:flex;flex-direction:column;gap:2px}
   .linkbtn{background:none;border:0;padding:0;margin:0;font:inherit;color:#8b9199;
     text-decoration:underline;cursor:pointer;font-weight:600}
@@ -202,29 +223,29 @@
   #patchStage:fullscreen .goprompt.armed{display:flex;position:fixed;inset:0;z-index:5;
     align-items:flex-start;justify-content:center;padding-top:25vh}
   .gobox{background:rgba(18,20,24,.94);border:1px solid var(--edge);border-radius:10px;
-    padding:18px 22px;text-align:center;max-width:520px}
-  .gotitle{font-size:15px;font-weight:700;margin-bottom:5px}
-  .gosub{font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.55}
-  .kbd{border:1px solid var(--edge);padding:1px 6px;font-size:11px;color:var(--text)}
+    padding:18px 22px;text-align:center;max-width:32.5rem}
+  .gotitle{font-size:0.9375rem;font-weight:700;margin-bottom:5px}
+  .gosub{font-size:0.78125rem;color:var(--muted);margin-bottom:14px;line-height:1.55}
+  .kbd{border:1px solid var(--edge);padding:1px 6px;font-size:0.6875rem;color:var(--text)}
   /* charts */
   .chart{margin-top:16px}
-  .chart h3{font-size:13px;color:var(--text);font-weight:600;margin:0}
+  .chart h3{font-size:0.8125rem;color:var(--text);font-weight:600;margin:0}
   /* Title row: the chart's own export buttons sit opposite its title. */
   .charthead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:4px}
   .chartbtns{display:flex;gap:6px;flex:none}
-  .chartbtns button{margin:0;padding:3px 10px;font-size:12px;font-weight:600}
+  .chartbtns button{margin:0;padding:3px 10px;font-size:0.75rem;font-weight:600}
   .chartwrap{overflow-x:auto}
   .chart svg{width:100%;height:auto;display:block;min-width:320px}
-  .chartnote{font-size:11px;color:var(--faint);margin-top:5px;line-height:1.5}
-  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin:0 0 6px}
+  .chartnote{font-size:0.6875rem;color:var(--faint);margin-top:5px;line-height:1.5}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:0.6875rem;color:var(--muted);margin:0 0 6px}
   .legend .lg{display:flex;align-items:center;gap:5px}
   .legend i{width:15px;height:2px;display:inline-block;border-radius:1px;flex:none}
   /* Analysis toolbar. Sits directly under the card heading: the run's identity and what can
      be done with it are settled before the numbers start. */
   .anlbar{display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
   .dispwrap{flex-wrap:wrap}
-  .dispwrap input{width:210px}
-  .hint{color:var(--faint);font-weight:400;font-size:12px}
+  .dispwrap input{width:13.125rem}
+  .hint{color:var(--faint);font-weight:400;font-size:0.75rem}
   .exportrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .expbtns{display:flex;gap:6px;flex-wrap:wrap}
   .expbtns button{margin:0}
@@ -242,11 +263,11 @@
   #patchStage:fullscreen .patchlabel,
   #patchStage:fullscreen .seqreadout{display:none}
   #patchStage:fullscreen .fsstatus{display:block;position:fixed;left:0;right:0;bottom:4px;
-    text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:.02em}
-  .patchlabel{font-family:var(--mono);font-size:13px;color:var(--muted)}
-  .seqreadout{font-size:14px;color:var(--text);font-family:var(--mono);text-align:center}
-  .seqreadout .y{font-size:20px;font-weight:700}
-  .seqreadout .u{color:var(--muted);font-size:19px}
+    text-align:center;font-family:var(--mono);font-size:0.8125rem;letter-spacing:.02em}
+  .patchlabel{font-family:var(--mono);font-size:0.8125rem;color:var(--muted)}
+  .seqreadout{font-size:0.875rem;color:var(--text);font-family:var(--mono);text-align:center}
+  .seqreadout .y{font-size:1.25rem;font-weight:700}
+  .seqreadout .u{color:var(--muted);font-size:1.1875rem}
   .seqbtns{display:flex;gap:6px;flex-wrap:wrap}
   /* External acquisitions: the local screen is not under test, so the patch is hidden outright rather
      than repurposed - a lit 10 cm square beside the display being measured is stray light in the
@@ -257,11 +278,11 @@
   .extstage{display:flex;flex-direction:column;align-items:center;gap:6px;
     width:10cm;max-width:100%;padding:22px 14px;
     border:1px solid var(--edge);border-radius:6px;text-align:center}
-  .extstage .next{font-size:19px;font-weight:700}
-  .extstage .count{font-family:var(--mono);font-size:46px;font-weight:700;line-height:1.1}
-  .extstage .count.reading{font-size:26px;color:var(--muted)}
-  .extstage .hint{font-size:14px;color:var(--muted)}
-  .extstage .prev{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .extstage .next{font-size:1.1875rem;font-weight:700}
+  .extstage .count{font-family:var(--mono);font-size:2.875rem;font-weight:700;line-height:1.1}
+  .extstage .count.reading{font-size:1.625rem;color:var(--muted)}
+  .extstage .hint{font-size:0.875rem;color:var(--muted)}
+  .extstage .prev{font-family:var(--mono);font-size:0.8125rem;color:var(--muted)}
   .extstage .prev.bad{color:var(--warn)}
   /* ---------- uniformity stage ----------
      The 3x3 grid fills whatever box it is shown in, so one set of rules covers both
@@ -287,10 +308,10 @@
   .unimark[hidden]{display:none}
   .unimark::after{content:"";width:min(200px,55%);aspect-ratio:1;border-radius:50%;
     border:6px solid currentColor}
-  .unilabel{font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .unilabel{font-family:var(--mono);font-size:0.8125rem;color:var(--muted)}
   /* Header selects: the shared inline-field shape, sized to their option text
      rather than to a number field. */
-  .unihopt select{width:auto;margin:0;padding:5px 6px;font-size:12px}
+  .unihopt select{width:auto;margin:0;padding:5px 6px;font-size:0.75rem}
   /* Full window sits above the sticky header (z-index 10) and below the help modal (20), so
      an accidental Help while armed still comes to the front rather than opening underneath. */
   #uniStage.fw{position:fixed;inset:0;z-index:15;margin:0;gap:0;background:#000;justify-content:center}
@@ -300,7 +321,7 @@
   #uniStage.fw .unilabel,#uniStage.fw .seqreadout,
   #uniStage:fullscreen .unilabel,#uniStage:fullscreen .seqreadout{display:none}
   #uniStage.fw .fsstatus,#uniStage:fullscreen .fsstatus{display:block;position:fixed;left:0;right:0;
-    bottom:4px;text-align:center;font-family:var(--mono);font-size:13px;letter-spacing:.02em}
+    bottom:4px;text-align:center;font-family:var(--mono);font-size:0.8125rem;letter-spacing:.02em}
   /* Bottom row under measurement: the status bar would sit on the patch being read, so it moves
      to the top edge instead. That also settles its color - whatever row is active, the text is
      now over the rest state (black in single cell, the held level in full field) rather than
@@ -315,20 +336,20 @@
      line up the way they do in a Luni file. */
   /* Columns rather than one stack: an 18-level run is 18 matrices, and each is barely a third
      of the card wide. auto-fill keeps it a single column on a narrow window. */
-  #uniMatHost{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:0 18px}
-  .unimat{font-size:12.5px;border-collapse:collapse;margin:2px 0 12px}
-  .unimat caption{caption-side:top;text-align:left;color:var(--muted);font-size:12px;padding-bottom:3px}
+  #uniMatHost{display:grid;grid-template-columns:repeat(auto-fill,minmax(13.25rem,1fr));gap:0 18px}
+  .unimat{font-size:0.78125rem;border-collapse:collapse;margin:2px 0 12px}
+  .unimat caption{caption-side:top;text-align:left;color:var(--muted);font-size:0.75rem;padding-bottom:3px}
   .unimat td{font-family:var(--mono);padding:2px 12px 2px 0;text-align:right;color:var(--text)}
-  .unimat td .p{color:var(--faint);font-size:11px;margin-right:5px}
+  .unimat td .p{color:var(--faint);font-size:0.6875rem;margin-right:5px}
   /* Map controls sit under the chart title, above the map itself. */
-  .unimapbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;
+  .unimapbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:0.75rem;
     color:var(--muted);margin:0 0 6px}
   .unimapbar label{display:flex;align-items:center;gap:6px;margin:0}
-  .unimapbar select{width:auto;margin:0;padding:2px 6px;font-size:12px}
+  .unimapbar select{width:auto;margin:0;padding:2px 6px;font-size:0.75rem}
   .unimapbar .m{font-family:var(--mono);color:var(--text)}
   /* conformance results */
   #conf{margin-top:6px}
-  .conf-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:13px;margin-top:4px}
+  .conf-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:0.8125rem;margin-top:4px}
   .conf-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #26292e;padding:3px 0}
   .conf-row .k{color:var(--muted)}.conf-row .v{font-family:var(--mono);text-align:right}
   .conf-row .v.bad{color:var(--warn)}   /* reserved: no acceptance limits are applied yet */
@@ -1485,6 +1506,17 @@ Public License instead of this License.</pre>
      an operator sets before measuring. -->
 <div class="cfgdock">
   <span class="lbl">Settings</span>
+  <!-- Interface size only. It does not touch the patch or the uniformity grid: those are sized in
+       cm because their size is the measured area, and scaling them here would quietly change the
+       measurement. -->
+  <label class="uiscale" for="uiScale">Size</label>
+  <select id="uiScale" title="Enlarge the interface on a fine-pitch display. Does not change the measurement patch size.">
+    <option value="1">100%</option>
+    <option value="1.25">125%</option>
+    <option value="1.5">150%</option>
+    <option value="2">200%</option>
+    <option value="2.5">250%</option>
+  </select>
   <button id="btnCfgExport" title="Save the settings of all three modes to a JSON file">Export</button>
   <button id="btnCfgImport" title="Load settings saved from a previous session">Import</button>
   <input type="file" id="cfgFileImport" accept=".json,application/json" hidden>
@@ -4912,6 +4944,13 @@ const CFG_VERS="pdweb-config/1";
 /* [DOM id, key in the file, kind]. `num` covers every free-text numeric box; `select` is
    validated against the control's own options, so the whitelist cannot drift from the markup. */
 const CFG_FIELDS={
+  /* Its own group rather than a member of one of the three modes: the scale applies to the whole
+     interface, so filing it under any single mode would be wrong. Carried in the config file
+     because the operator sets it once per workstation and a fine-pitch panel needs it every
+     session - the same reason the acquisition settings travel. */
+  interface:[
+    ["uiScale","scale","select"],
+  ],
   meter:[
     ["quant","quantity","select"], ["mode","measurementMode","select"],
     ["navg","averages","num"],     ["scale","scaleFactor","num"],
@@ -4979,6 +5018,12 @@ function applyConfig(o){
       else skipped.push(`${where}="${String(v).slice(0,20)}"`);
     }
   }
+  /* Every other field in the loop above is an inert box read when a run starts, so writing .value
+     is enough. The scale is the one with an effect outside its own control, and assigning .value
+     does not fire change - so it is applied here from whatever the loop settled on. Reading the
+     control rather than the file means an out-of-range value that the loop already rejected
+     cannot slip through a second path. */
+  applyUiScale($("uiScale").value);
   /* Routed through applyRefUV / applyUniRefUV rather than written to the boxes, so the selector,
      the values and their disabled state end up consistent however the file spells the
      reference. One entry per card - they are independent settings. */
@@ -4992,6 +5037,19 @@ function applyConfig(o){
   }
   return {applied,skipped};
 }
+
+/* Interface scale. Written to the documentElement rather than :root in the sheet so the selector
+   is the single source of truth and applyConfig can drive it through the same path as an operator
+   changing it by hand. Deliberately not applied to the stages - see the --uiscale note in the
+   stylesheet. */
+function applyUiScale(v){
+  const n=Number.isFinite(+v)&&+v>0 ? +v : 1;
+  document.documentElement.style.setProperty("--uiscale",n);
+}
+$("uiScale").onchange=e=>{
+  applyUiScale(e.target.value);
+  log(`interface scale ${Math.round(+e.target.value*100)}% (measurement patch size unchanged)`);
+};
 
 $("btnCfgExport").onclick=()=>{
   const stamp=new Date().toISOString().replace(/[:.]/g,"-").replace("T","_").slice(0,19);
