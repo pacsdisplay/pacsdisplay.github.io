@@ -66,8 +66,8 @@
      decides whether the [hidden] attribute actually hides them. */
   [hidden]{display:none!important}
   /* ---- physical scale ----
-     CSS fixes 1in at 96px, so a CSS pixel is 0.2646 mm by definition. A fine-pitch panel at 100%
-     OS scaling reports devicePixelRatio 1, so the browser holds to that: on a 5 MP panel
+     CSS fixes 1in at 96px, so a CSS pixel is 0.2646 mm by definition. A fine-pitch display at 100%
+     OS scaling reports devicePixelRatio 1, so the browser holds to that: on a 5 MP display
      (0.165 mm) the type renders tiny AND `width:10cm` on the patch renders 6.2 cm.
      Both are the same error, so one number fixes both. applyPitch derives from the pixel pitch:
        --uiscale  interface only, as the root font size - so it reaches a rule exactly when that
@@ -275,7 +275,7 @@
      is why the size that reaches a file is measured off the element (see stagePx). */
   #patch{width:var(--cm10);height:var(--cm10);max-width:100%;border:1px solid var(--edge);border-radius:6px;background:#000}
   /* Fullscreen: the patch is the only thing lit. Status sits at the very bottom edge - a
-     few hundred pixels of gray well away from the meter aperture, so panel loading still
+     few hundred pixels of gray well away from the meter aperture, so display loading still
      reflects the level under test. Its color is set from JS per level (see setSeqStatus);
      no opacity here, because a fixed opacity would undo the contrast that computes. */
   .fsstatus{display:none}
@@ -292,7 +292,7 @@
   .seqbtns{display:flex;gap:6px;flex-wrap:wrap}
   /* External acquisitions: the local screen is not under test, so the patch is hidden outright rather
      than repurposed - an illuminated square beside the display being measured is stray light in the
-     room and implies the wrong panel is the subject. #extStage takes its place, sized so the
+     room and implies the wrong display is the subject. #extStage takes its place, sized so the
      countdown is readable from arm's length at the meter. */
   #patchStage.ext #patch{display:none}
   #patchStage:not(.ext) .extstage{display:none}
@@ -483,7 +483,7 @@
         No. 196 gray tracking metrics.</p>
 
         <div class="caution">The patch is painted with CSS <code>rgb()</code>, so the browser and the
-        operating system color-manage it to the installed display profile before it reaches the panel. No web
+        operating system color-manage it to the installed display profile before it reaches the display. No web
         API exposes that transform, and nothing in this page can detect it. If the clinical viewing interface
         you are testing renders through a different path - its own calibration LUT, for example - then the
         digital driving levels measured here are not the ones that clinical viewer emits. Confirm the display
@@ -539,7 +539,7 @@
             the countdown so it no longer matches real time).</li>
           </ul>
           <li><b>Full screen</b> fills the display with the luminance patch. This matters on OLED and on any
-          panel with local dimming, where the luminance patch area changes how hard the panel is driven - a
+          display with local dimming, where the luminance patch area changes how hard the display is driven - a
           small patch on black does not measure the same as a full field. Leaving full screen mid-run stops
           the acquisition. For external readings, the setting is ignored.</li>
           <li>In full screen the interface waits at <b>Ready to measure</b>. Position the photometer, then
@@ -645,11 +645,11 @@
         uniformity metrics of AAPM Report No. 270 and Online Report No. 3 (TG18).</p>
 
         <div class="caution">The pattern is painted with CSS <code>rgb()</code>, so the browser and the
-        operating system color-manage it to the installed display profile before it reaches the panel. No web
+        operating system color-manage it to the installed display profile before it reaches the display. No web
         API exposes that transform, and nothing in this page can detect it. Uniformity is a ratio between
         positions measured at the same driving level, so it is far less sensitive to that path than a
         luminance response check - but the gray levels named here are still not necessarily the ones the
-        display panel receives.</div>
+        display receives.</div>
 
         <h3>Setting up</h3>
         <ul>
@@ -658,7 +658,7 @@
           time. If unavailable, use 20-30 minutes for LED backlights and 45-60 minutes for CCFL backlights.</li>
           <li><b>Turn off</b> anything that changes luminance on its own: ambient light sensors, automatic
           brightness, local dimming where it can be disabled, power saving and screen blanking. Local dimming
-          matters more here than anywhere else in this page - it is designed to make the panel
+          matters more here than anywhere else in this page - it is designed to make the display
           non-uniform.</li>
           <li>Measure the ambient contribution and enter it as <b>L<sub>amb</sub></b>. It is added to every
           reading inside the LUDM and MLD calculation. The matrices, the exports and the Luni file all report
@@ -696,13 +696,13 @@
         <h3>Field: single cell or full field</h3>
         <ul>
           <li><b>Single cell</b> (default) lights only the ninth of the screen under the probe and keeps
-          the other eight black. The lit area stays the same size all run, so the panel is loaded the same
+          the other eight black. The lit area stays the same size all run, so the display is loaded the same
           way at every position, and results compare directly with other tools that measure uniformity a
           patch at a time.</li>
           <li><b>Full field</b> lights the whole screen at the gray level under test, which is how the
           TG18-UN patterns are defined - UNL10 and UNL80 correspond closely to the 3 level set's DDL 30 and
-          210. On an OLED or a locally dimmed panel this reads quite differently from single cell, because
-          the panel drives a full white field far harder than one ninth of one.</li>
+          210. On an OLED or a locally dimmed display this reads quite differently from single cell, because
+          the display drives a full white field far harder than one ninth of one.</li>
           <li>Neither choice changes the sequence, the metrics, or the file format, and the mode used is
           recorded with the run. Note that at <b>DDL 0</b> in single cell the screen is entirely black and the
           status line at the bottom edge is the only thing that will be lit.</li>
@@ -1167,7 +1167,7 @@ Public License instead of this License.</pre>
   <section class="card" id="pitchCard" hidden>
     <h2>Display calibration</h2>
     <p class="placeholder">Pixel pitch of the display. Sets the interface size and the
-      true size of the measurement patch (should be 10 cm). Check the panel specifications or
+      true size of the measurement patch (should be 10 cm). Check the display specifications or
       calculate by dividing the active area width in mm by the horizontal resolution.</p>
     <div class="pitchgrid" id="pitchGrid">
       <button class="pitchbtn" data-pitch="0.270"><b>0.270 mm</b><i>2 MP 21.3" / office</i></button>
@@ -1309,7 +1309,7 @@ Public License instead of this License.</pre>
     <div class="msg" id="seqMsg"></div>
 
     <!-- patchStage is the fullscreen target: the patch fills the screen and everything
-         else is suppressed, so panel loading reflects the gray level under test. -->
+         else is suppressed, so display loading reflects the gray level under test. -->
     <div class="patchwrap" id="patchStage">
       <div id="patch"></div>
       <!-- External acquisitions only (see #patchStage.ext): tells the operator which patch is next and
@@ -1430,10 +1430,10 @@ Public License instead of this License.</pre>
         <div style="max-width:92px"><label title="Gray level the 1 level mode measures. Defaults to DDL 210, about the 80% level.">1 level DDL</label><input id="uniOneGl"></div>
       </div>
       <!-- Second row, mirroring the luminance card. The target is a separate question from
-           uniformity: Max Δu'v' above measures spread across the panel and needs no reference,
-           this one measures how far the panel sits from an intended white point. -->
+           uniformity: Max Δu'v' above measures spread across the display and needs no reference,
+           this one measures how far the display sits from an intended white point. -->
       <div class="row advrow">
-        <div style="max-width:132px"><label title="White point the panel is compared against. Independent of the spread metric above, which is measured about the panel's own mean.">Chromaticity ref</label>
+        <div style="max-width:132px"><label title="White point the display is compared against. Independent of the spread metric above, which is measured about the display's own mean.">Chromaticity ref</label>
           <select id="uniRef">
             <option value="d65">D65</option>
             <option value="d50">D50</option>
@@ -1572,18 +1572,11 @@ Public License instead of this License.</pre>
 "use strict";
 /* ==========================================================================
    pdweb - i1D3 photometer driver (WebHID port of ArgyllCMS i1d3.c + i1d3.h) + DICOM GSDF conformance
-   analysis. Driver = v9 (echo-validate + resync), HW-validated vs spotread (luminance + illuminance +
-   reconnect).
+   analysis.
 
    Copyright (C) 2026 Nick Bevins. GNU GPL v2 or later, no warranty. The ported driver is Copyright (C) 2006 -
    2014, Graeme W. Gill. Full notices are in the HTML comment at the top of this file and in the License
    section of the page; the GPL text is embedded there too.
-
-   Layout: constants / EEPROM map      device protocol codes, challenge/response constants, CIE 1931 table MTX
-     3x3 helpers for the calibration matrices GSDF                        PS3.14 forward/inverse + conformance
-     analysis class I1D3                  transport, bring-up, adaptive measurement UI
-     state, meter mode, luminance-response capture Uniformity                  nine-position capture,
-     LUDM/MLD, deviation map
 
    Porting rule: where this file looks wrong but matches ArgyllCMS, the Argyll line number is cited inline.
    Those sites are deliberate - every existing calibration was validated against that behavior. Verify against
@@ -1591,24 +1584,10 @@ Public License instead of this License.</pre>
    and the unguarded rgb2 update in takeEmisMeasurement.
 
    Caveat that no code here can detect: the patch is painted with CSS rgb(), so the browser and OS
-   color-manage it to the installed display profile before it reaches the panel. There is no web API exposing
+   color-manage it to the installed display profile before it reaches the display. There is no web API exposing
    that transform. If the clinical viewer under test renders through a different path (its own GSDF LUT, or an
    unmanaged surface), the DDLs measured here are not the DDLs that viewer emits. Stated for the operator in
    the lumResponse instructions modal.
-
-   Deferred / to do:
-     - Repeat and reverse sweeps (hysteresis / settling), probably an Advanced setting.
-     - Acceptance-limit recommendations. Deliberately absent: limits differ by display class and by which
-       guidance a site follows, so nothing here is styled pass/fail.
-     - Settings export/import: write the capture settings (averages, scale, move delay, color floor, L_amb,
-       chromaticity ref, 1 level DDL, field/present) to a small JSON config the operator can reload after a
-       page refresh, so a site's preferred setup survives without being retyped. Deliberately NOT done by
-       restoring these from an imported run: a measurement file records how one run was captured, and
-       silently adopting its pacing as the settings for the next one is a trap. A config file is an explicit
-       act with a single obvious meaning; a run import is not. Note which settings are analysis inputs
-       (L_amb, color floor, chromaticity ref - re-analysis reads them live from the fields) and which are
-       acquisition-only, since loading a config after an import would change the analysis on the next
-       Re-analyze.
    ========================================================================== */
 
 const $=id=>document.getElementById(id);
@@ -1749,7 +1728,7 @@ const Y_FLOOR=0.01;
    or a bare count, because data acquistions exported before clampedAt existed carry only the count.
 
    Naming the levels matters: a clamp at DDL 0 is a display black-level property, but a clamp part-way up the
-   ramp is not - on an external run it almost always means the probe was off the panel or still moving, and
+   ramp is not - on an external run it almost always means the probe was off the display or still moving, and
    telling that operator to raise their black level sends them the wrong way entirely. */
 const clampWarning=(at,external)=>{
   const list=Array.isArray(at)?at:null, n=list?list.length:at;
@@ -1882,7 +1861,7 @@ function gsdfAnalyze(pts, Lamb, refUV, floor, background){
      definition instead of scaling the mean by a phantom read.
      Only Lp is averaged. P[0].L stays the single raw measurement, because it feeds the color
      floor and the TG196 discard rule - both of which ask what the meter resolved off the
-     panel at that level, not what the black point averages to. */
+     display at that level, not what the black point averages to. */
   const bgReads=(background||[]).filter(b=>Number.isFinite(b?.Y));
   P[0].Lp=bgReads.reduce((s,b)=>s+b.Y, P[0].L)/(bgReads.length+1)+Lamb;
 
@@ -1929,7 +1908,7 @@ function gsdfAnalyze(pts, Lamb, refUV, floor, background){
   /* Chromaticity deviation, restricted to points at or above the color floor: meter chromaticity is dominated
      by noise near black, so dark steps would produce a large but meaningless Δu'v'. nUsed is reported so the
      exclusion is visible. Screened on raw measured luminance, not L', to match the TG196 discard rule (see
-     tg196()): the exclusion is about what the colorimeter can resolve off the panel, and L_amb is a property
+     tg196()): the exclusion is about what the colorimeter can resolve off the display, and L_amb is a property
      of the room. The two floors therefore mean the same quantity. */
   let maxDuv=0, duvAt="", nUsed=0;
   for(const p of P){ if(p.L<floor) continue; nUsed++;
@@ -2569,7 +2548,7 @@ const FS_CONTRAST=60, FS_FLIP=128;
 /* Move delay: the operator's window to reposition the probe, or to advance the pattern on an
    externally driven display, before the next reading. Different from the uniformity card's
    MOVE_DELAY_UNI_DEF to create options rather than the two sharing one number.
-   Not to be confused with SETTLE_MS below, which is panel settling after a repaint: physics,
+   Not to be confused with SETTLE_MS below, which is display settling after a repaint: physics,
    not logistics, and nothing the operator paces against. */
 const MOVE_DELAY_SEQ_DEF=3;          // seconds, when the field is blank or garbage
 /* No cadence-drift accounting here on purpose: the delay starts when a measurement ends, so
@@ -2605,7 +2584,7 @@ function setSeqStatus(ddl,i,n,label){
 /* ---- fullscreen stage ----
    requestFullscreen requires user activation, so it is called from the button handler
    before anything else awaits. Leaving fullscreen mid-run (Esc, alt-tab on some WMs)
-   aborts the run: once the stage collapses, panel loading no longer matches the
+   aborts the run: once the stage collapses, display loading no longer matches the
    condition the remaining levels would be measured under, which is the whole point of
    the option on OLED. The element is a parameter because the uniformity grid is a second
    fullscreen target with the same requirements. */
@@ -2618,14 +2597,14 @@ async function exitStageFullscreen(){
   if(document.fullscreenElement){ try{ await document.exitFullscreen(); }catch(e){} }
 }
 /* External acquisitions never enter fullscreen, so a stray fullscreenchange from anywhere else on the
-   page must not kill one - and the panel-loading explanation would be wrong for them anyway.
+   page must not kill one - and the display-loading explanation would be wrong for them anyway.
    A uniformity run loses more than loading when the stage collapses: the nine cells move, so
    the remaining positions would be measured somewhere other than where they are labeled. */
 document.addEventListener("fullscreenchange",()=>{
   if(!document.fullscreenElement && seq.on && !seq.external){
     seq.stop();
-    log("fullscreen exited - run stopped (panel loading changed)","w");
-    showMsg("seqMsg","Full screen was exited during the run, so the run was stopped. Panel loading changes once the patch is no longer full screen.","warn");
+    log("fullscreen exited - run stopped (display loading changed)","w");
+    showMsg("seqMsg","Full screen was exited during the run, so the run was stopped. Display loading changes once the patch is no longer full screen.","warn");
   }
   if(!document.fullscreenElement && uni.on && !uni.external && uni.present==="screen"){
     uni.stop();
@@ -2804,7 +2783,7 @@ const seq={ on:false, external:false, lastRun:null,
     /* ---- background reads ----
        BG_READS consecutive measurements at DDL 0 before the ramp begins. These are the
        stabilization reads pacsDisplay writes as the three "#  %8.6f  <RGB>" header lines of
-       a cLR, and they serve the same purpose here: the panel has just gone from whatever was
+       a cLR, and they serve the same purpose here: the display has just gone from whatever was
        on screen to full black, and the first level of the ramp should not absorb that
        settling. They are recorded separately from points[] and never become curve points -
        the ramp measures DDL 0 on its own, and appending these would put four readings at one
@@ -2902,7 +2881,7 @@ const seq={ on:false, external:false, lastRun:null,
          moveDelayMs is kept separately for anything reading the run as data rather than as a cLR.
          An internal ramp repaints its own patch and the probe never moves, so it has no move
          delay at all: null, not 0, so an interpreter can tell "no repositioning in this mode"
-         from "repositioning with no time allowed". moveDelayCovers says whether panel settling
+         from "repositioning with no time allowed". moveDelayCovers says whether display settling
          is inside the number, which cannot be inferred from the number alone. */
       meta:{ started:started.toISOString(), points:n, navg, scale:sc, Lamb, floor, refUV,
              product:$("dProd").textContent, serial:dev.serial||"", complete, stopped,
@@ -2999,7 +2978,7 @@ function armFullscreenStart(n){
 }
 
 /* Fullscreen is entered here rather than inside seq.run() so the request still carries
-   the click's user activation. External acquisitions skip all of it: fullscreen exists to control panel
+   the click's user activation. External acquisitions skip all of it: fullscreen exists to control display
    loading on the display being measured, and on an external run that display is not this one. */
 async function startSeq(n,opts={}){
   if(seq.on) return;
@@ -3028,7 +3007,7 @@ $("btnSeqStop").onclick=()=>seq.stop();
    ========================================================================== */
 
 /* Environment fingerprint stored with every run. None of this proves what color
-   transform sits between rgb() and the panel - no web API exposes that - but it records
+   transform sits between rgb() and the display - no web API exposes that - but it records
    what the capture environment was, which is the difference between an auditable result
    and an unexplainable one. See the color-management caveat in the file header. */
 function envInfo(){
@@ -3998,7 +3977,7 @@ function setUniExtCount(msLeft){
 }
 
 /* Full window is a fixed overlay: no API, no permission, never refused, and the only way to
-   measure an area smaller than the whole panel - the operator sizes the browser to the area
+   measure an area smaller than the whole display - the operator sizes the browser to the area
    they want and the nine cells divide that. Full screen is the same box handed to the
    Fullscreen API, which needs the click's user activation, so both are opened from the button
    handler before anything awaits. */
@@ -4109,7 +4088,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
              $("uniExtCount").textContent="-"; $("uniExtCount").className="count"; }
     /* Field state between positions. Single cell goes black, so the only thing lit during a run
        is the cell under test. Full field holds the ladder's first level: dropping a lit field
-       to black between every position would make the panel settle from a different place at
+       to black between every position would make the display settle from a different place at
        each one. */
     const restLevel=field==="full"?levels[0]:null;
 
@@ -4177,7 +4156,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
         const ddl=levels[j], p=UNI_POS[i];
         lvlPrep(i,ddl,j);
         /* Settle after the level change, as the ramp does. On a full field this is the whole
-           panel's load changing rather than a ninth of it. */
+           display's load changing rather than a ninth of it. */
         if(!ext && !await sleepWhile(SETTLE_MS,alive)) break;
         let m;
         try{ m=await timedRead(); }
@@ -4208,7 +4187,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
              navg, scale:sc, Lamb, floor, refUV,
              /* The operator's repositioning window, and what it covers. Both modes move the
                 probe across the nine positions, so both carry a real delay; moveDelayCovers
-                says whether panel settling is inside it, which an interpreter cannot infer
+                says whether display settling is inside it, which an interpreter cannot infer
                 from the number alone. */
              moveDelayMs:delayMs, moveDelayCovers:ext?"move+settle":"move",
              product:$("dProd").textContent, serial:dev.serial||"",
@@ -4319,7 +4298,7 @@ function uniMedian(asc){
   const n=asc.length;
   return n%2 ? asc[(n-1)/2] : (asc[n/2-1]+asc[n/2])/2;
 }
-/* White point the panel is compared against. Deliberately a separate control from the luminance
+/* White point the display is compared against. Deliberately a separate control from the luminance
    card's: the two cards can reasonably be run against different targets, and sharing one would
    make a change on one page silently rewrite the other's results. Same options and the same
    coercion, so an operator learns it once. */
@@ -4356,7 +4335,7 @@ function uniAnalyze(run,Lamb,floor,refUV){
 
     const Lp=L.map(v=>v+Lamb);
     const med=uniMedian([...Lp].sort((a,b)=>a-b));
-    /* A median of zero is reachable - black on an emissive panel with L_amb left at 0 - and
+    /* A median of zero is reachable - black on an emissive display with L_amb left at 0 - and
        both metrics are ratios. Report n/a and say why rather than dividing by it. */
     let ludm=null, ludmAt=null;
     if(med>0){
@@ -4384,8 +4363,8 @@ function uniAnalyze(run,Lamb,floor,refUV){
       for(const k of idx){ const d=Math.hypot(U[k]-ub,V[k]-vb); if(d>duv){ duv=d; duvAt=k; } }
     }
     /* Distance from the chosen white point, which answers a different question from the spread
-       above: a panel can be perfectly uniform and uniformly wrong. Reported alongside rather
-       than instead of, because uniformity is defined about the panel's own mean and swapping
+       above: a display can be perfectly uniform and uniformly wrong. Reported alongside rather
+       than instead of, because uniformity is defined about the display's own mean and swapping
        the basis would silently redefine every previously recorded Max Δu'v'.
        One position is enough here - unlike the spread, which needs two to have a mean worth
        taking - so the gate is only the color floor. */
@@ -4479,8 +4458,8 @@ function renderUniConformance(a){
   $("uniConfNote").innerHTML =
     `LUDM is the largest deviation of any position from the median of the nine; MLD is the `+
     `spread between the brightest and darkest. Both use L' = L + L<sub>amb</sub> and are computed `+
-    `separately at each gray level. The mean Δu'v' is the panel mean is chromaticity <i>uniformity</i>. `+
-    `The ref Δu'v' is how far the panel sits from the reference white point. The matrices below report `+
+    `separately at each gray level. The mean Δu'v' about the display mean is chromaticity <i>uniformity</i>. `+
+    `The ref Δu'v' is how far the display sits from the reference white point. The matrices below report `+
     `measured luminance L in cd/m².`;
   $("uniConf").style.display="";
   $("uniConf").open=true;
@@ -4522,7 +4501,7 @@ function renderUniMatrices(a){
    interpolates between the nine positions so the shape is visible directly. */
 const UNI_COOL=[76,124,196], UNI_ZERO=[56,60,66], UNI_WARM=[209,84,79];
 const rgbOf=([r,g,b])=>`rgb(${r},${g},${b})`;
-/* t in [-1,1]: cool below the median, warm above, a near-neutral panel gray at zero so a
+/* t in [-1,1]: cool below the median, warm above, a near-neutral display gray at zero so a
    uniform display reads as flat rather than as a color. The warm end is the red the charts
    already use for target lines. */
 function uniColor(t){
@@ -4606,7 +4585,7 @@ function renderUniMap(a){
     /* Auto fits the range to this level's own largest deviation, which is what makes a small
        gradient visible at all - and equally what makes a good display fill the palette as
        dramatically as a bad one. The note says so, because a map like this is otherwise read as
-       severity when it only shows shape. The floor keeps a flat panel from being scaled up into
+       severity when it only shows shape. The floor keeps a uniform display from being scaled up into
        pure meter noise. */
     const scale=scSel.value==="auto" ? Math.max(maxAbs,0.05) : +scSel.value;
 
@@ -4733,7 +4712,7 @@ function buildLuni(run,a){
   out.push(`#\tMax. MLD:\t${a.maxMLD?f3(a.maxMLD.v):"n/a"}\t(GL ${a.maxMLD?uniGl3(a.maxMLD.gl):"---"})`);
   /* Additions to the format, like Pattern above. Both Δu'v' figures travel because the file
      otherwise cannot say whether a chromaticity number is spread or offset from target. */
-  out.push(`#\tMax. du'v' (about panel mean):\t${a.maxDuv?a.maxDuv.v.toFixed(4):"n/a"}`+
+  out.push(`#\tMax. du'v' (about display mean):\t${a.maxDuv?a.maxDuv.v.toFixed(4):"n/a"}`+
     `\t(GL ${a.maxDuv?uniGl3(a.maxDuv.gl):"---"})`);
   out.push(`#\tMax. du'v' (from reference):\t${a.maxDuvRef?a.maxDuvRef.v.toFixed(4):"n/a"}`+
     `\t(GL ${a.maxDuvRef?uniGl3(a.maxDuvRef.gl):"---"})`);
@@ -4843,7 +4822,7 @@ $("btnUniCopyConf").onclick=async()=>{
     `Pattern\t${uniFieldText(a)}`,
     `Max. LUDM\t${a.maxLUDM?a.maxLUDM.v.toFixed(3)+"% (GL "+uniGl3(a.maxLUDM.gl)+", "+a.maxLUDM.at+")":"n/a"}`,
     `Max. MLD\t${a.maxMLD?a.maxMLD.v.toFixed(3)+"% (GL "+uniGl3(a.maxMLD.gl)+", "+a.maxMLD.at+")":"n/a"}`,
-    `Max. du'v' about panel mean (>=${a.floor} cd/m2)\t${a.maxDuv?a.maxDuv.v.toFixed(4)+" (GL "+uniGl3(a.maxDuv.gl)+", "+a.maxDuv.at+")":"n/a"}`,
+    `Max. du'v' about display mean (>=${a.floor} cd/m2)\t${a.maxDuv?a.maxDuv.v.toFixed(4)+" (GL "+uniGl3(a.maxDuv.gl)+", "+a.maxDuv.at+")":"n/a"}`,
     `Max. du'v' from reference\t${a.maxDuvRef?a.maxDuvRef.v.toFixed(4)+" (GL "+uniGl3(a.maxDuvRef.gl)+", "+a.maxDuvRef.at+")":"n/a"}`,
     `Chromaticity reference\t${a.refUV?`u' ${a.refUV[0]}, v' ${a.refUV[1]}`:"n/a"}`,
     `Positions used for du'v'\t${a.maxDuv?a.maxDuv.nUsed:0} of ${a.n}`,
@@ -5012,7 +4991,7 @@ $("uniFileImport").onchange=async e=>{
    editable, and an id like seqExtInt says nothing to the person editing it. The mapping lives
    here, which also means the markup can be renamed without invalidating saved files.
 
-   What is deliberately NOT here: Display ID on either card. It identifies the panel under test,
+   What is deliberately NOT here: Display ID on either card. It identifies the display tested,
    not the operator's preferences, and a config file that quietly relabels the display it is
    loaded next to would be a trap. Same reasoning that keeps acquisition settings out of the run
    importer - see the note above the uniformity import.
@@ -5125,8 +5104,7 @@ function applyConfig(o){
    guess about any display - it is the length the whole stylesheet was written against. */
 const CSS_REF_MM=25.4/96;
 /* Bounds on an accepted pitch. Generous either side of anything real (a phone is ~0.05, a video
-   wall tile ~1.0) - the check exists to stop a typo like 0.0165 from scaling the interface by 16,
-   not to police the operator's panel. */
+   wall tile ~1.0) - the check exists to stop a typo like 0.0165 from scaling the interface by 16. */
 const PITCH_MIN=0.05, PITCH_MAX=1;
 
 /* The pitch in force. null = not declared. The single definition of it; the controls are one way
@@ -5136,7 +5114,7 @@ let pixelPitchMm=null;
 /* mm covered by one CSS pixel. dpr is device pixels per CSS pixel and already folds in OS scaling
    and browser zoom, so the physical size is pitch times ratio - which is why a mid-session zoom
    corrects rather than doubles up.
-   A null pitch is NOT "assume a 0.2646 mm panel, then correct for dpr": that reads a 2x Retina CSS
+   A null pitch is NOT "assume a 0.2646 mm display, then correct for dpr": that reads a 2x Retina CSS
    pixel as 0.53 mm and halves the interface. Nothing known means the CSS reference stands.
    Takes the pitch as an argument so labelPitchOptions can price an option not yet chosen. */
 function mmForPitch(p){ return p ? p*(window.devicePixelRatio||1) : CSS_REF_MM; }
@@ -5219,7 +5197,7 @@ function setPitch(v,{quiet=false,close=true}={}){
   return true;
 }
 
-/* Delegated, so adding a panel class is one <button>. A preset is a complete answer, "Not set"
+/* Delegated, so adding a display class is one <button>. A preset is a complete answer, "Not set"
    included, so it commits and closes on the click. */
 $("pitchGrid").onclick=e=>{
   const b=e.target.closest(".pitchbtn");
