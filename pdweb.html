@@ -65,18 +65,19 @@
      (.modal is display:flex, .helpdoc is block). Without the override, source order
      decides whether the [hidden] attribute actually hides them. */
   [hidden]{display:none!important}
-  /* ---- UI scale ----
-     A fine-pitch diagnostic panel (12 MP at 100% OS scaling) reports devicePixelRatio 1, so the
-     browser has no idea its pixels are a third the linear size of the 96 DPI reference pixel and
-     every px below renders tiny. This scales the interface without touching the measurement
-     surfaces.
-     The mechanism is the root font size: `zoom` on <html> would also scale #patch and #uniGrid,
-     which is exactly wrong - their size in cm IS the measured area, recorded in the Luni header
-     (see stagePx). Sizes in px are unaffected by a root font-size change, so declaring the scale
-     here and expressing only the type scale in rem keeps the two apart by construction: the
-     stages stay in cm/vw/%, and no rule that sizes them is written in rem.
-     Percentages of 16px are used rather than a unitless factor so the value in the settings file
-     reads as what the operator chose. */
+  /* ---- physical scale ----
+     CSS fixes 1in at 96px, so a CSS pixel is 0.2646 mm by definition. A fine-pitch panel at 100%
+     OS scaling reports devicePixelRatio 1, so the browser holds to that: on a 5 MP panel
+     (0.165 mm) the type renders tiny AND `width:10cm` on the patch renders 6.2 cm.
+     Both are the same error, so one number fixes both. applyPitch derives from the pixel pitch:
+       --uiscale  interface only, as the root font size - so it reaches a rule exactly when that
+                  rule is written in rem. Chrome sized in px is left alone.
+       --cm10     one true 10 cm, in CSS px. The measurement surfaces size from this rather than
+                  from `cm`, whose length is the 96 DPI fiction above.
+     Two variables rather than `zoom` on <html>, which would scale both at one factor: a stage must
+     never be resizable by a typographic change. Both default to the reference, so an unset pitch
+     renders as this file did before the control existed. */
+  :root{--uiscale:1;--cm10:10cm}
   html{font-size:calc(16px * var(--uiscale,1))}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     background:var(--bg);color:var(--text);line-height:1.45;font-size:.8125rem}
@@ -129,7 +130,7 @@
   .kv .k{color:var(--muted)}.kv .v{font-family:var(--mono)}
   .diag{color:#767c85;font-size:0.75rem;font-family:var(--mono);margin-top:8px}
   .log{background:var(--field);border:1px solid var(--edge);border-radius:6px;padding:10px;margin-top:10px;
-    font-family:var(--mono);font-size:0.75rem;height:15.8rem;overflow-y:auto;white-space:pre-wrap}
+    font-family:var(--mono);font-size:0.75rem;height:11.875rem;overflow-y:auto;white-space:pre-wrap}
   .log .e{color:var(--err)}.log .ok{color:var(--ok)}.log .t{color:var(--muted)}.log .w{color:var(--warn)}.log .m{color:#d7dbe0}
   /* Recessed inline chip. .kbd and .helpdoc code differ only in the details below. */
   code,.kbd{font-family:var(--mono);background:var(--field);padding:1px 5px;border-radius:4px;font-size:0.75rem}
@@ -203,11 +204,29 @@
   .cfgdock button{margin:0;padding:6px 10px;font-size:0.75rem}
   .cfgdock .lbl{color:var(--faint);font-size:0.6875rem;font-weight:700;letter-spacing:.3px;
     text-transform:uppercase;padding:0 2px}
-  /* The scale control sits in the dock with the other cross-mode settings. Its own select has to
-     opt out of the global width:100% - the dock is a flex row, not a form column. */
-  .cfgdock .uiscale{margin:0;color:var(--faint);font-size:0.6875rem;font-weight:700;
-    letter-spacing:.3px;text-transform:uppercase;padding:0 0 0 4px;white-space:nowrap}
-  .cfgdock select{width:auto;margin:0;padding:5px 6px;font-size:0.75rem}
+  /* The pitch readout in the dock: mono, and never the accent color - it reports a setting rather
+     than asking for attention. Warn only when nothing is declared. */
+  .cfgdock #btnPitch{font-family:var(--mono);font-weight:400;color:var(--muted);white-space:nowrap}
+  .cfgdock #btnPitch.unset{color:var(--warn)}
+  /* ---- display calibration card ----
+     auto-fit gives four across on a desktop and one on a phone without a media query; the minmax
+     floor is the width of the button's own second line, so a label never wraps mid-phrase. */
+  .pitchgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:8px}
+  /* Overrides the global button{}: a left-aligned two-line block, weight on the number. */
+  .pitchbtn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin:0;
+    padding:9px 11px;text-align:left;font-weight:400;line-height:1.3}
+  .pitchbtn b{font-family:var(--mono);font-size:0.9375rem;font-weight:700}
+  .pitchbtn i{font-style:normal;font-size:0.6875rem;color:var(--muted)}
+  .pitchbtn.on{background:var(--btn-active);border-color:#565e69}   /* as .modebtn.active */
+  .pitchbtn.on i{color:var(--text)}
+  .pitchrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .pitchrow label{margin:0;white-space:nowrap}
+  .pitchrow input{width:6.5rem;font-family:var(--mono);text-align:right}
+  .pitchunit{color:var(--muted);font-size:0.75rem}
+  .pitchnow{font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-left:auto}
+  /* An out-of-range pitch leaves the last good scale in force, so it has to look rejected. */
+  .pitchrow input.bad{border-color:var(--err);color:var(--err)}
+  .pitchnow.bad{color:var(--err)}
   /* The footer is the one thing the dock can cover, so it gets clearance at the narrow widths
      where the two would otherwise overlap. */
   @media (max-width:900px){ .cfgdock{right:8px;bottom:8px} .sitefoot{padding-bottom:64px} }
@@ -252,7 +271,9 @@
   /* Holds the export group against the right edge, and keeps it there once the row wraps. */
   .expbtns.out{margin-left:auto}
   .patchwrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0}
-  #patch{width:10cm;height:10cm;max-width:100%;border:1px solid var(--edge);border-radius:6px;background:#000}
+  /* --cm10, not 10cm - see the physical scale note at the top. max-width can still clamp it, which
+     is why the size that reaches a file is measured off the element (see stagePx). */
+  #patch{width:var(--cm10);height:var(--cm10);max-width:100%;border:1px solid var(--edge);border-radius:6px;background:#000}
   /* Fullscreen: the patch is the only thing lit. Status sits at the very bottom edge - a
      few hundred pixels of gray well away from the meter aperture, so panel loading still
      reflects the level under test. Its color is set from JS per level (see setSeqStatus);
@@ -270,13 +291,13 @@
   .seqreadout .u{color:var(--muted);font-size:1.1875rem}
   .seqbtns{display:flex;gap:6px;flex-wrap:wrap}
   /* External acquisitions: the local screen is not under test, so the patch is hidden outright rather
-     than repurposed - a lit 10 cm square beside the display being measured is stray light in the
+     than repurposed - an illuminated square beside the display being measured is stray light in the
      room and implies the wrong panel is the subject. #extStage takes its place, sized so the
      countdown is readable from arm's length at the meter. */
   #patchStage.ext #patch{display:none}
   #patchStage:not(.ext) .extstage{display:none}
   .extstage{display:flex;flex-direction:column;align-items:center;gap:6px;
-    width:10cm;max-width:100%;padding:22px 14px;
+    width:var(--cm10);max-width:100%;padding:22px 14px;
     border:1px solid var(--edge);border-radius:6px;text-align:center}
   .extstage .next{font-size:1.1875rem;font-weight:700}
   .extstage .count{font-family:var(--mono);font-size:2.875rem;font-weight:700;line-height:1.1}
@@ -289,7 +310,7 @@
      presentations: full window is a fixed overlay over the page, full screen is the same
      box handed to the Fullscreen API. It is never shown in the card - see below. */
   .uniwrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0}
-  #uniGrid{position:relative;width:10cm;max-width:100%;aspect-ratio:1;
+  #uniGrid{position:relative;width:var(--cm10);max-width:100%;aspect-ratio:1;
     display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
     gap:0;background:#000;border:1px solid var(--edge);border-radius:6px;overflow:hidden}
   .unicell{background:#000}
@@ -1138,6 +1159,38 @@ Public License instead of this License.</pre>
 </div>
 
 <main>
+  <!-- shared: display calibration. Never opens on its own - an unset pitch is a legitimate way to
+       run, so the dock readout is this setting's resting presence and the card is offered from
+       there. Large buttons rather than a select because the pitch is hardest to set when it is
+       most needed: before it is declared the interface renders small, this card included, and no
+       CSS unit can fix that. Percentages in the labels come from labelPitchOptions. -->
+  <section class="card" id="pitchCard" hidden>
+    <h2>Display calibration</h2>
+    <p class="placeholder">Pixel pitch of the display. Sets the interface size and the
+      true size of the measurement patch (should be 10 cm). Check the panel specifications or
+      calculate by dividing the active area width in mm by the horizontal resolution.</p>
+    <div class="pitchgrid" id="pitchGrid">
+      <button class="pitchbtn" data-pitch="0.270"><b>0.270 mm</b><i>2 MP 21.3" / office</i></button>
+      <button class="pitchbtn" data-pitch="0.211"><b>0.211 mm</b><i>3 MP 21.3"</i></button>
+      <button class="pitchbtn" data-pitch="0.200"><b>0.200 mm</b><i>6 MP 30"</i></button>
+      <button class="pitchbtn" data-pitch="0.185"><b>0.185 mm</b><i>8 MP 4K 31"</i></button>
+      <button class="pitchbtn" data-pitch="0.170"><b>0.170 mm</b><i>12 MP 34"</i></button>
+      <button class="pitchbtn" data-pitch="0.165"><b>0.165 mm</b><i>5 MP 21.3"</i></button>
+      <button class="pitchbtn" data-pitch="0.155"><b>0.155 mm</b><i>12 MP 31"</i></button>
+      <button class="pitchbtn" data-pitch="0.103"><b>0.103 mm</b><i>32 MP 33"</i></button>
+      <button class="pitchbtn" data-pitch=""><b>Not set</b><i>96 dpi CSS reference</i></button>
+    </div>
+    <!-- An edit buffer, not the setting: nothing happens until Set or Enter. A pitch is typed one
+         digit at a time, and 0.1 on the way to 0.165 would resize the interface mid-entry. -->
+    <div class="pitchrow">
+      <label for="uiPitchMm">Or enter pitch</label>
+      <input type="number" id="uiPitchMm" min="0.05" max="1" step="0.001" placeholder="0.000">
+      <span class="pitchunit">mm</span>
+      <button id="btnPitchSet">Set</button>
+      <span class="pitchnow" id="pitchNow"></span>
+    </div>
+  </section>
+
   <!-- shared: instrument -->
   <div class="card">
     <div class="cardtop">
@@ -1506,17 +1559,10 @@ Public License instead of this License.</pre>
      an operator sets before measuring. -->
 <div class="cfgdock">
   <span class="lbl">Settings</span>
-  <!-- Interface size only. It does not touch the patch or the uniformity grid: those are sized in
-       cm because their size is the measured area, and scaling them here would quietly change the
-       measurement. -->
-  <label class="uiscale" for="uiScale">Size</label>
-  <select id="uiScale" title="Enlarge the interface on a fine-pitch display. Does not change the measurement patch size.">
-    <option value="1">100%</option>
-    <option value="1.25">125%</option>
-    <option value="1.5">150%</option>
-    <option value="2">200%</option>
-    <option value="2.5">250%</option>
-  </select>
+  <!-- The pitch in force, and the way back to the card that sets it. A readout rather than a
+       second picker: two controls for one setting is how the box and the selector end up
+       disagreeing, and the card is the picker. -->
+  <button id="btnPitch" title="Pixel pitch of the display under test - click to change"></button>
   <button id="btnCfgExport" title="Save the settings of all three modes to a JSON file">Export</button>
   <button id="btnCfgImport" title="Load settings saved from a previous session">Import</button>
   <input type="file" id="cfgFileImport" accept=".json,application/json" hidden>
@@ -2992,6 +3038,9 @@ function envInfo(){
     screen:`${screen.width}x${screen.height}`,
     colorDepth:screen.colorDepth,
     devicePixelRatio:window.devicePixelRatio,
+    /* Declared, not measured; null when unset. It is what turns every other length in this file
+       from CSS pixels into millimeters. */
+    pixelPitchMm:pixelPitchMm,
     colorGamut:gamut,
     dynamicRange:matchMedia("(dynamic-range: high)").matches?"high":"standard"
   };
@@ -4030,11 +4079,18 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
        sizes. It also lets a reader check a full-screen run against env.screen.
        CSS pixels, as getBoundingClientRect reports them - dpr travels alongside so device
        pixels are recoverable, and browser zoom is folded into both. Null for external acquisitions for
-       the same reason stageAspect is: pdweb does not drive that display. */
+       the same reason stageAspect is: pdweb does not drive that display.
+       mm is present only when a pitch was declared, and is measured off the element rather than
+       assumed from the 10 cm the stylesheet asks for - max-width can clamp the grid, and full
+       screen replaces the size outright. */
     const box=$("uniGrid").getBoundingClientRect();
     const stageAspect=(!ext && box.height>0) ? box.width/box.height : null;
+    const mmPer=mmPerCssPx();
     const stagePx=(!ext && box.height>0)
-      ? {w:Math.round(box.width), h:Math.round(box.height), dpr:window.devicePixelRatio||1} : null;
+      ? {w:Math.round(box.width), h:Math.round(box.height), dpr:window.devicePixelRatio||1,
+         pitchMm:pixelPitchMm,
+         wMm:pixelPitchMm ? +(box.width*mmPer).toFixed(1) : null,
+         hMm:pixelPitchMm ? +(box.height*mmPer).toFixed(1) : null} : null;
 
     /* ---- stage control ----
        The only thing that genuinely differs between a local and an external run is what happens
@@ -4489,7 +4545,7 @@ function uniFieldURL(grid,scale,aspect){
   const W=UNI_FIELD_PX, H=Math.max(32,Math.round(UNI_FIELD_PX/aspect));
   const c=document.createElement("canvas"); c.width=W; c.height=H;
   const ctx=c.getContext("2d"), img=ctx.createImageData(W,H), d=img.data;
-  /* Control points sit at the CELL CENTRES - normalized 1/6, 1/2, 5/6 - so the interpolation
+  /* Control points sit at the CELL CENTERS - normalized 1/6, 1/2, 5/6 - so the interpolation
      runs between them and holds flat out to the edges rather than extrapolating past the
      outermost measurement, which there is no evidence for. */
   const axis=v=>{ const t=Math.min(2,Math.max(0,(v-1/6)*3)), i=Math.min(1,Math.floor(t));
@@ -4632,6 +4688,19 @@ function uniExportStamp(){ return (uni.lastRun?.meta.started||new Date().toISOSt
 const UNI_MODE_TEXT={"1":"1 step(s)","3":"3 step(s)","18":"18 step(s)",ext:"External step(s)"};
 const uniGl3=g=>String(g).padStart(3,"0");        // gray levels are written three digits wide
 
+/* Shared by the TSV comment and the Luni header so the two cannot describe the same rectangle
+   differently. CSS px lead because they are always present; mm follow when a pitch was declared.
+   Both, not mm alone - the pitch is a claim rather than a measurement, so a reader who doubts it
+   needs the numbers it was derived from. */
+function uniAreaText(s){
+  const cell=(v)=>Math.round(v/3);
+  let t=`${s.w} x ${s.h} CSS px (device pixel ratio ${s.dpr}, `+
+        `cell ${cell(s.w)} x ${cell(s.h)} CSS px)`;
+  if(s.wMm&&s.hMm) t+=`, ${s.wMm} x ${s.hMm} mm at ${s.pitchMm} mm pitch `+
+                      `(cell ${(s.wMm/3).toFixed(1)} x ${(s.hMm/3).toFixed(1)} mm)`;
+  return t;
+}
+
 /* ---- Luni writer: the pacsDisplay-compatible plain-text uniformity format ----
    A commented header - tab after every leading "#" - then one block per gray level carrying
    its metrics and a 3x3 matrix in reading order. Luminances are RAW measured values, not L':
@@ -4658,9 +4727,7 @@ function buildLuni(run,a){
   /* Also an addition to the format. The measured area is the defining parameter of a full
      window run and cannot be recovered from the matrices, so it travels with them. Omitted
      entirely on an external run, where pdweb never saw the area. */
-  if(m.stagePx) out.push(`#\tMeasured area: ${m.stagePx.w} x ${m.stagePx.h} CSS px`+
-    ` (device pixel ratio ${m.stagePx.dpr}, cell ${Math.round(m.stagePx.w/3)} x `+
-    `${Math.round(m.stagePx.h/3)} CSS px)`);
+  if(m.stagePx) out.push(`#\tMeasured area: ${uniAreaText(m.stagePx)}`);
   out.push("#");
   out.push(`#\tMax. LUDM:\t${a.maxLUDM?f3(a.maxLUDM.v):"n/a"}\t(GL ${a.maxLUDM?uniGl3(a.maxLUDM.gl):"---"})`);
   out.push(`#\tMax. MLD:\t${a.maxMLD?f3(a.maxMLD.v):"n/a"}\t(GL ${a.maxMLD?uniGl3(a.maxMLD.gl):"---"})`);
@@ -4715,8 +4782,7 @@ function buildUniTSV(run){
      pattern line, which it qualifies; located by that line rather than by a fixed index, so
      inserting a header above it cannot silently move it somewhere else. */
   if(m.stagePx) head.splice(head.findIndex(l=>l.startsWith("# pattern:"))+1,0,
-    `# measured area: ${m.stagePx.w} x ${m.stagePx.h} CSS px   `+
-    `dpr: ${m.stagePx.dpr}   cell: ${Math.round(m.stagePx.w/3)} x ${Math.round(m.stagePx.h/3)} CSS px`);
+    `# measured area: ${uniAreaText(m.stagePx)}`);
   const gls=[...new Set(run.points.map(p=>p.ddl))].sort((a,b)=>a-b);
   const byKey=new Map(run.points.map(p=>[`${p.pos}|${p.ddl}`,p]));
   const cols=["DDL","Pos","L_cd_m2","L'_cd_m2","u'","v'"];
@@ -4854,12 +4920,23 @@ function validateUniRun(o){
       stageAspect: Number.isFinite(+m.stageAspect)&&+m.stageAspect>0
         ? Math.min(3,Math.max(0.6,+m.stageAspect)) : null,
       /* Provenance only - nothing renders from it, so it is taken or dropped whole rather than
-         clamped to a plausible range. All three fields must be sane or the object is meaningless
-         as a record of what was measured. */
+         clamped to a plausible range. The CSS px pair must be sane or the object is meaningless
+         as a record of what was measured.
+         The millimeter fields are optional (an unset pitch writes none) and are re-derived from
+         the file's own pitch rather than trusted, so a file cannot claim an area that disagrees
+         with the pitch beside it. An out-of-range pitch drops all three together. */
       stagePx: (m.stagePx && Number.isFinite(+m.stagePx.w) && Number.isFinite(+m.stagePx.h)
                 && +m.stagePx.w>0 && +m.stagePx.h>0)
-        ? {w:Math.round(+m.stagePx.w), h:Math.round(+m.stagePx.h),
-           dpr:Number.isFinite(+m.stagePx.dpr)&&+m.stagePx.dpr>0 ? +m.stagePx.dpr : 1} : null,
+        ? (()=>{ const s=m.stagePx,
+                 w=Math.round(+s.w), h=Math.round(+s.h),
+                 dpr=Number.isFinite(+s.dpr)&&+s.dpr>0 ? +s.dpr : 1,
+                 p=Number.isFinite(+s.pitchMm)&&+s.pitchMm>=PITCH_MIN&&+s.pitchMm<=PITCH_MAX
+                   ? +s.pitchMm : null,
+                 mm=p ? p*dpr : null;
+                 return {w, h, dpr, pitchMm:p,
+                         wMm: mm ? +(w*mm).toFixed(1) : null,
+                         hMm: mm ? +(h*mm).toFixed(1) : null}; })()
+        : null,
       backgrounded:!!m.backgrounded,
       readMsMean: Number.isFinite(+m.readMsMean)&&m.readMsMean!==null ? +m.readMsMean : null,
       env:m.env||null, imported:true, sourceFile:""
@@ -4944,13 +5021,9 @@ const CFG_VERS="pdweb-config/1";
 /* [DOM id, key in the file, kind]. `num` covers every free-text numeric box; `select` is
    validated against the control's own options, so the whitelist cannot drift from the markup. */
 const CFG_FIELDS={
-  /* Its own group rather than a member of one of the three modes: the scale applies to the whole
-     interface, so filing it under any single mode would be wrong. Carried in the config file
-     because the operator sets it once per workstation and a fine-pitch panel needs it every
-     session - the same reason the acquisition settings travel. */
-  interface:[
-    ["uiScale","scale","select"],
-  ],
+  /* No `interface` group here even though the file has one: the pitch box is an edit buffer, so
+     reading it off the DOM the way this table does would export an uncommitted entry. Handled
+     from pixelPitchMm directly - see buildConfig and applyConfig. */
   meter:[
     ["quant","quantity","select"], ["mode","measurementMode","select"],
     ["navg","averages","num"],     ["scale","scaleFactor","num"],
@@ -4983,6 +5056,8 @@ function buildConfig(){
     }
     out[group]=g;
   }
+  /* From the committed value, not the box - see CFG_FIELDS. null means undeclared. */
+  out.interface={pixelPitchMm};
   /* The white point travels as the pair rather than as the selector: applyRefUV derives the
      selector from the numbers, so a file cannot restore "D65" alongside custom coordinates.
      The two cards keep separate references and therefore separate entries. */
@@ -5018,12 +5093,14 @@ function applyConfig(o){
       else skipped.push(`${where}="${String(v).slice(0,20)}"`);
     }
   }
-  /* Every other field in the loop above is an inert box read when a run starts, so writing .value
-     is enough. The scale is the one with an effect outside its own control, and assigning .value
-     does not fire change - so it is applied here from whatever the loop settled on. Reading the
-     control rather than the file means an out-of-range value that the loop already rejected
-     cannot slip through a second path. */
-  applyUiScale($("uiScale").value);
+  /* Routed through setPitch: it is the only writer, and it applies a scale the loop's inert boxes
+     never need. close:false leaves the card as the operator had it. */
+  if(o.interface && typeof o.interface==="object" && !Array.isArray(o.interface)
+     && "pixelPitchMm" in o.interface){
+    const p=o.interface.pixelPitchMm, where="interface.pixelPitchMm";
+    if(setPitch(p,{quiet:true,close:false})) applied.push(where);
+    else skipped.push(`${where}="${String(p).slice(0,20)}"`);
+  }
   /* Routed through applyRefUV / applyUniRefUV rather than written to the boxes, so the selector,
      the values and their disabled state end up consistent however the file spells the
      reference. One entry per card - they are independent settings. */
@@ -5038,18 +5115,139 @@ function applyConfig(o){
   return {applied,skipped};
 }
 
-/* Interface scale. Written to the documentElement rather than :root in the sheet so the selector
-   is the single source of truth and applyConfig can drive it through the same path as an operator
-   changing it by hand. Deliberately not applied to the stages - see the --uiscale note in the
-   stylesheet. */
-function applyUiScale(v){
-  const n=Number.isFinite(+v)&&+v>0 ? +v : 1;
-  document.documentElement.style.setProperty("--uiscale",n);
+/* ==========================================================================
+   PHYSICAL SCALE
+   The pixel pitch of the display under test, and the two things derived from it. See the physical
+   scale note at the top of the stylesheet for what each variable reaches.
+   ========================================================================== */
+
+/* The size of a CSS pixel by definition: 1in = 96px is fixed by the CSS spec, so this is not a
+   guess about any display - it is the length the whole stylesheet was written against. */
+const CSS_REF_MM=25.4/96;
+/* Bounds on an accepted pitch. Generous either side of anything real (a phone is ~0.05, a video
+   wall tile ~1.0) - the check exists to stop a typo like 0.0165 from scaling the interface by 16,
+   not to police the operator's panel. */
+const PITCH_MIN=0.05, PITCH_MAX=1;
+
+/* The pitch in force. null = not declared. The single definition of it; the controls are one way
+   to set it, not where it lives. */
+let pixelPitchMm=null;
+
+/* mm covered by one CSS pixel. dpr is device pixels per CSS pixel and already folds in OS scaling
+   and browser zoom, so the physical size is pitch times ratio - which is why a mid-session zoom
+   corrects rather than doubles up.
+   A null pitch is NOT "assume a 0.2646 mm panel, then correct for dpr": that reads a 2x Retina CSS
+   pixel as 0.53 mm and halves the interface. Nothing known means the CSS reference stands.
+   Takes the pitch as an argument so labelPitchOptions can price an option not yet chosen. */
+function mmForPitch(p){ return p ? p*(window.devicePixelRatio||1) : CSS_REF_MM; }
+function scaleForPitch(p){ return CSS_REF_MM/mmForPitch(p); }
+function mmPerCssPx(){ return mmForPitch(pixelPitchMm); }
+function uiScaleFactor(){ return scaleForPitch(pixelPitchMm); }
+
+/* On documentElement rather than in the sheet, so setPitch stays the single writer. --cm10 is
+   100 mm expressed in CSS px. */
+function applyPitch(){
+  const r=document.documentElement.style;
+  r.setProperty("--uiscale",uiScaleFactor().toFixed(4));
+  r.setProperty("--cm10",`${(100/mmPerCssPx()).toFixed(1)}px`);
 }
-$("uiScale").onchange=e=>{
-  applyUiScale(e.target.value);
-  log(`interface scale ${Math.round(+e.target.value*100)}% (measurement patch size unchanged)`);
+
+/* View state only, never persisted, and only ever opened from the dock readout. */
+let pitchCardOpen=false;
+
+/* The percentage on each preset, written from JS because it is a function of devicePixelRatio:
+   0.165 mm reads 160% at 100% browser zoom and something else after one Ctrl+=. */
+function labelPitchOptions(){
+  for(const b of $("pitchGrid").children){
+    const sub=b.querySelector("i");
+    /* Stashed on first pass, or each dpr change would append another percentage to the last. */
+    const base=sub.dataset.label||(sub.dataset.label=sub.textContent);
+    sub.textContent=`${base} - ${Math.round(scaleForPitch(+b.dataset.pitch||null)*100)}%`;
+  }
+}
+
+/* null/"" is undeclared, a legitimate answer. undefined is the third result, "not acceptable" -
+   null is already taken. */
+function validPitch(v){
+  if(v===null||v===undefined||String(v).trim()==="") return null;
+  const n=parseFloat(v);
+  return Number.isFinite(n)&&n>=PITCH_MIN&&n<=PITCH_MAX ? n : undefined;
+}
+
+/* Reads pixelPitchMm, never the box, so a half-typed entry cannot move anything. */
+function renderPitch(err=false){
+  labelPitchOptions();
+  $("uiPitchMm").classList.toggle("bad",err);
+  /* Exact match only, so a hand-typed 0.1704 leaves every preset dark rather than lighting the
+     0.170 beside it. No preset is 0, so the ||null for "Not set" cannot collide with a real one. */
+  for(const b of $("pitchGrid").children)
+    b.classList.toggle("on", !err && (+b.dataset.pitch||null)===pixelPitchMm);
+  $("pitchNow").className=err?"pitchnow bad":"pitchnow";
+  $("pitchNow").textContent = err ? `must be ${PITCH_MIN}-${PITCH_MAX} mm`
+    : pixelPitchMm===null ? "no correction applied"
+    : `interface ${Math.round(uiScaleFactor()*100)}%, patch ${(100/mmPerCssPx()).toFixed(0)} px = 10.0 cm`;
+  const dock=$("btnPitch");
+  dock.classList.toggle("unset",pixelPitchMm===null);
+  /* Trimmed, not fixed at three places: rounding a hand-entered 0.1704 to 0.170 would show a
+     preset that was not picked. */
+  dock.textContent = pixelPitchMm===null ? "Pitch not set"
+    : `${+pixelPitchMm.toFixed(4)} mm - ${Math.round(uiScaleFactor()*100)}%`;
+  $("pitchCard").hidden=!pitchCardOpen;
+}
+
+/* The only writer of pixelPitchMm. Commits, normalizes the box to what was accepted, and closes
+   the card. A rejected value changes nothing - the box keeps the operator's text to be corrected,
+   the card stays open, the last good scale stays in force. Refused rather than clamped: a clamp
+   applies a pitch nobody entered and looks identical to acceptance. */
+function setPitch(v,{quiet=false,close=true}={}){
+  const n=validPitch(v);
+  if(n===undefined){
+    renderPitch(true);
+    if(!quiet) log(`pixel pitch must be ${PITCH_MIN}-${PITCH_MAX} mm - ignored`,"w");
+    return false;
+  }
+  pixelPitchMm=n;
+  $("uiPitchMm").value = n===null ? "" : String(+n.toFixed(4));
+  if(close) pitchCardOpen=false;
+  applyPitch();
+  renderPitch();
+  if(quiet) return true;
+  if(n===null) log(`pixel pitch not set - rendering against the ${CSS_REF_MM.toFixed(3)} mm CSS reference`);
+  else log(`pixel pitch ${n.toFixed(3)} mm, dpr ${window.devicePixelRatio||1}`+
+           ` -> interface ${Math.round(uiScaleFactor()*100)}%,`+
+           ` measurement patch ${(100/mmPerCssPx()).toFixed(0)} CSS px = 10.0 cm`,"ok");
+  return true;
+}
+
+/* Delegated, so adding a panel class is one <button>. A preset is a complete answer, "Not set"
+   included, so it commits and closes on the click. */
+$("pitchGrid").onclick=e=>{
+  const b=e.target.closest(".pitchbtn");
+  if(b) setPitch(b.dataset.pitch);
 };
+/* Nothing on input or change - only Set commits. Enter goes the same way. */
+$("btnPitchSet").onclick=()=>setPitch($("uiPitchMm").value);
+$("uiPitchMm").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); setPitch(e.target.value); } };
+$("btnPitch").onclick=()=>{
+  pitchCardOpen=!pitchCardOpen;
+  /* Reopening discards an abandoned edit, so the card never opens showing an uncommitted value. */
+  if(pitchCardOpen) $("uiPitchMm").value = pixelPitchMm===null ? "" : String(+pixelPitchMm.toFixed(4));
+  renderPitch();
+  if(pitchCardOpen){ $("pitchCard").scrollIntoView({block:"nearest"}); $("uiPitchMm").focus(); }
+};
+
+/* Browser zoom and a move to a differently-scaled display both change devicePixelRatio, which
+   changes what the declared pitch implies. The media query is the only event for it, and matches
+   one exact ratio so it must be re-armed. Not a commit: the pitch did not change, so this
+   re-derives the variables without touching pixelPitchMm. */
+(function watchDpr(){
+  matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`)
+    .addEventListener("change",()=>{ applyPitch(); renderPitch(); watchDpr(); },{once:true});
+})();
+
+/* At load. A browser can restore the box across a reload without firing change, so it is committed
+   here rather than trusted. The card stays shut either way. */
+setPitch($("uiPitchMm").value,{quiet:true,close:false});
 
 $("btnCfgExport").onclick=()=>{
   const stamp=new Date().toISOString().replace(/[:.]/g,"-").replace("T","_").slice(0,19);
