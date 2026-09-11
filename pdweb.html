@@ -512,7 +512,7 @@
           points.</li>
           <li><b>Ext 18</b> and <b>Ext 11</b> measure an external display - one connected to another
           workstation, e.g., a modality acquisition workstation. pdweb coordinates nothing in these modes: it
-          simply takes a reading on a fixed interval while you move the photometer from patch to patch on the
+          simply takes a reading on a fixed interval while you adjust the gray level patch or pattern on the
           other display, and labels the readings with the gray levels you are <b>supposed</b> to be on.
           Everything after capture - analysis, charts, and all exports - is identical to a local
           data collection.</li>
@@ -523,13 +523,13 @@
             <li>The data acquistiion process gives you one interval to seat the probe on the <b>DDL 0 (black)</b>
             patch, then takes four readings there back to back without pausing - three background readings
             and the ramp's own DDL 0 point.</li>
-            <li>The stage shows which patch is next and counts down to the reading. Move while it counts, hold
+            <li>The stage shows which patch is next and counts down to the reading. Adjust while it counts, hold
             still once it says so. Set the pace with <b>Move delay</b> in Advanced settings.</li>
             <li>The countdown starts when the previous reading <i>finishes</i>. A run therefore takes a little
             longer than the interval times the number of levels.</li>
             <li>There is no way to redo a level. If you fall behind, <b>Stop</b> and start again - a reading
             taken between patches is indistinguishable from a real one in the numbers.</li>
-            <li>pdweb flags what it can: a level reading darker than the one below it, a level clamped to the
+            <li>pdweb flags what it can: a level reading darker than the one below it, a level stuck to the
             luminance floor, and a run where the tab was in the background (which lets the browser throttle
             the countdown so it no longer matches real time).</li>
           </ul>
@@ -562,7 +562,7 @@
           No. 196 makes its own exclusion. The count of levels actually used is reported. Most references use
           5 cd/m². Below this level, the human visual system has a difficult time distinguishing between
           colors.</li>
-          <li><b>Move delay</b> - seconds to advance the pattern on the display under test in the
+          <li><b>Move delay</b> - seconds to advance the pattern on the external display measured in the
           <b>Ext 18</b> and <b>Ext 11</b> modes. It is measured from the end of one reading to the start
           of the next. It has no effect on the local-patch modes, where the page paints its own patch and
           the probe never moves.</li>
@@ -2822,7 +2822,7 @@ const seq={ on:false, external:false, lastRun:null,
        so making the operator wait an interval between them would only add dead time. */
     const background=[];
     stagePrep(0,null,null,"bg");
-    if(ext){ $("extNext").textContent="Seat the probe on the BLACK patch"; $("extHint").textContent="Move the probe now"; }
+    if(ext){ $("extNext").textContent="Seat the probe on the BLACK patch"; $("extHint").textContent="Move to next DDL"; }
     if(await (ext?sleepTicking(intervalMs,alive,left=>setExtCount(left)):sleepWhile(SETTLE_MS,alive))){
       for(let i=0;i<BG_READS && this.on;i++){
         stagePrep(0,i+1,BG_READS,"bg");
