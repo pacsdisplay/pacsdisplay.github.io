@@ -3512,10 +3512,7 @@ function chartChroma(host,a){
    ========================================================================== */
 
 /* Exports are recolored for a white page. The screen palette is built against a dark panel:
-   the data line is near-white and would vanish, and the tolerance ambers glare on paper.
-   These are the same hues with the lightness relationships turned over, so the exported
-   chart reads the way the screen one does - data darkest, ±20% fainter than ±10%, grid
-   faintest of all. Anything not in the map is left alone. */
+   the data line is near-white and would vanish. Anything not in the map is left alone. */
 const EXPORT_INK="#16181b", EXPORT_MUTED="#4f555d", EXPORT_BG="#ffffff";
 const EXPORT_PAL=new Map([
   [C_DATA,   EXPORT_INK],       // C_HIGHGL is the same value, so it maps with it
