@@ -3519,14 +3519,10 @@ function chartChroma(host,a){
 const EXPORT_INK="#16181b", EXPORT_MUTED="#4f555d", EXPORT_BG="#ffffff";
 const EXPORT_PAL=new Map([
   [C_DATA,   EXPORT_INK],       // C_HIGHGL is the same value, so it maps with it
-  [C_TARGET, "#bf3b34"],
-  [C_T10,    "#a37414"],
-  [C_T20,    "#c7a05c"],
   [C_AXIS,   "#ccd0d6"],
   [C_TICK,   EXPORT_MUTED],
   [C_PATH,   "#8f959d"],
   [C_LOWGL,  "#9aa1aa"],
-  [BAR_R,    "#bd524c"], [BAR_G,"#3c8b4f"], [BAR_B,"#585fb5"],
 ]);
 const expC=c=>EXPORT_PAL.get(c)||c;
 
