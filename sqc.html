@@ -5,7 +5,7 @@ Copyright (c) 2026 Nicholas Bevins
 Part of the pdweb project (https://pacsdisplay.org)
 
 Pattern design based on AAPM Report 270 specifications.
-Implementation licensed under GNU General Public License v3.0
+Implementation licensed under the GNU General Public License v2 or later
 -->
 <html lang="en">
 <head>
@@ -469,15 +469,17 @@ USAGE:
 
         function drawLargeSquares(xOffset, yOffset, effectiveScale) {
             const kOffset = 4;
-            const squareSize = 256 * effectiveScale;
 
             for (let k = 0; k < 3; k++) {
                 const grayLevel = k * 128;
-                const x = xOffset + effectiveScale * (128 + k * 256);
-                const y = yOffset + effectiveScale * (128 * (kOffset + 1));
+                // Edges on whole pixels, as in pdweb.html, so they are not antialiased
+                const x = Math.round(xOffset + effectiveScale * (128 + k * 256));
+                const y = Math.round(yOffset + effectiveScale * (128 * (kOffset + 1)));
+                const x2 = Math.round(xOffset + effectiveScale * (384 + k * 256));
+                const y2 = Math.round(yOffset + effectiveScale * (128 * (kOffset + 1) + 256));
 
                 ctx.fillStyle = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
-                ctx.fillRect(x, y, squareSize, squareSize);
+                ctx.fillRect(x, y, x2 - x, y2 - y);
             }
         }
 

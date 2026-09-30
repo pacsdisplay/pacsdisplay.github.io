@@ -19,6 +19,12 @@
   not needed here were omitted. Everything else in this file is original work by the copyright holder named at
   the top. See the License section of the page for the full statement.
 
+  TEST PATTERNS. The pattern drawing code (TG270-pQC, TG270-sQC, TG18-OIQ, gray levels, uniformity
+  scan, ambient test) is original work by the copyright holder, under the same v2 or later terms. The
+  TG270 and TG18 pattern designs are described in AAPM Report No. 270 and AAPM TG18 (Online Report
+  No. 3); they are redrawn here from the published specifications. No AAPM pattern files or report
+  text are included, and pdweb is not affiliated with AAPM.
+
   LICENSE LEVEL. pdweb is v2 or later while pacsDisplay is v3. That is deliberate: pdweb is a separate
   program - no pacsDisplay code, no Argyll, no Tcl - so hosting the two together is aggregation, not
   combination, and "or later" already permits a merge into v3 if one is ever wanted. Offering v2 as an option
@@ -52,7 +58,7 @@
     /* --field is the recessed surface: inputs, the log, code chips, the license block. */
     --field:#101215;
     --text:#e3e5e8;--muted:#8b9199;--faint:#6d737b;
-    --btn:#343a42;--btn-active:#454c56;
+    --btn:#343a42;--btn-active:#454c56;--edge-hi:#565e69;
     /* Status colors are kept as bare channel triples so the translucent pill and message
        backgrounds derive from them rather than restating the channels by hand - six
        hand-copied rgba() literals used to sit here waiting to drift out of step. */
@@ -83,7 +89,7 @@
   nav{grid-column:2;justify-self:center;display:flex;gap:8px}
   .modebtn{background:transparent;color:var(--muted);border:1px solid var(--edge);border-radius:6px;
     padding:6px 16px;font-weight:600;font-size:0.8125rem;cursor:pointer}
-  .modebtn.active{background:var(--btn-active);color:var(--text);border-color:#565e69}
+  .modebtn.active,.tile.on{background:var(--btn-active);color:var(--text);border-color:var(--edge-hi)}
   /* The content column tracks the type: at 45rem it stays the same number of characters wide at
      every scale, so raising the scale enlarges the text rather than reflowing the cards. The
      advanced rows are laid out against this width (see .advrow). */
@@ -110,7 +116,7 @@
   .pill.info{background:rgba(139,145,153,.18);color:#c6cbd1}
   /* Inline card messages. The log panel is collapsed by default, so anything the
      operator must act on (cover position, incomplete run, GSDF domain) shows here too. */
-  .msg{margin:10px 0 0;padding:8px 11px;border-radius:6px;font-size:0.8125rem;display:none}
+  .msg{margin:10px 0 0;padding:8px 11px;border-radius:6px;display:none}
   .msg.show{display:block}
   .msg.warn{background:rgba(var(--warn-rgb),.12);border:1px solid rgba(var(--warn-rgb),.35);color:#e8c477}
   .msg.err {background:rgba(var(--err-rgb),.12);border:1px solid rgba(var(--err-rgb),.35);color:#e58b87}
@@ -122,7 +128,7 @@
   .readout{display:flex;align-items:baseline;gap:9px;margin:10px 0}
   .big{font-family:var(--mono);font-size:2.75rem;font-weight:700;letter-spacing:-1px}
   .unit{color:var(--muted);font-size:1.1875rem}
-  .kv{display:grid;grid-template-columns:4.375rem 1fr;gap:3px 10px;font-size:0.8125rem}
+  .kv{display:grid;grid-template-columns:4.375rem 1fr;gap:3px 10px}
   .kv .k{color:var(--muted)}.kv .v{font-family:var(--mono)}
   .diag{color:#767c85;font-size:0.75rem;font-family:var(--mono);margin-top:8px}
   .log{background:var(--field);border:1px solid var(--edge);border-radius:6px;padding:10px;margin-top:10px;
@@ -158,7 +164,7 @@
   .advrow>div{min-width:0}
   .advrow label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .advrow input,.advrow select{padding:8px 6px}
-  .placeholder{color:var(--muted);font-size:0.8125rem;padding:2px 0 4px}
+  .placeholder{color:var(--muted);padding:2px 0 4px}
   /* ---- instructions modal ----
      One authored block per mode, both sitting as static markup in the document so the prose
      can be edited without touching JS and without an innerHTML path existing at all.
@@ -174,7 +180,6 @@
     padding:12px 16px;border-bottom:1px solid var(--edge)}
   .modal-body{overflow:auto;padding:14px 16px 18px}
   .iconbtn{margin:0;padding:4px 10px;font-size:0.8125rem;line-height:1.2}
-  .helpdoc{font-size:0.8125rem}
   .helpdoc h3{font-size:0.8125rem;margin:16px 0 5px;color:var(--text)}
   .helpdoc h3:first-child{margin-top:0}
   .helpdoc p,.helpdoc ul{margin:0 0 8px;color:#c2c7cd}
@@ -203,17 +208,16 @@
   /* Reports a setting rather than asking for attention; warn only when nothing is declared. */
   .cfgdock #btnPitch{font-family:var(--mono);font-weight:400;color:var(--muted);white-space:nowrap}
   .cfgdock #btnPitch.unset{color:var(--warn)}
-  /* ---- display calibration card ----
+  /* ---- tiles: the display calibration presets and the pattern list ----
      auto-fit covers desktop to phone without a media query; the minmax floor is the width of the
      button's second line, so a label never wraps mid-phrase. */
-  .pitchgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:8px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:8px}
   /* Overrides button{}: left-aligned two-line block, weight on the number. */
-  .pitchbtn{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin:0;
+  .tile{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin:0;
     padding:9px 11px;text-align:left;font-weight:400;line-height:1.3}
-  .pitchbtn b{font-family:var(--mono);font-size:0.9375rem;font-weight:700}
-  .pitchbtn i{font-style:normal;font-size:0.6875rem;color:var(--muted)}
-  .pitchbtn.on{background:var(--btn-active);border-color:#565e69}   /* as .modebtn.active */
-  .pitchbtn.on i{color:var(--text)}
+  .tile b{font-family:var(--mono);font-size:0.9375rem;font-weight:700}
+  .tile i{font-style:normal;font-size:0.6875rem;color:var(--muted)}
+  .tile.on i{color:var(--text)}
   .pitchrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
   .pitchrow label{margin:0;white-space:nowrap}
   .pitchrow input{width:6.5rem;font-family:var(--mono);text-align:right}
@@ -230,12 +234,8 @@
   .linkbtn{background:none;border:0;padding:0;margin:0;font:inherit;color:#8b9199;
     text-decoration:underline;cursor:pointer;font-weight:600}
   .linkbtn:hover{color:var(--text)}
-  /* fullscreen arm/go overlay - only ever shown while fullscreen and waiting to start */
-  .goprompt{display:none}
-  /* Sits in the upper third rather than dead center: the operator seats the photometer over
-     the middle of the screen, which is exactly where a centered box would put the Go button. */
-  #patchStage:fullscreen .goprompt.armed{display:flex;position:fixed;inset:0;z-index:5;
-    align-items:flex-start;justify-content:center;padding-top:25vh}
+  /* arm/go overlay - only ever shown while a stage is open and waiting to start */
+  .goprompt,.fsstatus{display:none}
   .gobox{background:rgba(18,20,24,.94);border:1px solid var(--edge);border-radius:10px;
     padding:18px 22px;text-align:center;max-width:32.5rem}
   .gotitle{font-size:0.9375rem;font-weight:700;margin-bottom:5px}
@@ -269,18 +269,7 @@
   /* --cm10, not 10cm - see the physical scale note at the top. max-width can still clamp it, which
      is why the size that reaches a file is measured off the element (see stagePx). */
   #patch{width:var(--cm10);height:var(--cm10);max-width:100%;border:1px solid var(--edge);border-radius:6px;background:#000}
-  /* Fullscreen: the patch is the only thing lit. Status sits at the very bottom edge - a
-     few hundred pixels of gray well away from the meter aperture, so display loading still
-     reflects the level under test. Its color is set from JS per level (see setSeqStatus);
-     no opacity here, because a fixed opacity would undo the contrast that computes. */
-  .fsstatus{display:none}
-  #patchStage:fullscreen{background:#000;width:100vw;height:100vh;margin:0;gap:0;justify-content:center}
-  #patchStage:fullscreen #patch{width:100vw;height:100vh;max-width:none;border:0;border-radius:0}
-  #patchStage:fullscreen .patchlabel,
-  #patchStage:fullscreen .seqreadout{display:none}
-  #patchStage:fullscreen .fsstatus{display:block;position:fixed;left:0;right:0;bottom:4px;
-    text-align:center;font-family:var(--mono);font-size:0.8125rem;letter-spacing:.02em}
-  .patchlabel{font-family:var(--mono);font-size:0.8125rem;color:var(--muted)}
+  .patchlabel,.unilabel{font-family:var(--mono);color:var(--muted)}
   .seqreadout{font-size:0.875rem;color:var(--text);font-family:var(--mono);text-align:center}
   .seqreadout .y{font-size:1.25rem;font-weight:700}
   .seqreadout .u{color:var(--muted);font-size:1.1875rem}
@@ -321,29 +310,33 @@
      property driving both shapes. */
   .unimark{position:absolute;box-sizing:border-box;border:6px solid currentColor;color:#808080;
     display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .unimark[hidden]{display:none}
   .unimark::after{content:"";width:min(200px,55%);aspect-ratio:1;border-radius:50%;
     border:6px solid currentColor}
-  .unilabel{font-family:var(--mono);font-size:0.8125rem;color:var(--muted)}
   /* Header selects: the shared inline-field shape, sized to their option text
      rather than to a number field. */
   .unihopt select{width:auto;margin:0;padding:5px 6px;font-size:0.75rem}
-  /* Full window sits above the sticky header (z-index 10) and below the help modal (20), so
-     an accidental Help while armed still comes to the front rather than opening underneath. */
-  #uniStage.fw{position:fixed;inset:0;z-index:15;margin:0;gap:0;background:#000;justify-content:center}
-  #uniStage:fullscreen{width:100vw;height:100vh;margin:0;gap:0;background:#000;justify-content:center}
-  #uniStage.fw #uniGrid,#uniStage:fullscreen #uniGrid{width:100%;height:100%;max-width:none;
-    aspect-ratio:auto;border:0;border-radius:0}
-  #uniStage.fw .unilabel,#uniStage.fw .seqreadout,
-  #uniStage:fullscreen .unilabel,#uniStage:fullscreen .seqreadout{display:none}
-  #uniStage.fw .fsstatus,#uniStage:fullscreen .fsstatus{display:block;position:fixed;left:0;right:0;
-    bottom:4px;text-align:center;font-family:var(--mono);font-size:0.8125rem;letter-spacing:.02em}
+  /* ---------- open stages ----------
+     Both run stages in full screen, plus the uniformity full-window overlay. Full window sits
+     above the sticky header (z-index 10) and below the help modal (20), so an accidental Help
+     while armed still comes to the front rather than opening underneath. */
+  #patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw{background:#000;margin:0;gap:0;justify-content:center}
+  #patchStage:fullscreen,#uniStage:fullscreen{width:100vw;height:100vh}
+  #uniStage.fw{position:fixed;inset:0;z-index:15}
+  #patchStage:fullscreen #patch,#uniStage:is(.fw,:fullscreen) #uniGrid{width:100%;height:100%;
+    max-width:none;aspect-ratio:auto;border:0;border-radius:0}
+  :is(#patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw) :is(.patchlabel,.unilabel,.seqreadout){display:none}
+  /* The patch is the only thing lit. Status sits at the very bottom edge, well away from the meter
+     aperture, so display loading still reflects the level under test. Its color is set from JS per
+     level (see fsInk); no opacity here, because a fixed opacity would undo that contrast. */
+  :is(#patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw) .fsstatus{display:block;position:fixed;
+    left:0;right:0;bottom:4px;text-align:center;font-family:var(--mono);letter-spacing:.02em}
   /* Bottom row under measurement: the status bar would sit on the patch being read, so it moves
-     to the top edge instead. That also settles its color - whatever row is active, the text is
-     now over the rest state (black in single cell, the held level in full field) rather than
-     over the lit cell, so setUniStatus can color against the field it is actually on. */
-  #uniStage.fw .fsstatus.top,#uniStage:fullscreen .fsstatus.top{bottom:auto;top:4px}
-  #uniStage.fw .goprompt.armed,#uniStage:fullscreen .goprompt.armed{display:flex;position:fixed;
+     to the top edge, over the rest state rather than the lit cell - which is what setUniStatus
+     colors it against. */
+  .fsstatus.top{bottom:auto!important;top:4px}
+  /* Upper third rather than dead center: the operator seats the photometer over the middle of the
+     screen, which is exactly where a centered box would put the Go button. */
+  :is(#patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw) .goprompt.armed{display:flex;position:fixed;
     inset:0;z-index:5;align-items:flex-start;justify-content:center;padding-top:25vh}
   #uniStage.ext #uniGrid{display:none}
   #uniStage:not(.ext) #uniExtStage{display:none}
@@ -365,7 +358,7 @@
   .unimapbar .m{font-family:var(--mono);color:var(--text)}
   /* conformance results */
   #conf{margin-top:6px}
-  .conf-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:0.8125rem;margin-top:4px}
+  .conf-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-top:4px}
   .conf-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #26292e;padding:3px 0}
   .conf-row .k{color:var(--muted)}.conf-row .v{font-family:var(--mono);text-align:right}
   .conf-row .v.bad{color:var(--warn)}   /* reserved: no acceptance limits are applied yet */
@@ -375,6 +368,29 @@
      every row the same height. */
   .conf-row .k sub{font-size:.75em;line-height:0;position:relative;bottom:-.25em;vertical-align:baseline}
   @media(max-width:560px){.conf-grid{grid-template-columns:1fr}}
+  /* ---------- pattern stage ----------
+     One full-window overlay for every test pattern; see the Test patterns section of the script for
+     why the canvas is sized in device pixels. Same layer as the uniformity full window: over the
+     header, under the help modal. Chrome sizes are px on purpose - the interface scale is for the
+     page, and nothing on the stage should move when it changes. */
+  .patopt{margin-top:10px;width:fit-content}
+  body:has(#patStage:not([hidden])){overflow:hidden}
+  #patStage{position:fixed;inset:0;z-index:15;background:#000}
+  #patCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;cursor:default}
+  #patCanvas.pan{cursor:grab}
+  #patCanvas.panning{cursor:grabbing}
+  .patbar,.patctl{position:absolute;top:8px;display:flex;align-items:center;gap:6px;user-select:none}
+  .patbar{left:8px}
+  .patctl{right:10px;gap:10px}
+  .patbar button,.patctl .pb{background:none;border:0;padding:2px 6px;margin:0;cursor:pointer;
+    color:var(--patink,#666);font:700 16px var(--mono)}
+  .patctl .pb{font-size:13px}
+  .patbar button:hover,.patctl .pb:hover{opacity:.7}
+  .patctl input,.patctl select{width:auto;margin:0;padding:6px 8px;font:700 14px var(--mono);
+    background:#1a1a1a;color:#d0d0d0;border:1px solid #555;border-radius:4px}
+  .patctl input{width:4.5em;text-align:center}
+  .patdlg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+  #patDlgMsg{white-space:pre-line;text-align:left}
 </style>
 </head>
 <body>
@@ -384,6 +400,7 @@
     <button class="modebtn active" data-mode="meter">meter</button>
     <button class="modebtn" data-mode="sequence">lumResponse</button>
     <button class="modebtn" data-mode="uniformity">uniformity</button>
+    <button class="modebtn" data-mode="patterns">patterns</button>
   </nav>
   <div class="headright"><button id="btnHelp" class="helpbtn">?</button></div>
 </header>
@@ -438,7 +455,7 @@
         <h3>What the numbers mean</h3>
         <ul>
           <li><b>luminance (cd/m²)</b> - the measured luminance, after any Scale factor.</li>
-		  <li><b>illuminance (lux)</b> - the measured illuminance, after any Scale factor.</li>
+          <li><b>illuminance (lux)</b> - the measured illuminance, after any Scale factor.</li>
           <li><b>u', v'</b> - CIE 1976 chromaticity coordinates. Distances in u', v' are roughly uniform
           perceptually.</li>
           <li><b>x, y</b> - the CIE 1931 chromaticity coordinates for the same measurement, shown for
@@ -504,10 +521,10 @@
           <li>Choose <b>18</b>, <b>52</b>, or <b>256</b> point. The 18 point test lands on exactly the levels
           of the TG18-LN test pattern set (every 15 gray levels: DDL 0, 15, 30, ..., 255), which is also the
           same sampling AAPM Report No. 196 uses. The 52 and 256 point tests give a finer curve (at
-          proportionally more time and typically with increased noise). AAPM No. Report 270 recommends using
+          proportionally more time and typically with increased noise). AAPM Report No. 270 recommends using
           52 points when available. <b>Note:</b> take care when using more points against the typical 10% and
           20% criteria - the increase in data points reduces the "smoothing" gained with fewer points and
-          tends to result in an apparant increase in non-conformance. The 10% and 20% thresholds were
+          tends to result in an apparent increase in non-conformance. The 10% and 20% thresholds were
           developed using the 18-point test and are not necessarily appropriate for data collection using more
           points.</li>
           <li><b>Ext 18</b> and <b>Ext 11</b> measure an external display - one connected to another
@@ -520,7 +537,7 @@
             <li><b>Ext 18</b> uses the TG18-LN levels. <b>Ext 11</b> uses the eleven gray steps of the
             <b>SMPTE</b> pattern, 25.5 gray levels apart and rounded (DDL 0, 26, 51, 77, ..., 255).</li>
             <li>Display the matching pattern on the external display before starting.</li>
-            <li>The data acquistiion process gives you one interval to seat the probe on the <b>DDL 0 (black)</b>
+            <li>The data acquisition process gives you one interval to seat the probe on the <b>DDL 0 (black)</b>
             patch, then takes four readings there back to back without pausing - three background readings
             and the ramp's own DDL 0 point.</li>
             <li>The stage shows which patch is next and counts down to the reading. Adjust while it counts, hold
@@ -759,6 +776,182 @@
         </ul>
       </div>
 
+      <!-- ---------- patterns ---------- -->
+      <div class="helpdoc" id="help-patterns" hidden>
+        <p class="lead">Visual test patterns for display QC. They need no instrument and run in any current
+        browser, including those without WebHID.</p>
+
+        <h3>Opening a pattern</h3>
+        <ul>
+          <li>Pick a pattern. It opens over the whole window, and in full screen if <b>Open full screen</b>
+          is checked.</li>
+          <li>The controls sit in the top corners: <b>?</b> explains the open pattern, <b>⟲</b> resets zoom
+          and pan, <b>⛶</b> toggles full screen, and <b>✕</b> or <code>Esc</code> closes it. In full screen
+          the first <code>Esc</code> leaves full screen and the second closes the pattern.</li>
+          <li>A pattern can be opened directly from a link: <code>pdweb.html?pattern=grays&amp;gray=128</code>.
+          Each pattern's help lists the parameters it accepts.</li>
+        </ul>
+
+        <h3>Pixels</h3>
+        <ul>
+          <li>Patterns are drawn in the display's own pixels. Bar and line-pair periods (1, 2, 4, 6 px) land
+          on physical pixels at any operating system scaling, and pixel sizes such as the scan box are
+          physical pixels too.</li>
+          <li>The display calibration (pixel pitch) setting sizes the interface and the measurement patch.
+          It does not affect the patterns.</li>
+          <li>As with the measurement modes, the browser and operating system color-manage what is drawn.
+          Evaluate patterns on the display profile and rendering path you intend to test.</li>
+        </ul>
+
+        <h3>Designs</h3>
+        <p>TG270-pQC and TG270-sQC follow AAPM Report No. 270; TG18-OIQ follows AAPM TG18 (Online Report
+        No. 3). They are redrawn from the published descriptions and scaled to the window, so they are
+        not the AAPM image files.</p>
+      </div>
+
+      <!-- ---------- TG270-pQC ---------- -->
+      <div class="helpdoc" id="help-pqc" hidden>
+        <p class="lead">Comprehensive visual evaluation of display performance, following AAPM Report No. 270.
+        Based on the TG18-PQC design.</p>
+        <h3>Features</h3>
+        <ul>
+          <li><b>18 horizontal gray bars</b>, 0 to 255 in steps of 15.</li>
+          <li><b>Modulation columns.</b> Left: horizontal modulation at 18, 12, 6 and 4 pixel periods;
+          right: vertical modulation at 4, 6, 12 and 18 pixels. Inner columns are 8 gray levels of
+          contrast, outer columns 2.</li>
+          <li><b>Line pairs</b> in the top and bottom bars at 2, 4 and 6 pixel periods, high contrast
+          (0/128 top, 128/255 bottom), for spatial resolution.</li>
+          <li><b>Side ramps</b>, 0 to 255 full height, each with a modulated center strip, for gradient
+          reproduction.</li>
+        </ul>
+        <h3>Use</h3>
+        <p>On a DICOM-conformant display every modulation pattern should be visible at every gray level.
+        Modulation and line-pair periods are fixed in display pixels and do not change with zoom.</p>
+        <h3>Controls</h3>
+        <ul>
+          <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
+          also resets.</li>
+        </ul>
+      </div>
+
+      <!-- ---------- TG270-sQC ---------- -->
+      <div class="helpdoc" id="help-sqc" hidden>
+        <p class="lead">Quick visual evaluation of display performance, following AAPM Report No. 270.</p>
+        <h3>Features</h3>
+        <ul>
+          <li><b>18 gray squares</b> (3 rows of 6) covering 0 to 255. Each carries 6-pixel vertical bar
+          patterns: upper left at -5 gray levels, lower right at +5. The first (0) and last (255) squares
+          use 3 gray levels of contrast in their outer patterns.</li>
+          <li><b>Three large squares</b> at 0, 128 and 255, for luminance measurements, uniformity and bad
+          pixels.</li>
+          <li><b>Ramp</b> along the bottom, 0 to 255 across the width, ending in 1-pixel line pairs that
+          verify pixel mapping. Useful for spotting bit-depth limits and contouring.</li>
+        </ul>
+        <h3>Use</h3>
+        <p>On a DICOM-conformant display all 18 modulation patterns should be about equally visible. The
+        3-level corner patterns may only be visible on the highest-performance displays.</p>
+        <h3>Controls</h3>
+        <ul>
+          <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
+          also resets.</li>
+        </ul>
+      </div>
+
+      <!-- ---------- TG18-OIQ ---------- -->
+      <div class="helpdoc" id="help-tg18oiq" hidden>
+        <p class="lead">Overall image quality, following the AAPM TG18-OIQ pattern (TG18-QC without the Cx
+        patterns). Scaled to the window on a grid referenced to a 1024 x 1024 pattern.</p>
+        <h3>Features</h3>
+        <ul>
+          <li><b>Gray steps</b>: 16 cells from 8 to 248 in steps of 16, with ±4 low-contrast corner
+          patches. The black cell carries a half-size patch at 13 and the white cell one at 242.</li>
+          <li><b>Luminance ramps</b> either side: 255 to 0 on the left, 0 to 255 on the right.</li>
+          <li><b>Window response bands</b> above the grid (black over white, with inner white-over-black
+          strips) and a <b>crosstalk</b> section above them, for video signal artifacts.</li>
+          <li><b>QUALITY CONTROL</b> panels on black, mid-gray and white, each letter at a lower contrast:
+          Q at ±14 gray levels down to L at ±1.</li>
+          <li><b>Spatial resolution</b> at the center and the four window corners: high contrast (0/255)
+          and low contrast (128/130) halves, each with 1 and 2 pixel bars in both directions. Periods are
+          fixed in display pixels.</li>
+        </ul>
+        <h3>Controls</h3>
+        <ul>
+          <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
+          also resets.</li>
+        </ul>
+      </div>
+
+      <!-- ---------- gray levels ---------- -->
+      <div class="helpdoc" id="help-grays" hidden>
+        <p class="lead">A uniform field at any gray level, for evaluating the gray scale and uniformity by
+        eye.</p>
+        <h3>Controls</h3>
+        <ul>
+          <li>Left click, wheel up or <code>↑</code>: raise the gray level by one step. Right click, wheel
+          down or <code>↓</code>: lower it.</li>
+          <li>Click the number to type a level (0 to 255); <code>Enter</code> applies, <code>Esc</code>
+          reverts. The drop-down sets the step size (1, 5 or 15).</li>
+          <li><b>⌗</b> shows a 3 x 3 grid to help judge uniformity across the display.</li>
+        </ul>
+        <h3>Link parameters</h3>
+        <ul>
+          <li><code>gray=N</code> starting level (default 120), <code>step=1|5|15</code> (default 15),
+          <code>grid=true</code>. Example: <code>pdweb.html?pattern=grays&amp;gray=128&amp;step=5</code>.</li>
+        </ul>
+      </div>
+
+      <!-- ---------- uniformity scan ---------- -->
+      <div class="helpdoc" id="help-scan" hidden>
+        <p class="lead">A single box on black, stepped across the whole display in a serpentine path, for
+        finding mura, bad pixels and non-uniformity.</p>
+        <h3>Controls</h3>
+        <ul>
+          <li>Wheel down or <code>→</code> (hold to keep going): move forward. Wheel up or
+          <code>←</code>: move back.</li>
+          <li><code>Space</code>: play forward until the end or until stopped; <code>Shift</code> +
+          <code>Space</code> plays backward.</li>
+          <li>Left click or <code>↑</code>: next gray level (15, 120, 240). Right click or <code>↓</code>:
+          previous.</li>
+          <li>The box size is in display pixels (square); changing it returns the box to the start.</li>
+        </ul>
+        <h3>Link parameters</h3>
+        <ul>
+          <li><code>size=N</code> (default 300), <code>gray=15|120|240</code> (default 120). Example:
+          <code>pdweb.html?pattern=scan&amp;size=150&amp;gray=15</code>.</li>
+        </ul>
+      </div>
+
+      <!-- ---------- ambient test ---------- -->
+      <div class="helpdoc" id="help-ambtest" hidden>
+        <p class="lead">Checks that the reading-room lighting leaves low-contrast detail visible. A faint
+        bar-pattern target is placed at random; find it and click it.</p>
+        <h3>Before starting</h3>
+        <ul>
+          <li>Set the ambient lighting to reading conditions: close or cover nearby windows, reduce
+          overhead lighting, and avoid lights reflecting on the display.</li>
+        </ul>
+        <h3>Controls</h3>
+        <ul>
+          <li>Click the target: pass. Click anywhere else: fail. Either result offers a retry at a new
+          position; <b>Move</b> repositions it at any time.</li>
+          <li><code>↑</code> / <code>↓</code>, or left / right click on the contrast readout, or
+          <code>Shift</code> + left / right click anywhere: raise or lower the contrast.</li>
+          <li><code>→</code> / <code>←</code>, or <code>Alt</code> + left / right click: shift the base
+          level (background and target together).</li>
+        </ul>
+        <h3>Target</h3>
+        <ul>
+          <li>102 x 102 display pixels of vertical bars on a 6-pixel period, starting at 3 gray levels of
+          contrast.</li>
+        </ul>
+        <h3>Link parameters</h3>
+        <ul>
+          <li><code>contrast=N</code> starting contrast (default 3); <code>lock</code> prevents changing
+          it; <code>email=address</code> adds a Share Results button that opens an email with the result.
+          Example: <code>pdweb.html?pattern=ambtest&amp;contrast=5&amp;lock</code>.</li>
+        </ul>
+      </div>
+
       <!-- ---------- license ---------- -->
       <div class="helpdoc" id="help-license" hidden>
         <h3>pdweb</h3>
@@ -789,10 +982,18 @@
         reimplemented, and the parts of the original driver not needed here were omitted. The measurement path
         was kept faithful to the original.</p>
         <p><b>What is original.</b> Everything outside the driver - the DICOM GSDF analysis, the AAPM Report
-        No. 196 gray tracking metrics, the uniformity analysis, the charts and maps, the user interface, and
-        the export writers - is original work by the copyright holder named at the top.</p>
+        No. 196 gray tracking metrics, the uniformity analysis, the charts and maps, the test patterns, the
+        user interface, and the export writers - is original work by the copyright holder named at the
+        top.</p>
         <p>Argyll is available from <code>argyllcms.com</code>. Neither Graeme W. Gill nor the Argyll project
         is responsible for pdweb.</p>
+
+        <h3>Test patterns</h3>
+        <p>The pattern drawing code is Copyright &copy; 2026 Nick Bevins, under the same GPL v2 or later
+        terms as the rest of pdweb. The TG270-pQC and TG270-sQC designs are described in AAPM Report No. 270,
+        and TG18-OIQ in AAPM TG18 (Online Report No. 3); the reports and their pattern files are copyright
+        of the AAPM. The patterns here are redrawn from the published specifications. No AAPM pattern files
+        or report text are included, and pdweb is not affiliated with the AAPM.</p>
 
         <h3>Relationship to pacsDisplay</h3>
         <p>pdweb reads and writes the pacsDisplay cLR and Luni file formats so results interchange with an
@@ -1162,16 +1363,16 @@ Public License instead of this License.</pre>
     <p class="placeholder">Pixel pitch of the display. Sets the interface size and the
       true size of the measurement patch (should be 10 cm). Check the display specifications or
       calculate by dividing the active area width in mm by the horizontal resolution.</p>
-    <div class="pitchgrid" id="pitchGrid">
-      <button class="pitchbtn" data-pitch="0.270"><b>0.270 mm</b><i>2 MP 21.3" / office</i></button>
-      <button class="pitchbtn" data-pitch="0.211"><b>0.211 mm</b><i>3 MP 21.3"</i></button>
-      <button class="pitchbtn" data-pitch="0.200"><b>0.200 mm</b><i>6 MP 30"</i></button>
-      <button class="pitchbtn" data-pitch="0.185"><b>0.185 mm</b><i>8 MP 4K 31"</i></button>
-      <button class="pitchbtn" data-pitch="0.170"><b>0.170 mm</b><i>12 MP 34"</i></button>
-      <button class="pitchbtn" data-pitch="0.165"><b>0.165 mm</b><i>5 MP 21.3"</i></button>
-      <button class="pitchbtn" data-pitch="0.155"><b>0.155 mm</b><i>12 MP 31"</i></button>
-      <button class="pitchbtn" data-pitch="0.103"><b>0.103 mm</b><i>32 MP 33"</i></button>
-      <button class="pitchbtn" data-pitch=""><b>Not set</b><i>96 dpi CSS reference</i></button>
+    <div class="tiles" id="pitchGrid">
+      <button class="tile" data-pitch="0.270"><b>0.270 mm</b><i>2 MP 21.3" / office</i></button>
+      <button class="tile" data-pitch="0.211"><b>0.211 mm</b><i>3 MP 21.3"</i></button>
+      <button class="tile" data-pitch="0.200"><b>0.200 mm</b><i>6 MP 30"</i></button>
+      <button class="tile" data-pitch="0.185"><b>0.185 mm</b><i>8 MP 4K 31"</i></button>
+      <button class="tile" data-pitch="0.170"><b>0.170 mm</b><i>12 MP 34"</i></button>
+      <button class="tile" data-pitch="0.165"><b>0.165 mm</b><i>5 MP 21.3"</i></button>
+      <button class="tile" data-pitch="0.155"><b>0.155 mm</b><i>12 MP 31"</i></button>
+      <button class="tile" data-pitch="0.103"><b>0.103 mm</b><i>32 MP 33"</i></button>
+      <button class="tile" data-pitch=""><b>Not set</b><i>96 dpi CSS reference</i></button>
     </div>
     <!-- An edit buffer: nothing applies until Set or Enter, so 0.1 on the way to 0.165 does not
          resize the interface mid-entry. -->
@@ -1184,8 +1385,8 @@ Public License instead of this License.</pre>
     </div>
   </section>
 
-  <!-- shared: instrument -->
-  <div class="card">
+  <!-- shared by the measurement modes; the patterns page has no use for the instrument -->
+  <div class="card" id="instrCard">
     <div class="cardtop">
       <h2>Instrument</h2>
       <div class="status-right"><span id="envPill"></span> <span id="statePill"></span></div>
@@ -1200,9 +1401,6 @@ Public License instead of this License.</pre>
         <span class="k">Serial</span><span class="v" id="dSerial">-</span>
       </div>
     </div>
-    <!-- Bring-up: getinfo → check/unlock (skip if unlocked) → int EEPROM →
-         ext EEPROM (retry, echo-validated) → decode 3 sensor spectra + ambient filter →
-         MIbLSr matrices (cd/m² & lux) vs CIE 1931 2°. Echo-validated + self-resync. -->
   </div>
 
   <!-- ===== METER MODE ===== -->
@@ -1253,7 +1451,7 @@ Public License instead of this License.</pre>
   </div>
 
   <!-- ===== LUMINANCE RESPONSE MODE ===== -->
-  <div class="card" id="view-sequence" style="display:none">
+  <div class="card" id="view-sequence" hidden>
     <h2>Luminance response</h2>
     <div class="seqhead">
       <div class="seqbtns">
@@ -1336,7 +1534,7 @@ Public License instead of this License.</pre>
   <!-- ===== ANALYSIS (lumResponse results) =====
        Separate card so capture and results stay distinct, and so charts have somewhere
        to live. Shown with the sequence view; contents stay empty until a run completes. -->
-  <div class="card" id="view-analysis" style="display:none">
+  <div class="card" id="view-analysis" hidden>
     <h2>Analysis</h2>
 
     <!-- import / export toolbar (buttons enabled once a run has produced points) -->
@@ -1367,7 +1565,7 @@ Public License instead of this License.</pre>
     </div>
 
     <!-- conformance results (populated after a complete run) -->
-    <details id="conf" class="adv" style="display:none">
+    <details id="conf" class="adv" hidden>
       <summary id="confHead">GSDF conformance</summary>
       <div class="msg" id="confWarn"></div>
       <div class="conf-grid" id="confGrid"></div>
@@ -1379,14 +1577,14 @@ Public License instead of this License.</pre>
   </div>
 
   <!-- ===== UNIFORMITY MODE ===== -->
-  <div class="card" id="view-uniformity" style="display:none">
+  <div class="card" id="view-uniformity" hidden>
     <h2>Uniformity</h2>
     <div class="seqhead">
       <div class="seqbtns">
         <button id="btnUni1" disabled title="One gray level: default DDL 210 (about the 80% level).">1 level</button>
         <button id="btnUni3" disabled title="Three gray levels: DDL 30, 120, 210 (about 10/50/80%). AAPM Report No. 270 recommends this set for routine testing.">3 level</button>
         <button id="btnUni18" disabled title="Eighteen gray levels, every 15 DDL from 0 to 255 (the TG18-LN levels).">18 level</button>
-        <button id="btnUniExt" disabled title="Measure an unattached display: and a reading is taken at each of the nine positions while you move the probe.">Ext</button>
+        <button id="btnUniExt" disabled title="Measure an unattached display: a reading is taken at each of the nine positions while you move the probe.">Ext</button>
         <button id="btnUniStop" disabled>Stop</button>
       </div>
       <div class="headopts">
@@ -1479,7 +1677,7 @@ Public License instead of this License.</pre>
   <!-- ===== UNIFORMITY ANALYSIS =====
        Separate card so capture and results stay distinct, mirroring lumResponse. Shown with
        the uniformity view; contents stay empty until a run completes. -->
-  <div class="card" id="view-uniAnalysis" style="display:none">
+  <div class="card" id="view-uniAnalysis" hidden>
     <h2>Analysis</h2>
 
     <div class="anlbar">
@@ -1509,7 +1707,7 @@ Public License instead of this License.</pre>
     </div>
 
     <!-- summary metrics (populated after a complete run) -->
-    <details id="uniConf" class="adv" style="display:none">
+    <details id="uniConf" class="adv" hidden>
       <summary id="uniConfHead">Uniformity</summary>
       <div class="msg" id="uniConfWarn"></div>
       <div class="conf-grid" id="uniConfGrid"></div>
@@ -1517,13 +1715,29 @@ Public License instead of this License.</pre>
     </details>
 
     <!-- per-gray-level 3x3 matrices; collapsed because an 18-level run is 18 of them -->
-    <details id="uniMatrices" class="adv" style="display:none">
+    <details id="uniMatrices" class="adv" hidden>
       <summary>Measured luminance by position</summary>
       <div id="uniMatHost"></div>
     </details>
 
     <!-- deviation map renders here -->
     <div id="uniMapHost"></div>
+  </div>
+
+  <!-- ===== TEST PATTERNS ===== Each tile opens its pattern on #patStage. -->
+  <div class="card" id="view-patterns" hidden>
+    <h2>Test patterns</h2>
+    <p class="placeholder">Visual test patterns for display QC. No instrument needed, and any current
+      browser works. Each pattern opens over the whole window; <b>Esc</b> or ✕ closes it and ? explains it.</p>
+    <div class="tiles" id="patTiles">
+      <button class="tile" data-pat="pqc"><b>TG270-pQC</b><i>Gray bars, modulation, line pairs</i></button>
+      <button class="tile" data-pat="sqc"><b>TG270-sQC</b><i>Quick check: 18 modulated squares</i></button>
+      <button class="tile" data-pat="tg18oiq"><b>TG18-OIQ</b><i>Overall image quality</i></button>
+      <button class="tile" data-pat="grays"><b>Gray levels</b><i>Uniform field, 0 to 255</i></button>
+      <button class="tile" data-pat="scan"><b>Uniformity scan</b><i>Moving box: mura, bad pixels</i></button>
+      <button class="tile" data-pat="ambtest"><b>Ambient test</b><i>Find the low-contrast target</i></button>
+    </div>
+    <label class="chk patopt"><input type="checkbox" id="patFull" checked> Open full screen</label>
   </div>
 
   <!-- shared: log (collapsed) -->
@@ -1545,6 +1759,8 @@ Public License instead of this License.</pre>
     with no warranty.</div>
   <div>Includes i1Display 3 instrument driver code ported from ArgyllCMS - Copyright &copy; 2006 - 2014,
   Graeme W. Gill.</div>
+  <div>Test pattern designs from AAPM TG18 and AAPM Report No. 270, redrawn from the published
+  specifications.</div>
 </footer>
 
 <!-- Settings for every mode, saved and reloaded as one file. Deliberately not a run export: it
@@ -1556,31 +1772,41 @@ Public License instead of this License.</pre>
        second picker: two controls for one setting is how the box and the selector end up
        disagreeing, and the card is the picker. -->
   <button id="btnPitch" title="Pixel pitch of the display under test - click to change"></button>
-  <button id="btnCfgExport" title="Save the settings of all three modes to a JSON file">Export</button>
+  <button id="btnCfgExport" title="Save the settings of every mode to a JSON file">Export</button>
   <button id="btnCfgImport" title="Load settings saved from a previous session">Import</button>
   <input type="file" id="cfgFileImport" accept=".json,application/json" hidden>
+</div>
+
+<!-- Pattern stage. The canvas is drawn in device pixels; the controls in .patctl belong to whichever
+     pattern is open and are rebuilt on every open. -->
+<div id="patStage" hidden>
+  <canvas id="patCanvas" tabindex="-1"></canvas>
+  <div class="patbar">
+    <button id="patHelp" title="Help">?</button>
+    <button id="patReset" title="Reset zoom and pan">⟲</button>
+    <button id="patFs" title="Full screen on/off">⛶</button>
+    <button id="patClose" title="Close (Esc)">✕</button>
+  </div>
+  <div class="patctl" id="patCtl"></div>
+  <div class="patdlg" id="patDlg" hidden>
+    <div class="gobox"><div class="gotitle" id="patDlgTitle"></div><div class="gosub" id="patDlgMsg"></div>
+      <div id="patDlgBtns"></div></div>
+  </div>
 </div>
 
 <script>
 "use strict";
 /* ==========================================================================
-   pdweb - i1D3 photometer driver (WebHID port of ArgyllCMS i1d3.c + i1d3.h) + DICOM GSDF conformance
-   analysis.
-
-   Copyright (C) 2026 Nick Bevins. GNU GPL v2 or later, no warranty. The ported driver is Copyright (C) 2006 -
-   2014, Graeme W. Gill. Full notices are in the HTML comment at the top of this file and in the License
-   section of the page; the GPL text is embedded there too.
+   pdweb. Copyright and license notices: see the comment at the top of this file.
 
    Porting rule: where this file looks wrong but matches ArgyllCMS, the Argyll line number is cited inline.
    Those sites are deliberate - every existing calibration was validated against that behavior. Verify against
    spotread before changing one. Known cited sites: black[0] in decodeInternal, the doubled rmeas threshold
    and the unguarded rgb2 update in takeEmisMeasurement.
 
-   Caveat that no code here can detect: the patch is painted with CSS rgb(), so the browser and OS
-   color-manage it to the installed display profile before it reaches the display. There is no web API exposing
-   that transform. If the clinical viewer under test renders through a different path (its own GSDF LUT, or an
-   unmanaged surface), the DDLs measured here are not the DDLs that viewer emits. Stated for the operator in
-   the lumResponse instructions modal.
+   Caveat no code here can detect: patches are painted with CSS rgb(), so the browser and OS color-manage
+   them to the installed display profile. If the clinical viewer under test renders through a different path,
+   the DDLs measured here are not the ones that viewer emits. Stated for the operator in the help modal.
    ========================================================================== */
 
 const $=id=>document.getElementById(id);
@@ -1598,18 +1824,10 @@ function log(m,c){
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-/* Cancelable delay: polls `alive` so Stop is honored during a patch settle
-   rather than only at the top of the next sequence step. */
-async function sleepWhile(ms,alive,step=50){
-  const end=performance.now()+ms;
-  while(performance.now()<end){ if(!alive()) return false; await sleep(Math.min(step,end-performance.now())); }
-  return alive();
-}
-
-/* Same contract as sleepWhile, plus a per-step callback carrying the milliseconds remaining.
-   External acquisitions use it to drive the countdown the operator moves against. The wait is a plain
-   duration measured from the moment it starts - which is when the previous measurement finished -
-   so the operator always gets the whole interval to move, regardless of how long the meter took. */
+/* Cancelable delay: polls `alive` so Stop is honored mid-wait rather than only at the top of the
+   next step, with an optional per-step callback carrying the milliseconds remaining (the countdown
+   an operator moves against). The wait is measured from the moment it starts - which is when the
+   previous measurement finished - so the operator always gets the whole interval. */
 async function sleepTicking(ms,alive,onTick,step=50){
   const end=performance.now()+ms;
   for(;;){
@@ -1621,6 +1839,7 @@ async function sleepTicking(ms,alive,onTick,step=50){
   }
   return alive();
 }
+const sleepWhile=(ms,alive)=>sleepTicking(ms,alive);
 
 /* Numeric field reader. parseFloat(x)||dflt silently swallows a deliberate 0
    (JS treats it as falsy), which matters for the color floor where 0 means
@@ -1642,6 +1861,40 @@ function showMsg(id,items,kind){
   el.appendChild(ul);
 }
 function clearMsg(id){ const el=$(id); el.className="msg"; el.textContent=""; }
+
+/* ---- small shared helpers ---- */
+const fmtL=Y=>Y.toFixed(Y<10?3:2);                // luminance readout precision
+const grayCss=g=>{ const v=Math.max(0,Math.min(255,Math.round(g))); return `rgb(${v},${v},${v})`; };
+/* Stage status text is drawn over the field, so any fixed color disappears somewhere on the ramp.
+   It holds FS_CONTRAST gray levels off the field instead - lighter over the dark half, darker from
+   mid-scale up - which keeps the separation without ever being the brightest thing on a dark screen. */
+const FS_CONTRAST=60, FS_FLIP=128;
+const fsInk=g=>grayCss((g|0)<FS_FLIP ? (g|0)+FS_CONTRAST : (g|0)-FS_CONTRAST);
+/* Printable ASCII only, so device strings can never carry markup or control characters. */
+const asciiOf=bytes=>Array.from(bytes).map(b=>b>=32&&b<127?String.fromCharCode(b):"").join("").trim();
+/* Not numOr(v,null): +null is 0, which would turn "not recorded" into a real zero. */
+const finiteOrNull=v=>v!=null&&Number.isFinite(+v)?+v:null;
+async function copyText(text,what){
+  try{ await navigator.clipboard.writeText(text); log(`${what} copied to clipboard`,"ok"); }
+  catch(e){ log("copy failed: "+e.message,"e"); }
+}
+/* JSON file import behind a button. The input is cleared first so the same file can be picked again. */
+function wireImport(btnId,inputId,onJSON,onErr){
+  $(btnId).onclick=()=>$(inputId).click();
+  $(inputId).onchange=async e=>{
+    const f=e.target.files&&e.target.files[0];
+    e.target.value="";
+    if(!f) return;
+    try{ await onJSON(JSON.parse(await f.text()),f.name); }catch(err){ onErr(err); }
+  };
+}
+const fileStamp=iso=>(iso||new Date().toISOString()).replace(/[:.]/g,"-").replace("T","_").slice(0,19);
+/* MM/DD/YY HH:MM:SS, as the pacsDisplay text formats write it. */
+function hdrStamp(iso){
+  const d=new Date(iso), t2=n=>String(n).padStart(2,"0");
+  return `${t2(d.getMonth()+1)}/${t2(d.getDate())}/${t2(d.getFullYear()%100)} `+
+         `${t2(d.getHours())}:${t2(d.getMinutes())}:${t2(d.getSeconds())}`;
+}
 
 const CC={getinfo:0x0000,status:0x0001,locked:0x0020,freqmeas:0x0100,periodmeas:0x0200,
           readintee:0x0800,readextee:0x1200,getdiff:0x9400,lockchal:0x9900,lockresp:0x9a00,relock:0x9b00};
@@ -1718,7 +1971,7 @@ const Y_FLOOR=0.01;
 
 /* Shared so the live capture path and Re-analyze on an imported run word this identically. meta.clamped and
    meta.clampedAt survive import, so the warning they explain has to survive too. Accepts either the DDL list
-   or a bare count, because data acquistions exported before clampedAt existed carry only the count.
+   or a bare count, because data acquisitions exported before clampedAt existed carry only the count.
 
    Naming the levels matters: a clamp at DDL 0 is a display black-level property, but a clamp part-way up the
    ramp is not - on an external run it almost always means the probe was off the display or still moving, and
@@ -2007,8 +2260,7 @@ class I1D3{
     throw last;
   }
 
-  async getInfo(){const r=await this.cmd(CC.getinfo);
-    return Array.from(r.subarray(2)).map(b=>b>=32&&b<127?String.fromCharCode(b):"").join("").replace(/\0.*$/,"").trim();}
+  async getInfo(){ return asciiOf((await this.cmd(CC.getinfo)).subarray(2)); }
   async lockStatus(){ const r=await this.cmd(CC.locked);
     let stat=1; if(r[2]!==0 || r[3]===0) stat=0; return stat; }
   async getDiffPos(){const r=await this.cmd(CC.getdiff);return r[1];}
@@ -2062,8 +2314,8 @@ class I1D3{
     return out;}
 
   decodeInternal(buf){const dv=new DataView(buf.buffer,buf.byteOffset,buf.byteLength);
-    this.serial=Array.from(buf.subarray(0x10,0x10+20)).map(b=>b>=32&&b<127?String.fromCharCode(b):"").join("").replace(/\0.*$/,"").trim();
-    this.vers=Array.from(buf.subarray(0x2C,0x2C+10)).map(b=>b>=32&&b<127?String.fromCharCode(b):"").join("").replace(/\0.*$/,"").trim();
+    this.serial=asciiOf(buf.subarray(0x10,0x10+20));
+    this.vers=asciiOf(buf.subarray(0x2C,0x2C+10));
     this.black=[0,0,0];
     /* NOTE: black[0] inside the loop is deliberate - it mirrors Argyll i1d3.c:2389-2396 verbatim, which
        writes p->black[0] on every iteration so only the last (blue) offset survives and black[1]/black[2]
@@ -2252,70 +2504,51 @@ const cont={on:false};
 let lastReading=null;
 let reading=false;
 
-/* Every button's enabled state derives from here. Previously button state was inferred
-   from $("btnRead").disabled, which coupled the sequence controls to the meter controls
-   and broke as soon as either changed for an unrelated reason. */
+/* Every button's enabled state derives from here, never from another button's state. */
+const dis=(ids,v)=>{ for(const id of ids) $(id).disabled=v; };
 function updateButtons(){
-  /* `busy` covers both kinds of run: they share one instrument, so a uniformity run has to
-     lock out the meter and the ramp exactly as the ramp already locks out the meter. */
+  /* `busy` covers both kinds of run: they share one instrument, so each locks out the other
+     and the meter. */
   const on=app.ready, busy=seq.on||uni.on;
   $("btnConnect").disabled=!HAS_HID;
   $("btnClose").disabled=!on;
-  $("btnRead").disabled=!on||busy;          // meter reads are locked out during a sequence
-  $("btnCont").disabled=!on||busy;
-  $("btnSeq18").disabled=!on||busy;
-  $("btnSeq52").disabled=!on||busy;
-  $("btnSeq256").disabled=!on||busy;
-  $("btnSeqExt18").disabled=!on||busy;
-  $("btnSeqExt11").disabled=!on||busy;
+  dis(["btnRead","btnCont","btnSeq18","btnSeq52","btnSeq256","btnSeqExt18","btnSeqExt11",
+       "btnUni1","btnUni3","btnUni18","btnUniExt"],!on||busy);
   $("btnSeqStop").disabled=!seq.on;
-  $("btnUni1").disabled=!on||busy;
-  $("btnUni3").disabled=!on||busy;
-  $("btnUni18").disabled=!on||busy;
-  $("btnUniExt").disabled=!on||busy;
   $("btnUniStop").disabled=!uni.on;
   $("btnCopyVal").disabled=!lastReading;
-  /* Export survives disconnect: captured points stay valid whether or not the meter is
-     still attached. cLR additionally requires a complete ramp. */
+  /* Import is locked out mid-run - settings included, because the run read its settings once at
+     the start and changing a box now would describe the acquisition wrongly. Exports survive
+     disconnect: captured points stay valid whether or not the meter is still attached. cLR and
+     Luni additionally need a complete run; Copy analysis needs an analysis, not just points. */
+  dis(["btnImport","btnUniImport","btnCfgImport"],busy);
   const run=seq.lastRun, havePts=!!(run && run.points.length);
-  $("btnImport").disabled=busy;
-  $("btnReanalyze").disabled=!havePts||busy;
-  $("btnCopyData").disabled=!havePts||busy;
-  $("btnExpJson").disabled=!havePts||busy;
+  dis(["btnReanalyze","btnCopyData","btnExpJson"],!havePts||busy);
   $("btnExpClr").disabled=!havePts||busy||!run.meta.complete;
-  /* Copy analysis needs an analysis, not just points: an incomplete or unanalyzable run
-     leaves the conformance section hidden and there is nothing to copy. */
-  /* Settings import is locked out mid-run for the same reason the run importers are: the run
-     read its settings once at the start, so changing a box now would describe the acquisition
-     wrongly. Export stays available - it only reads. */
-  $("btnCfgImport").disabled=busy;
   $("btnCopyConf").disabled=!lastConf||busy;
-  /* Analysis card placeholder: only while the card has nothing to show. */
-  $("analysisEmpty").style.display=(havePts||$("conf").style.display!=="none")?"none":"";
-
-  /* Same derivation for the uniformity card. Luni additionally requires a complete run: a
-     matrix with a hole in it is written as if it were whole. */
+  $("analysisEmpty").hidden=havePts||!$("conf").hidden;
   const urun=uni.lastRun, uHavePts=!!(urun && urun.points.length);
-  $("btnUniImport").disabled=busy;
-  $("btnUniReanalyze").disabled=!uHavePts||busy;
-  $("btnUniCopyData").disabled=!uHavePts||busy;
-  $("btnUniExpJson").disabled=!uHavePts||busy;
+  dis(["btnUniReanalyze","btnUniCopyData","btnUniExpJson"],!uHavePts||busy);
   $("btnUniExpLuni").disabled=!uHavePts||busy||!urun.meta.complete;
   $("btnUniCopyConf").disabled=!lastUniConf||busy;
-  $("uniAnalysisEmpty").style.display=(uHavePts||$("uniConf").style.display!=="none")?"none":"";
+  $("uniAnalysisEmpty").hidden=uHavePts||!$("uniConf").hidden;
 }
 
+function stopCont(){ if(cont.on){ cont.on=false; $("btnCont").textContent="Continuous"; } }
+
+/* Cards shown per mode. Each analysis card belongs to its capture card; the instrument card to
+   every mode that measures. */
+const VIEWS={meter:["view-meter"], sequence:["view-sequence","view-analysis"],
+             uniformity:["view-uniformity","view-uniAnalysis"], patterns:["view-patterns"]};
 let helpMode="meter";                 // which instruction block the modal will show
 function setMode(mode){
   document.querySelectorAll(".modebtn").forEach(b=>b.classList.toggle("active",b.dataset.mode===mode));
-  $("view-meter").style.display   = mode==="meter" ? "" : "none";
-  $("view-sequence").style.display= mode==="sequence" ? "" : "none";
-  $("view-analysis").style.display= mode==="sequence" ? "" : "none";   // results belong to lumResponse
-  $("view-uniformity").style.display  = mode==="uniformity" ? "" : "none";
-  $("view-uniAnalysis").style.display = mode==="uniformity" ? "" : "none";
-  if(mode!=="meter" && cont.on){ cont.on=false; $("btnCont").textContent="Continuous"; }
+  for(const [m,ids] of Object.entries(VIEWS)) for(const id of ids) $(id).hidden=m!==mode;
+  $("instrCard").hidden=mode==="patterns";
+  if(mode!=="meter") stopCont();
   if(mode!=="sequence") seq.stop();
   if(mode!=="uniformity") uni.stop();
+  if(mode!=="patterns") closePattern();
   helpMode=mode;
   showHelpDoc(mode);
   queueCenterPatchRoom();   /* after the views toggle - no box to measure until the view is on */
@@ -2333,7 +2566,7 @@ const MAIN_PAD_TOP=parseFloat(getComputedStyle(MAIN).paddingTop)||0;
 function centerPatchRoom(){
   const p=$("patch");
   /* Other mode, patch hidden for an external run, or full screen - where <main> is not involved. */
-  if($("view-sequence").style.display==="none"||p.offsetParent===null||document.fullscreenElement){
+  if($("view-sequence").hidden||p.offsetParent===null||document.fullscreenElement){
     MAIN.style.paddingTop=""; return;
   }
   /* Not cleared first to take a baseline: that shortens the document and clamps scrollY. */
@@ -2353,20 +2586,18 @@ window.addEventListener("resize",queueCenterPatchRoom);
 document.addEventListener("fullscreenchange",queueCenterPatchRoom);
 
 /* ---- instructions modal ----
-   Both blocks are already in the document; this only chooses which is visible and manages
-   focus. Nothing writes into them, so there is no path from data to markup here. */
+   Every block is already in the document as static markup; this only chooses which is visible and
+   manages focus. Nothing writes into them, so there is no path from data to markup here. */
 const HELP_TITLE={meter:"Instructions - meter", sequence:"Instructions - lumResponse",
-                  uniformity:"Instructions - uniformity", license:"License"};
+                  uniformity:"Instructions - uniformity", patterns:"Instructions - patterns",
+                  license:"License"};
 function showHelpDoc(doc){
-  $("help-meter").hidden      = doc!=="meter";
-  $("help-sequence").hidden   = doc!=="sequence";
-  $("help-uniformity").hidden = doc!=="uniformity";
-  $("help-license").hidden    = doc!=="license";
-  $("helpTitle").textContent  = HELP_TITLE[doc]||"Instructions";
+  for(const d of $("helpModal").querySelectorAll(".helpdoc")) d.hidden=d.id!==`help-${doc}`;
+  $("helpTitle").textContent=HELP_TITLE[doc]||PAT[doc]?.title||"Instructions";
 }
-/* `doc` overrides the current mode - the footer link opens the license from either mode.
+/* `doc` overrides the current mode - the footer link opens the license from any mode.
    Callers must not be wired as onclick=openHelp: the event object would arrive as `doc`
-   and match no document, hiding all three. */
+   and match no document, hiding them all. */
 let helpOpener=null;
 function openHelp(doc,opener){
   if($("helpModal").hidden===false) return;
@@ -2398,7 +2629,7 @@ $("helpModal").addEventListener("click",e=>{ if(e.target.hasAttribute("data-clos
    can't drift. `note` is app-authored text only. */
 function setDisconnectedUI(note){
   app.ready=false;
-  if(cont.on){ cont.on=false; $("btnCont").textContent="Continuous"; }
+  stopCont();
   seq.stop();
   uni.stop();
   stopCoverPoll();
@@ -2423,7 +2654,7 @@ function updateCoverPill(pos){
 function startCoverPoll(){
   stopCoverPoll();
   coverTimer=setInterval(async()=>{
-    if(!app.ready||reading||cont.on||seq.on) return;
+    if(!app.ready||reading||cont.on||seq.on||uni.on) return;
     try{ updateCoverPill(await dev.getDiffPos()); }catch(e){ /* transient; keep last state */ }
   },1000);
 }
@@ -2493,51 +2724,38 @@ async function doRead(){
   const mode=$("mode").value;
   const {quantity}=await resolveQuantity();
   const m=await dev.measure(mode,navg,quantity);
-  const isLux = quantity==="ill";
-  const v=m.Y*sc;
-  const unit = isLux ? "lux" : "cd/m²";
-  const [up,vp]=uvFromXYZ(m.XYZ[0],m.XYZ[1],m.XYZ[2]);
-  $("valUnit").textContent = unit;
-  $("val").textContent = v.toFixed(v<10?3:2);
-  $("chrom").textContent = `${up.toFixed(4)}, ${vp.toFixed(4)}  (${m.x.toFixed(4)}, ${m.y.toFixed(4)})`;
-  $("xyz").textContent = m.XYZ.map(x=>(x*sc).toFixed(3)).join(", ");
-  $("diag").textContent = `sensor Hz (R/G/B): ${m.hz.map(x=>x.toFixed(1)).join(" / ")}   ·   ${m.detail}   ·   quantity: ${isLux?"illuminance":"luminance"}`;
+  const what=quantity==="ill"?"illuminance":"luminance", unit=quantity==="ill"?"lux":"cd/m²";
+  const v=fmtL(m.Y*sc), [up,vp]=uvFromXYZ(...m.XYZ).map(u=>u.toFixed(4));
   const XYZs=m.XYZ.map(x=>(x*sc).toFixed(3)).join(", ");
-  log(`${isLux?"illuminance":"luminance"}: ${v.toFixed(v<10?3:2)} ${unit}  ·  u', v' ${up.toFixed(4)},${vp.toFixed(4)}  ·  XYZ ${XYZs}`,"m");
-  lastReading={ v:v.toFixed(v<10?3:2), unit, up:up.toFixed(4), vp:vp.toFixed(4), x:m.x.toFixed(4), y:m.y.toFixed(4) };
+  $("valUnit").textContent=unit;
+  $("val").textContent=v;
+  $("chrom").textContent=`${up}, ${vp}  (${m.x.toFixed(4)}, ${m.y.toFixed(4)})`;
+  $("xyz").textContent=XYZs;
+  $("diag").textContent=`sensor Hz (R/G/B): ${m.hz.map(x=>x.toFixed(1)).join(" / ")}   ·   ${m.detail}   ·   quantity: ${what}`;
+  log(`${what}: ${v} ${unit}  ·  u', v' ${up},${vp}  ·  XYZ ${XYZs}`,"m");
+  lastReading=`${v}\t${up}\t${vp}`;
   updateButtons();
 }
 
-/* Read failures surface in the card, not only the log - the log panel is collapsed by
-   default, so a cover-position refusal was previously invisible: the readout simply
-   didn't change. */
-async function singleRead(){ if(reading||seq.on) return; reading=true;
+/* Read failures surface in the card, not only the log - the log panel is collapsed by default,
+   so a cover-position refusal would otherwise be invisible: the readout simply wouldn't change. */
+async function tryRead(){
+  reading=true;
   try{ clearMsg("meterMsg"); await doRead(); }
   catch(err){ showMsg("meterMsg",err.message,"warn"); log(`read: ${err.message}`,"w"); }
-  finally{ reading=false; } }
-$("btnRead").onclick=singleRead;
-
+  finally{ reading=false; }
+}
+$("btnRead").onclick=()=>{ if(!reading&&!seq.on) tryRead(); };
 $("btnCont").onclick=async e=>{
-  if(cont.on){ cont.on=false; e.target.textContent="Continuous"; return; }
-  cont.on=true; e.target.textContent="Stop"; clearMsg("meterMsg");
+  if(cont.on){ stopCont(); return; }
+  cont.on=true; e.target.textContent="Stop";
   while(cont.on){
     if(reading){ await sleep(50); continue; }
-    reading=true;
-    try{ clearMsg("meterMsg"); await doRead(); }
-    catch(err){ showMsg("meterMsg",err.message,"warn"); log(`read: ${err.message}`,"w"); }
-    finally{ reading=false; }
+    await tryRead();
     await sleep(150);
   }
 };
-
-$("btnCopyVal").onclick=async()=>{
-  if(!lastReading) return;
-  const r=lastReading;
-  //const txt=`${r.v} ${r.unit}\tu'=${r.up} v'=${r.vp}\tx=${r.x} y=${r.y}`; //drop long export (ignore units, xy)
-  const txt=`${r.v}\t${r.up}\t${r.vp}`;
-  try{ await navigator.clipboard.writeText(txt); log("measurement copied to clipboard","ok"); }
-  catch(e){ log("copy failed: "+e.message,"e"); }
-};
+$("btnCopyVal").onclick=()=>{ if(lastReading) copyText(lastReading,"measurement"); };
 
 /* ===== reference illuminant selector =====
    CIE 1976 u'v' of the standard illuminants; Δu'v' is measured against whichever is
@@ -2546,27 +2764,35 @@ $("btnCopyVal").onclick=async()=>{
    Carried to five places to match pacsDisplay's approach, which hardcodes D65 as
    0.19783, 0.46833. */
 const REFS={ d65:[0.19783,0.46833], d50:[0.20916,0.48808] };
-function currentRef(){
-  const sel=$("seqRef").value;
-  if(sel==="custom") return [numInput("seqRefU",REFS.d65[0],{min:0,max:1}), numInput("seqRefV",REFS.d65[1],{min:0,max:1})];
-  return REFS[sel];
+/* The luminance ("seq") and uniformity ("uni") cards each carry their own selector: the two can
+   reasonably be run against different targets, and sharing one would let a change on one card
+   silently rewrite the other's results. Same options and coercion, so an operator learns it once. */
+function refOf(p){
+  const sel=$(`${p}Ref`).value;
+  if(sel==="custom") return [numInput(`${p}RefU`,REFS.d65[0],{min:0,max:1}),
+                             numInput(`${p}RefV`,REFS.d65[1],{min:0,max:1})];
+  return REFS[sel].slice();
 }
-$("seqRef").onchange=()=>{
-  const custom=$("seqRef").value==="custom";
-  $("seqRefU").disabled=!custom; $("seqRefV").disabled=!custom;
-  if(!custom){ const [up,vp]=REFS[$("seqRef").value]; $("seqRefU").value=up; $("seqRefV").value=vp; }
+/* Points a selector at a u'v' pair, falling back to Custom when it matches no listed preset, so
+   an imported run or a config file restores selector, values and disabled state together. */
+function applyRef(p,[up,vp]){
+  const key=Object.keys(REFS).find(k=>Math.abs(REFS[k][0]-up)<1e-6&&Math.abs(REFS[k][1]-vp)<1e-6);
+  const listed=!!key && [...$(`${p}Ref`).options].some(o=>o.value===key);
+  $(`${p}Ref`).value=listed?key:"custom";
+  $(`${p}RefU`).value=up; $(`${p}RefV`).value=vp;
+  $(`${p}RefU`).disabled=$(`${p}RefV`).disabled=listed;
+}
+for(const p of ["seq","uni"]) $(`${p}Ref`).onchange=()=>{
+  const sel=$(`${p}Ref`).value;
+  if(sel!=="custom") applyRef(p,REFS[sel]);
+  else $(`${p}RefU`).disabled=$(`${p}RefV`).disabled=false;
 };
 
 /* ===== Luminance response (GSDF) capture ===== */
 const SETTLE_MS=400;                 // patch-change → measure delay, so the meter only sees the new level
 const BG_READS=3;                    // background reads at DDL 0 before the ramp (cLR stabilization lines)
-/* The fullscreen status text is drawn on the patch itself, so any fixed color disappears
-   somewhere on the ramp. Instead it holds this many gray levels away from the current
-   level - lighter over the dark half, darker from mid-scale up, which keeps the separation
-   constant without ever being the brightest thing on a dark screen. */
-const FS_CONTRAST=60, FS_FLIP=128;
 
-/* ---- external-display data acquistions ----
+/* ---- external-display data acquisitions ----
    No patch is painted and nothing here drives the display under test: the operator moves the
    probe across patches on another machine's screen while the run reads on a fixed interval. */
 /* Move delay: the operator's window to reposition the probe, or to advance the pattern on an
@@ -2584,25 +2810,30 @@ const MOVE_DELAY_SEQ_DEF=3;          // seconds, when the field is blank or garb
 const REVERSAL_LFLOOR=0.2,          // cd/m², noise floor: reversals below this are not reported
       REVERSAL_FRAC=0.02;           // fractional drop required before a reversal is called
 
-/* Countdown to the next external read. null blanks it; while a read is in flight the caller
-   passes null and the stage shows "measuring", so a slow adaptive read never looks like a hang. */
-function setExtCount(msLeft){
-  const el=$("extCount");
-  if(msLeft==null){ el.textContent="measuring..."; el.className="count reading"; return; }
-  el.textContent=`${Math.max(0,msLeft/1000).toFixed(1)} s`;
-  el.className="count";
+/* Countdown to the next external read, on either card's external stage (el). While a read is in
+   flight the caller passes null and the stage shows "measuring", so a slow adaptive read never
+   looks like a hang. */
+function setCount(el,msLeft){
+  el.textContent=msLeft==null ? "measuring..." : `${Math.max(0,msLeft/1000).toFixed(1)} s`;
+  el.className=msLeft==null ? "count reading" : "count";
 }
+const setExtCount=ms=>setCount($("extCount"),ms);
+/* Live readout under either stage; ids are `${p}Y` and `${p}UV`. */
+function setReadout(p,Y,up,vp){
+  $(`${p}Y`).textContent=Y==null ? "-" : fmtL(Y);
+  $(`${p}UV`).textContent=Y==null ? "-, -" : `${up.toFixed(4)}, ${vp.toFixed(4)}`;
+}
+const setSeqReadout=(Y,up,vp)=>setReadout("seq",Y,up,vp);
 
 function ddlLevels(n){ const out=[]; for(let i=0;i<n;i++) out.push(Math.round(i*255/(n-1))); return out; }
-function setPatch(ddl){ const g=ddl|0; $("patch").style.background=`rgb(${g},${g},${g})`; }
+function setPatch(ddl){ $("patch").style.background=grayCss(ddl|0); }
 function setSeqStatus(ddl,i,n,label){
   const prog=(i==null)?"":`   ·   ${label||"Measuring"} ${i} / ${n}`;
   const txt=`DDL ${ddl==null?"-":ddl} / 255${prog}`;
   $("patchLabel").textContent=txt;
   const fs=$("fsStatus");
   fs.textContent=txt+"   ·   Esc to stop";              // only visible while fullscreen
-  const g=(ddl|0)<FS_FLIP ? Math.min(255,(ddl|0)+FS_CONTRAST) : Math.max(0,(ddl|0)-FS_CONTRAST);
-  fs.style.color=`rgb(${g},${g},${g})`;
+  fs.style.color=fsInk(ddl);
 }
 
 /* ---- fullscreen stage ----
@@ -2641,25 +2872,46 @@ document.addEventListener("fullscreenchange",()=>{
    mid-run. Hidden tabs get their timers throttled hard, which stretches the interval without
    anything on screen saying so. Recorded rather than fatal: a notification stealing focus for a
    moment should not discard a three-minute run, but the result has to carry the caveat. */
-let seqBackgrounded=false;
+let seqBackgrounded=false, uniBackgrounded=false;
 document.addEventListener("visibilitychange",()=>{
-  if(document.hidden && seq.on && seq.external && !seqBackgrounded){
-    seqBackgrounded=true;
-    log("tab hidden during an external run - timer throttling may have stretched the interval","w");
-  }
+  if(!document.hidden) return;
+  if(seq.on && seq.external && !seqBackgrounded) seqBackgrounded=true;
+  else if(uni.on && uni.external && !uniBackgrounded) uniBackgrounded=true;
+  else return;
+  log("tab hidden during an external run - timer throttling may have stretched the interval","w");
 });
-function setSeqReadout(Y,up,vp){
-  if(Y==null){ $("seqY").textContent="-"; $("seqUV").textContent="-, -"; return; }
-  $("seqY").textContent=Y.toFixed(Y<10?3:2);
-  $("seqUV").textContent=`${up.toFixed(4)}, ${vp.toFixed(4)}`;
+/* The caveat that travels with a backgrounded run, live or re-analyzed. `what` is what the
+   readings are labeled with; ms is the requested interval when known. */
+const bgWarning=(what,ms)=>
+  `This tab was in the background during the run. Browsers throttle timers in hidden tabs, so the `+
+  `countdown may have run slower than ${ms?`the ${(ms/1000).toFixed(1)} s `:""}requested and the `+
+  `readings may not line up with the ${what} they are labeled with.`;
+
+/* Diffuser check at the start of a run. Emissive measurement requires the cover open
+   (i1d3.c:2345), so refuse up front and say so in the card rather than in the collapsed log. */
+async function requireCoverOff(msgId,label){
+  try{
+    const pos=await dev.getDiffPos(); updateCoverPill(pos);
+    if(pos!==1) return true;
+    showMsg(msgId,`${label} requires the diffuser cover to be OFF. Open the cover and start again.`,"warn");
+    log(`${label} blocked: diffuser cover is closed`,"w");
+  }catch(e){
+    showMsg(msgId,`Could not read the diffuser position: ${e.message}`,"err");
+    log(`${label}: ${e.message}`,"e");
+  }
+  return false;
 }
+/* Conformance grid rows. Keys are app-authored literals and may contain markup; values are
+   toFixed() numbers, DDLs and position labels, so neither carries anything device- or file-supplied. */
+const setConfRows=(id,rows)=>{ $(id).innerHTML=rows.map(([k,v])=>
+  `<div class="conf-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join(""); };
 
 let lastConf=null;
 function fpct(x){ return (x>=0?'+':'')+x.toFixed(1)+'%'; }
 function renderConformance(a){
   /* Clearing lastConf matters now that Copy analysis lives outside the conformance section:
      hiding the section is no longer enough to put the stale numbers out of reach. */
-  if(!a){ lastConf=null; $("conf").style.display="none"; renderCharts(null); updateButtons(); return; }
+  if(!a){ lastConf=null; $("conf").hidden=true; renderCharts(null); updateButtons(); return; }
   lastConf=a;
   /* Values are reported without pass/fail styling: acceptance limits differ by display
      class and by which guidance a site follows, so interpretation is left to the operator. */
@@ -2688,10 +2940,7 @@ function renderConformance(a){
     [`${TG_T}<sub>2</sub> (mean Δu'v' per step)`, tg.T2.toFixed(4)],
     [`${TG_T}<sub>2max</sub>`, tg.T2max.toFixed(4)+"  ("+tg.t2At+")"]);
   else if(tg) rows.push(["TG196 gray tracking", "n/a"]);
-  /* Keys are app-authored literals and may contain markup; values are toFixed() numbers and
-     DDL-derived strings, so neither carries anything device- or file-supplied. */
-  $("confGrid").innerHTML=rows.map(([k,v])=>
-    `<div class="conf-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+  setConfRows("confGrid",rows);
 
   /* T1 and T1max compare each level against white and are largely independent of how
      finely the ramp was sampled. T2 and T2max are distances between neighbours, so they
@@ -2705,10 +2954,21 @@ function renderConformance(a){
     : "";
   if(a.warnings && a.warnings.length) showMsg("confWarn",a.warnings,"warn"); else clearMsg("confWarn");
   $("confHead").textContent=`GSDF conformance - ${a.n} points, L_amb ${a.Lamb} cd/m², ref u'v' ${a.refUV[0]}, ${a.refUV[1]}`;
-  $("conf").style.display="";
+  $("conf").hidden=false;
   $("conf").open=true;
   renderCharts(a);
   updateButtons();                  // drops the Analysis placeholder, enables export
+}
+
+/* Capture-time caveats, applied identically to a live run and to Re-analyze on an imported one -
+   otherwise an imported external run would silently lose the reasons to doubt it. Clamped points
+   mean the display black is below anything GSDF can describe; a reversal is the one failure an
+   external run cannot detect for itself; a backgrounded tab stretched the countdown without
+   stretching the operator's sense of it. clampedAt falls back to the bare count for old files. */
+function seqCaveats(a,M){
+  if(M.clamped) a.warnings.unshift(clampWarning(M.clampedAt?.length?M.clampedAt:M.clamped,M.external));
+  if(M.reversals?.length) a.warnings.unshift(reversalWarning(M.reversals,M.external));
+  if(M.backgrounded) a.warnings.unshift(bgWarning("patches",M.moveDelayMs));
 }
 
 const seq={ on:false, external:false, lastRun:null,
@@ -2722,26 +2982,17 @@ const seq={ on:false, external:false, lastRun:null,
     if(!app.ready){ showMsg("seqMsg","Connect the instrument first.","warn"); return; }
     if(this.on) return;
     const ext=!!opts.external;
-    if(cont.on){ cont.on=false; $("btnCont").textContent="Continuous"; }
+    stopCont();
     clearMsg("seqMsg"); clearMsg("confWarn");
-
-    /* Emissive measurement requires the cover open (i1d3.c:2345). Refuse up front and say
-       so in the card - this used to log a warning into a collapsed panel and return. */
-    try{ const pos=await dev.getDiffPos(); updateCoverPill(pos);
-      if(pos===1){
-        showMsg("seqMsg","Luminance response requires the diffuser cover to be OFF. Open the cover and start again.","warn");
-        log("lumResponse blocked: diffuser cover is closed","w"); return; }
-    }catch(e){
-      showMsg("seqMsg",`Could not read the diffuser position: ${e.message}`,"err");
-      log(`lumResponse: ${e.message}`,"e"); return; }
+    if(!await requireCoverOff("seqMsg","Luminance response")) return;
 
     this.on=true; this.external=ext; updateButtons();
-    $("conf").style.display="none"; lastConf=null;
+    $("conf").hidden=true; lastConf=null;
     const navg=numInput("seqNavg",2,{min:1,max:64,int:true});
     const sc=numInput("seqScale",1.0,{min:1e-9});
     const Lamb=numInput("seqLamb",0,{min:0});
     const floor=numInput("seqFloor",5,{min:0});
-    const refUV=currentRef();
+    const refUV=refOf("seq");
     const mode="adaptive";
     /* Read once, with the other settings: editing the field mid-run must not move a grid the
        operator is already pacing against. */
@@ -2796,6 +3047,7 @@ const seq={ on:false, external:false, lastRun:null,
       if(ext){ $("patchStage").classList.remove("ext"); this.external=false; }
       else setPatch(0);
     };
+    const halt=()=>{ this.on=false; updateButtons(); stageReset(); };
     /* Times only completed reads. A thrown read is usually a long timeout, and readMsMean is
        recorded to explain how long a run took, not to flag a fault. */
     const timedRead=async()=>{
@@ -2829,20 +3081,20 @@ const seq={ on:false, external:false, lastRun:null,
         let m;
         try{ m=await timedRead(); }
         catch(err){
-          this.on=false; updateButtons(); stageReset();
+          halt();
           showMsg("seqMsg",`Background read ${i+1} of ${BG_READS} failed: ${err.message}. The run was not started.`,"err");
           log(`background read ${i+1} failed - ${err.message}`,"e");
           return;
         }
         if(m===null) break;                              // stopped between averages
-        const Y=m.Y*sc, [up,vp]=uvFromXYZ(m.XYZ[0],m.XYZ[1],m.XYZ[2]);
+        const Y=m.Y*sc, [up,vp]=uvFromXYZ(...m.XYZ);
         background.push({Y,up,vp});
         setSeqReadout(Y,up,vp);
         log(`  background ${i+1}/${BG_READS}  →  ${Y.toFixed(4)} cd/m²   (u' ${up.toFixed(4)}, v' ${vp.toFixed(4)})`,"");
       }
     }
     if(!this.on){                                        // stopped during the background block
-      this.on=false; updateButtons(); stageReset();
+      halt();
       log("run stopped during background reads","w");
       return;
     }
@@ -2869,7 +3121,7 @@ const seq={ on:false, external:false, lastRun:null,
       /* Clamp rather than reject: a 0.00 reading is a real result worth showing, it just
          cannot go through log10(). The domain warning below explains the consequence. */
       if(Y<Y_FLOOR){ clampedAt.push(ddl); Y=Y_FLOOR; }
-      const [up,vp]=uvFromXYZ(m.XYZ[0],m.XYZ[1],m.XYZ[2]);
+      const [up,vp]=uvFromXYZ(...m.XYZ);
       setSeqReadout(Y,up,vp);
       /* A level that reads darker than the one below it is either a display fault or, on an
          external run, a reading taken while the probe was still moving. Gated above 0.2 cd/m² and
@@ -2878,7 +3130,7 @@ const seq={ on:false, external:false, lastRun:null,
       const down = prevY!=null && prevY>REVERSAL_LFLOOR && Y<prevY*(1-REVERSAL_FRAC);
       if(down){ reversals.push({from:prevDdl,to:ddl});
         log(`  DDL ${ddl} read lower than DDL ${prevDdl} (${Y.toFixed(3)} < ${prevY.toFixed(3)} cd/m²)`,"w"); }
-      if(ext){ $("extPrev").textContent=`last: DDL ${ddl} → ${Y.toFixed(Y<10?3:2)} cd/m²`;
+      if(ext){ $("extPrev").textContent=`last: DDL ${ddl} → ${fmtL(Y)} cd/m²`;
                $("extPrev").className="prev"+(down?" bad":""); }
       prevY=Y; prevDdl=ddl;
       /* u'v' only: x,y are shown live in meter mode but nothing downstream of a run reads
@@ -2888,8 +3140,7 @@ const seq={ on:false, external:false, lastRun:null,
     }
 
     const stopped=!this.on;                               // capture before clearing the flag
-    this.on=false; updateButtons();
-    stageReset();
+    halt();
 
     /* Completeness gate: analysis runs only when every requested DDL produced a point.
        A partial set still yields plausible-looking numbers - dropping DDL 0 alone shifts
@@ -2936,28 +3187,15 @@ const seq={ on:false, external:false, lastRun:null,
     const a=gsdfAnalyze(results,Lamb,refUV,floor,background);
     if(!a){ showMsg("seqMsg","Could not analyze the run (need at least two distinct gray levels).","warn"); return; }
     this.lastRun.analysis=a;
-
-    /* Clamped points imply the display black is at or below the safety floor, which is far
-       below anything GSDF can describe. Surfaced as its own message because the fix is a
-       display setting, not a software option. */
-    if(clampedAt.length) a.warnings.unshift(clampWarning(clampedAt,ext));
-    /* A reversal is the one failure an external run cannot detect for itself: the numbers stay
-       plausible whether the probe was on the right patch or not. */
-    if(reversals.length) a.warnings.unshift(reversalWarning(reversals,ext));
-    /* Throttling stretches the countdown without stretching the operator's sense of it, so the
-       pace they were keeping and the pace on screen came apart at some point in the run. */
-    if(seqBackgrounded) a.warnings.unshift(
-      `This tab was in the background during the run. Browsers throttle timers in hidden tabs, so `+
-      `the countdown may have run slower than the ${(intervalMs/1000).toFixed(1)} s requested and the `+
-      `readings may not line up with the patches they are labeled with.`);
+    seqCaveats(a,this.lastRun.meta);
 
     renderConformance(a);
     if(a.warnings.length) showMsg("seqMsg",a.warnings,"warn");
     a.warnings.forEach(w=>log(`conformance warning: ${w}`,"w"));
     log(`conformance: total ${a.totalJND.toFixed(1)} JND · maxΔ(dLL/JND) ${fpct(a.maxDLLerr)} · maxΔ(JND/GL) ${fpct(a.maxJNDGLerr)} · maxΔu'v' ${a.maxDuv.toFixed(4)}`, "ok");
-  if(a.tg && !a.tg.insufficient)
-    log(`TG196: T1 ${a.tg.T1.toFixed(4)} · T1max ${a.tg.T1max.toFixed(4)} · `+
-        `T2 ${a.tg.T2.toFixed(4)} · T2max ${a.tg.T2max.toFixed(4)}  (${a.tg.n} of ${a.tg.nTotal} levels)`,"ok");
+    if(a.tg && !a.tg.insufficient)
+        log(`TG196: T1 ${a.tg.T1.toFixed(4)} · T1max ${a.tg.T1max.toFixed(4)} · `+
+          `T2 ${a.tg.T2.toFixed(4)} · T2max ${a.tg.T2max.toFixed(4)}  (${a.tg.n} of ${a.tg.nTotal} levels)`,"ok");
   }
 };
 /* Data acquisitions on an opened stage wait for an explicit go. Opening the stage relocates and 
@@ -3049,15 +3287,12 @@ function envInfo(){
   };
 }
 
-function displayName(){ return ($("dispId").value||"").trim() || ""; }
-/* The uniformity card carries its own Display ID: the two analyses are independent runs and
-   an imported uniformity file must not rename the lumResponse one sitting beside it. */
-function uniDisplayName(){ return ($("uniDispId").value||"").trim() || ""; }
-/* pacsDisplay builds the filename from [join $DisplayName _]; mirror that, then drop
-   anything a filesystem would object to. */
-function nameToFile(n){ return n.replace(/\s+/g,"_").replace(/[^\w.\-]/g,""); }
-function displayNameF(){ return nameToFile(displayName()); }
-function uniDisplayNameF(){ return nameToFile(uniDisplayName()); }
+/* Each analysis card carries its own Display ID (dispId / uniDispId): the two are independent runs,
+   and an imported uniformity file must not rename the lumResponse one sitting beside it. For file
+   names, pacsDisplay joins the name with "_"; mirror that, then drop anything a filesystem would
+   object to. */
+const dispName=id=>$(id).value.trim();
+const dispFile=id=>dispName(id).replace(/\s+/g,"_").replace(/[^\w.\-]/g,"");
 
 const joinEOL=lines=>lines.join("\r\n")+"\r\n";
 
@@ -3100,13 +3335,10 @@ const rgbHex=g=>{ const h=Math.round(g).toString(16).padStart(2,"0"); return `#$
 function buildCLR(run){
   const {meta,points}=run;
   const P=[...points].sort((a,b)=>a.ddl-b.ddl);
-  const d=new Date(meta.started), t2=n=>String(n).padStart(2,"0");
-  const stamp=`${t2(d.getMonth()+1)}/${t2(d.getDate())}/${t2(d.getFullYear()%100)} `+
-              `${t2(d.getHours())}:${t2(d.getMinutes())}:${t2(d.getSeconds())}`;
   const out=[];
-  out.push(`#  ${CLR_TITLE} - ${stamp}`);
-  out.push(`#  Display ID: ${displayName()}`);
-  /* Ldelay comes from the acquisitions's own recorded settle time, not the current constant.
+  out.push(`#  ${CLR_TITLE} - ${hdrStamp(meta.started)}`);
+  out.push(`#  Display ID: ${dispName("dispId")}`);
+  /* Ldelay comes from the acquisition's own recorded settle time, not the current constant.
      LUTmode must stay the LAST whitespace-delimited token: evalQClr reads it as
      [lindex $line end] and strips the 8-char "LUTmode=" prefix. Nothing downstream reads
      the other fields, so the legacy ILlimit_plus/ILlimit_minus pair was dropped - pdweb
@@ -3135,7 +3367,7 @@ function buildTSV(run){
   const P=[...points].sort((a,b)=>a.ddl-b.ddl);
   const head=[
     `# pdweb lumResponse - ${meta.started}`,
-    `# display: ${displayName()}   meter: ${meta.product||"i1d3"} ${meta.serial||""}`.trimEnd(),
+    `# display: ${dispName("dispId")}   meter: ${meta.product||"i1d3"} ${meta.serial||""}`.trimEnd(),
     `# points requested: ${meta.points}   measured: ${P.length}   complete: ${meta.complete}`+
       `   navg: ${meta.navg}   scale: ${meta.scale}   L_amb: ${meta.Lamb} cd/m2`,
     /* How the points were acquired changes how much they can be trusted, so it travels with
@@ -3156,29 +3388,20 @@ function buildTSV(run){
     `# background (DDL 0): `+
       ((run.background||[]).map(b=>b.Y.toFixed(6)).join("   ") || "none"),
   ];
-  /* A tab advances to the next 8-column stop, so a label shorter than the numbers beneath it
-     lands a stop early and the header looks detached from its column in a text viewer - the
-     columns themselves were never wrong, and a paste into a spreadsheet always lined up.
-     Padding each label to the width of the widest value in its column puts the two on the
-     same stop. The trailing spaces ride into the spreadsheet's header cells, where they are
-     invisible; the last column needs no padding at all. */
-  const cols=["DDL","L_cd_m2","L'_cd_m2","u'","v'"];
-  const rows=P.map(p=>[String(p.ddl),p.Y.toFixed(6),(p.Y+meta.Lamb).toFixed(6),
-                       p.up.toFixed(6),p.vp.toFixed(6)]);
+  return tsvTable(head,["DDL","L_cd_m2","L'_cd_m2","u'","v'"],
+    P.map(p=>[String(p.ddl),p.Y.toFixed(6),(p.Y+meta.Lamb).toFixed(6),p.up.toFixed(6),p.vp.toFixed(6)]));
+}
+/* Comment header, then the table. A tab advances to the next 8-column stop, so a label shorter
+   than the numbers beneath it lands a stop early and looks detached from its column in a text
+   viewer. Padding each label to its column's widest value puts the two on the same stop; the
+   trailing spaces are invisible in a spreadsheet, and the last column needs none. */
+function tsvTable(head,cols,rows){
   const w=cols.map((c,i)=>rows.reduce((m,r)=>Math.max(m,r[i].length),c.length));
-  head.push(cols.map((c,i)=>i<cols.length-1?c.padEnd(w[i]):c).join("\t"));
-  for(const r of rows) head.push(r.join("\t"));
-  return head.join("\n")+"\n";
+  return [...head, cols.map((c,i)=>i<cols.length-1?c.padEnd(w[i]):c).join("\t"),
+          ...rows.map(r=>r.join("\t"))].join("\n")+"\n";
 }
 
-function exportStamp(){ return (seq.lastRun?.meta.started||new Date().toISOString())
-  .replace(/[:.]/g,"-").replace("T","_").slice(0,19); }
-
-$("btnCopyData").onclick=async()=>{
-  if(!seq.lastRun) return;
-  try{ await navigator.clipboard.writeText(buildTSV(seq.lastRun)); log("measurement table copied to clipboard","ok"); }
-  catch(e){ log("copy failed: "+e.message,"e"); }
-};
+$("btnCopyData").onclick=()=>{ if(seq.lastRun) copyText(buildTSV(seq.lastRun),"measurement table"); };
 /* Exported measurement shape. CIE 1931 x,y are shown live in meter mode because most
    display documentation is written in xy, but they carry nothing the export needs - every
    metric in this file works in u'v', and shipping both invites the two disagreeing in a
@@ -3201,12 +3424,12 @@ $("btnExpJson").onclick=()=>{
   const payload={ format:"pdweb-lumresponse/1", exported:new Date().toISOString(),
                   ...rest,
                   background:(background||[]).map(expBg), points:points.map(expPoint),
-                  display:displayName(),
+                  display:dispName("dispId"),
   /* tg carries an internal `insufficient` flag; outside this file the presence or absence of
      the metrics says the same thing more clearly. */
                   analysis: analysis ? (({series,intervals,tg,...keep})=>
                     ({...keep, tg: (tg && !tg.insufficient) ? (({insufficient,...t})=>t)(tg) : null}))(analysis) : null };
-  download(`pdweb_${displayNameF()}_${exportStamp()}_lumresponse.json`,
+  download(`pdweb_${dispFile("dispId")}_${fileStamp(seq.lastRun?.meta.started)}_lumresponse.json`,
            JSON.stringify(payload,null,2),"application/json");
   log("run exported as JSON","ok");
 };
@@ -3229,6 +3452,11 @@ const D_T10="5 4", D_T20="2 4", D_RING="4 4", D_CROSS="5 4";
    sit inside the frame instead of being bisected by it; the ticks are still drawn at the
    true 0 and 255. */
 const DDL_DOM=[-5,260];
+const MONO="ui-monospace,monospace";
+/* Shared by the two DDL charts: axis, and a legend of measured / reference / tolerance bands. */
+const DDL_AXIS={xDom:DDL_DOM, xLabel:"DDL", xTicks:[0,32,64,96,128,160,192,224,255], gridX:false, tickY:false};
+const tolLegend=ref=>[{color:C_DATA,label:"measured"},{color:C_TARGET,label:ref},
+                      {color:C_T10,label:"±10%",dash:D_T10},{color:C_T20,label:"±20%",dash:D_T20}];
 
 function sEl(tag,attrs,parent){
   const e=document.createElementNS(SVGNS,tag);
@@ -3289,20 +3517,24 @@ function legendRow(items){
    scale is identical across charts and text renders at one size. A chart that needs a
    different plot shape changes its padding and height, never its width - an earlier square
    chart used w=380 and came out ~1.7x larger than its neighbours. */
+/* Chart container plus its title row, which carries the per-chart export buttons. What they need -
+   the legend's colors and dash patterns, which are not recoverable from the rendered swatches - is
+   parked on the element as chartMeta rather than re-derived, so the image and the chart on screen
+   cannot end up describing the same series differently. */
+function chartShell(meta){
+  const wrap=document.createElement("div"); wrap.className="chart";
+  wrap.chartMeta=meta;
+  const head=document.createElement("div"); head.className="charthead";
+  const h3=document.createElement("h3"); h3.textContent=meta.title;
+  head.append(h3,chartExportBtns(wrap));
+  wrap.appendChild(head);
+  return {wrap,h3};
+}
 function chartFrame(host,{title,slug,legend,note,w=660,h=250,pad={l:58,r:14,t:12,b:34},
                           xDom,yDom,xLabel,yLabel,xTicks,yTicks,yLog=false,
                           gridX=true,gridY=true,tickX=true,tickY=true,
                           yFmt=v=>String(+v.toPrecision(4))}){
-  const wrap=document.createElement("div"); wrap.className="chart";
-  /* The title row carries the per-chart export buttons. What they need - the legend's colors
-     and dash patterns, which are not recoverable from the rendered swatches - is parked on
-     the element rather than re-derived, so the image and the chart on screen cannot end up
-     describing the same series differently. */
-  wrap.chartMeta={title,slug,legend,note};
-  const head=document.createElement("div"); head.className="charthead";
-  const h3=document.createElement("h3"); h3.textContent=title;
-  head.append(h3,chartExportBtns(wrap));
-  wrap.appendChild(head);
+  const {wrap}=chartShell({title,slug,legend,note});
   if(legend) wrap.appendChild(legendRow(legend));
   const box=document.createElement("div"); box.className="chartwrap"; wrap.appendChild(box);
   const svg=sEl("svg",{viewBox:`0 0 ${w} ${h}`,preserveAspectRatio:"xMidYMid meet"},box);
@@ -3335,7 +3567,7 @@ function chartFrame(host,{title,slug,legend,note,w=660,h=250,pad={l:58,r:14,t:12
       sEl("line",{x1:R,x2:R-TICK,y1:Y,y2:Y,stroke:C_TICK,"stroke-width":1},svg);
     }
     sEl("text",{x:L-7,y:Y+3.5,fill:C_TICK,"font-size":10,"text-anchor":"end",
-                "font-family":"ui-monospace,monospace"},svg).textContent=yFmt(t);
+                "font-family":MONO},svg).textContent=yFmt(t);
   }
   for(const t of xT){
     const X=sx(t);
@@ -3344,7 +3576,7 @@ function chartFrame(host,{title,slug,legend,note,w=660,h=250,pad={l:58,r:14,t:12
       sEl("line",{x1:X,x2:X,y1:T,y2:T+TICK,stroke:C_TICK,"stroke-width":1},svg);
     }
     sEl("text",{x:X,y:B+14,fill:C_TICK,"font-size":10,"text-anchor":"middle",
-                "font-family":"ui-monospace,monospace"},svg).textContent=String(+t.toPrecision(6));
+                "font-family":MONO},svg).textContent=String(+t.toPrecision(6));
   }
   if(xLabel) sEl("text",{x:(L+R)/2,y:h-4,fill:C_TICK,"font-size":10.5,
                          "text-anchor":"middle"},svg).textContent=xLabel;
@@ -3387,11 +3619,8 @@ function chartJndGl(host,a){
   const half=Math.max(...spread, m*0.2)*1.12;
   const yDom=[m-half,m+half];
   const {svg,sx,sy}=chartFrame(host,{
-    title:"JND / GL by gray level", slug:"jnd-gl", xLabel:"DDL", yLabel:"JND / GL",
-    xDom:DDL_DOM, yDom, xTicks:[0,32,64,96,128,160,192,224,255],
-    gridX:false, tickY:false,
-    legend:[{color:C_DATA,label:"measured"},{color:C_TARGET,label:"global mean"},
-            {color:C_T10,label:"±10%",dash:D_T10},{color:C_T20,label:"±20%",dash:D_T20}],
+    title:"JND / GL by gray level", slug:"jnd-gl", yLabel:"JND / GL", ...DDL_AXIS, yDom,
+    legend:tolLegend("global mean"),
     note:`Each point is the mean JND/GL across the interval ending at that DDL `+
          `(${iv.length} intervals, ${gapText(iv)}). Global mean ${m.toFixed(4)} `+
          `JND/GL.`});
@@ -3425,12 +3654,9 @@ function chartDllJnd(host,a){
   if(yhi/ylo<MIN_SPAN){ const c=Math.sqrt(ylo*yhi), k=Math.sqrt(MIN_SPAN); ylo=c/k; yhi=c*k; }
   const yDom=yLog?[ylo,yhi]:padDomain(lo,hi);
   const {svg,sx,sy}=chartFrame(host,{
-    title:"dL/L per JND vs GSDF target", slug:"dll-jnd", xLabel:"DDL",
-    yLabel:yLog?"dL/L per JND (log)":"dL/L per JND",
-    xDom:DDL_DOM, yDom, yLog, xTicks:[0,32,64,96,128,160,192,224,255],
-    gridX:false, tickY:false,
-    legend:[{color:C_DATA,label:"measured"},{color:C_TARGET,label:"GSDF target"},
-            {color:C_T10,label:"±10%",dash:D_T10},{color:C_T20,label:"±20%",dash:D_T20}],
+    title:"dL/L per JND vs GSDF target", slug:"dll-jnd",
+    yLabel:yLog?"dL/L per JND (log)":"dL/L per JND", ...DDL_AXIS, yDom, yLog,
+    legend:tolLegend("GSDF target"),
     note:"dL/L per target JND across each interval, where dL/L is ΔL over the mean of the "+
          "pair. Target is the DICOM GSDF (PS3.14) for this display's endpoints."});
   for(const f of [0.8,1.2]) series(svg,sx,sy,iv.map(d=>[d.ddl,d.dllTgt*f]),C_T20,{dash:D_T20,width:1.4});
@@ -3640,7 +3866,7 @@ async function saveChartPNG(chart){
      ID field and its own run timestamp. Both are read at click time rather than captured when
      the chart was built, so editing Display ID takes effect on the next export. */
   const u=chart.chartMeta.uni;
-  download(`pdweb_${u?uniDisplayNameF():displayNameF()}_${u?uniExportStamp():exportStamp()}_`+
+  download(`pdweb_${dispFile(u?"uniDispId":"dispId")}_${fileStamp((u?uni:seq).lastRun?.meta.started)}_`+
            `${chart.chartMeta.slug}.png`, blob,"image/png");
   log(`${chart.chartMeta.title} written as PNG`,"ok");
   return "Saved";
@@ -3676,8 +3902,8 @@ $("btnExpClr").onclick=()=>{
      full ramp, and the dL/L column would silently span a gap. */
   if(!seq.lastRun || !seq.lastRun.meta.complete) return;
   const nbg=(seq.lastRun.background||[]).length;
-  download(`cLR_${displayNameF()}.txt`, buildCLR(seq.lastRun), "text/plain;charset=utf-8");
-  log(`cLR written for ${displayName()} (${nbg} background, ${seq.lastRun.points.length} points)`,"ok");
+  download(`cLR_${dispFile("dispId")}.txt`, buildCLR(seq.lastRun), "text/plain;charset=utf-8");
+  log(`cLR written for ${dispName("dispId")} (${nbg} background, ${seq.lastRun.points.length} points)`,"ok");
   const notes=[];
   if(nbg!==BG_READS) notes.push(
     `This run carries ${nbg} background read(s) instead of ${BG_READS}, so the cLR was written `+
@@ -3707,84 +3933,76 @@ function num(v,name,{min=-Infinity,max=Infinity}={}){
   return n;
 }
 const numOr=(v,d)=>Number.isFinite(+v)?+v:d;
+/* Each entry of an array of objects, validated by fn(entry, "what i") for error messages. */
+const objs=(arr,what,fn)=>arr.map((p,i)=>{
+  if(!p||typeof p!=="object") throw new Error(`${what} ${i} is not an object`);
+  return fn(p,`${what} ${i}`);
+});
+const readYuv=(p,tag)=>({Y:num(p.Y,`${tag} Y`,{min:0}),
+  up:num(p.up,`${tag} u'`,{min:0,max:1}), vp:num(p.vp,`${tag} v'`,{min:0,max:1})});
+
+/* What both run formats share: the envelope checks and the common meta fields. */
+function importBase(o,fmt,what){
+  if(!o||typeof o!=="object"||Array.isArray(o)) throw new Error("not a pdweb export");
+  if(typeof o.format==="string" && !o.format.startsWith(fmt))
+    throw new Error(`unrecognized format "${o.format.slice(0,40)}"`);
+  if(!Array.isArray(o.points)) throw new Error(`no ${what} array`);
+  const m=(o.meta&&typeof o.meta==="object")?o.meta:{};
+  const md=finiteOrNull(m.moveDelayMs);
+  return { m, display: typeof o.display==="string"?o.display.slice(0,120):"", meta:{
+    started: typeof m.started==="string"?m.started.slice(0,40):new Date().toISOString(),
+    navg:numOr(m.navg,1), scale:numOr(m.scale,1), Lamb:numOr(m.Lamb,0), floor:numOr(m.floor,5),
+    /* A pair or nothing, range-checked, defaulting to D65 so a run captured before this field
+       existed still analyzes against something stated. */
+    refUV:(Array.isArray(m.refUV)&&m.refUV.length===2)
+      ? [num(m.refUV[0],"reference u'",{min:0,max:1}), num(m.refUV[1],"reference v'",{min:0,max:1})]
+      : REFS.d65.slice(),
+    product:String(m.product||"").slice(0,64), serial:String(m.serial||"").slice(0,64),
+    stopped:!!m.stopped, external:!!m.external, backgrounded:!!m.backgrounded,
+    settleMs:numOr(m.settleMs,SETTLE_MS), readMsMean:finiteOrNull(m.readMsMean),
+    /* null stays null: a local ramp has no move delay at all, which is not a delay of 0. */
+    moveDelayMs: md==null ? null : Math.min(3.6e6,Math.max(0,md)),
+    moveDelayCovers:["move+settle","move"].includes(m.moveDelayCovers) ? m.moveDelayCovers : null,
+    /* env lives in meta, stamped once at capture. Nothing writes a top-level copy. */
+    env:m.env||null, imported:true, sourceFile:""
+  }};
+}
 
 function validateRun(o){
-  if(!o||typeof o!=="object"||Array.isArray(o)) throw new Error("not a pdweb export");
-  if(typeof o.format==="string" && !o.format.startsWith("pdweb-lumresponse/"))
-    throw new Error(`unrecognized format "${o.format.slice(0,40)}"`);
-  if(!Array.isArray(o.points)) throw new Error("no points array");
-  const points=o.points.map((p,i)=>{
-    if(!p||typeof p!=="object") throw new Error(`point ${i} is not an object`);
-    return { ddl:num(p.ddl,`point ${i} DDL`,{min:0,max:255}),
-             Y:num(p.Y,`point ${i} Y`,{min:0}),
-             up:num(p.up,`point ${i} u'`,{min:0,max:1}),
-             vp:num(p.vp,`point ${i} v'`,{min:0,max:1}) };
-  });
+  const {m,meta,display}=importBase(o,"pdweb-lumresponse/","points");
+  const points=objs(o.points,"point",(p,t)=>({ddl:num(p.ddl,`${t} DDL`,{min:0,max:255}),...readYuv(p,t)}));
   if(points.length<2) throw new Error("need at least two points");
-
-  /* Validated like the points, and capped at BG_READS so a padded file cannot push extra
-     stabilization lines into an exported cLR. A missing or short array is tolerated rather
-     than rejected - the cLR writer reports it, which is the only place the count matters. */
-  const background=(Array.isArray(o.background)?o.background:[]).slice(0,BG_READS)
-    .map((b,i)=>{
-      if(!b||typeof b!=="object") throw new Error(`background read ${i} is not an object`);
-      return { Y:num(b.Y,`background ${i} Y`,{min:0}),
-               up:num(b.up,`background ${i} u'`,{min:0,max:1}),
-               vp:num(b.vp,`background ${i} v'`,{min:0,max:1}) };
-    });
-
-  const m=(o.meta&&typeof o.meta==="object")?o.meta:{};
+  /* Capped at BG_READS so a padded file cannot push extra stabilization lines into an exported
+     cLR. A missing or short array is tolerated - the cLR writer reports it, which is the only
+     place the count matters. */
+  const background=objs((Array.isArray(o.background)?o.background:[]).slice(0,BG_READS),"background",readYuv);
   const requested=Array.isArray(o.requested)?o.requested.map(Number).filter(Number.isFinite):[];
   const measured=new Set(points.map(p=>p.ddl));
   const missing=requested.filter(d=>!measured.has(d));
-  const refUV=(Array.isArray(m.refUV)&&m.refUV.length===2)
-    ? [num(m.refUV[0],"reference u'",{min:0,max:1}), num(m.refUV[1],"reference v'",{min:0,max:1})]
-    : REFS.d65.slice();
-
-  return {
-    meta:{
-      started: typeof m.started==="string"?m.started.slice(0,40):new Date().toISOString(),
-      points: numOr(m.points,points.length), navg: numOr(m.navg,1), scale: numOr(m.scale,1),
-      Lamb: numOr(m.Lamb,0), floor: numOr(m.floor,5), refUV,
-      product: String(m.product||"").slice(0,64), serial: String(m.serial||"").slice(0,64),
-      /* Trust the requested list over the stored flag when it is present - it is the
-         same completeness test a live run uses. */
-      complete: requested.length ? missing.length===0 : !!m.complete,
-      stopped: !!m.stopped, clamped: numOr(m.clamped,0), missing,
-      /* DDL list behind the clamp count. Files written before it existed carry only the count,
-         so an empty array here means "not recorded", not "none" - clampWarning falls back to
-         the count when the list is empty. */
-      clampedAt: Array.isArray(m.clampedAt)?m.clampedAt.map(Number).filter(Number.isFinite):[],
-      /* External-acquisition provenance. moveDelayMs deliberately avoids numOr: numOr is
-         Number.isFinite(+v)?+v:d and +null is 0, so numOr(m.moveDelayMs,null) would hand a local
-         run a move delay of 0 instead of null and make it read as external downstream. */
-      external: !!m.external,
-      moveDelayMs: Number.isFinite(+m.moveDelayMs)&&m.moveDelayMs!==null
-        ? Math.min(3.6e6,Math.max(0,+m.moveDelayMs)) : null,
-      moveDelayCovers: m.moveDelayCovers==="move+settle"||m.moveDelayCovers==="move"
-        ? m.moveDelayCovers : null,
-      readMsMean: Number.isFinite(+m.readMsMean)&&m.readMsMean!==null ? +m.readMsMean : null,
-      reversals: Array.isArray(m.reversals)?m.reversals.filter(r=>r&&typeof r==="object")
-        .map(r=>({from:numOr(r.from,0),to:numOr(r.to,0)})) : [],
-      backgrounded: !!m.backgrounded,
-      fullscreen: !!m.fullscreen, settleMs: numOr(m.settleMs,SETTLE_MS),
-      /* env lives in meta, stamped once at capture. Nothing writes a top-level copy. */
-      env: m.env||null, imported:true, sourceFile:""
-    },
-    requested: requested.length?requested:points.map(p=>p.ddl),
-    background, points, analysis:null,
-    display: typeof o.display==="string"?o.display.slice(0,120):""
-  };
+  Object.assign(meta,{
+    points:numOr(m.points,points.length),
+    /* Trust the requested list over the stored flag when it is present - it is the same
+       completeness test a live run uses. */
+    complete: requested.length ? missing.length===0 : !!m.complete,
+    clamped:numOr(m.clamped,0), missing,
+    /* DDL list behind the clamp count. Files written before it existed carry only the count, so
+       an empty array means "not recorded", not "none" - clampWarning falls back to the count. */
+    clampedAt: Array.isArray(m.clampedAt)?m.clampedAt.map(Number).filter(Number.isFinite):[],
+    reversals: Array.isArray(m.reversals)?m.reversals.filter(r=>r&&typeof r==="object")
+      .map(r=>({from:numOr(r.from,0),to:numOr(r.to,0)})) : [],
+    fullscreen:!!m.fullscreen,
+  });
+  return { meta, requested: requested.length?requested:points.map(p=>p.ddl),
+           background, points, analysis:null, display };
 }
 
-/* Point the reference selector at a u'v' pair, falling back to Custom when it matches no
-   preset (or matches one with no option in the list). */
-function applyRefUV([up,vp]){
-  const key=Object.keys(REFS).find(k=>Math.abs(REFS[k][0]-up)<1e-6&&Math.abs(REFS[k][1]-vp)<1e-6);
-  const listed=key && [...$("seqRef").options].some(o=>o.value===key);
-  $("seqRef").value=listed?key:"custom";
-  $("seqRefU").value=up; $("seqRefV").value=vp;
-  $("seqRefU").disabled=!!listed; $("seqRefV").disabled=!!listed;
+/* Import: restore the capture settings first, so the initial re-analysis reproduces the original
+   result; they stay editable for Re-analyze afterwards. */
+function restoreRunSettings(p,dispId,run){
+  if(run.display) $(dispId).value=run.display;
+  $(`${p}Lamb`).value=run.meta.Lamb;
+  $(`${p}Floor`).value=run.meta.floor;
+  applyRef(p,run.meta.refUV);
 }
 
 /* Re-runs the analysis on the loaded run using the current Advanced settings, so an
@@ -3798,52 +4016,31 @@ function analyzeLoadedRun(){
     return;
   }
   const Lamb=numInput("seqLamb",0,{min:0}), floor=numInput("seqFloor",5,{min:0});
-  const refUV=currentRef();
+  const refUV=refOf("seq");
   Object.assign(run.meta,{Lamb,floor,refUV});     // keep metadata aligned with what was analyzed
   const a=gsdfAnalyze(run.points,Lamb,refUV,floor,run.background);
   if(!a){ showMsg("seqMsg","Could not analyze the loaded run (need two distinct gray levels).","warn"); return; }
   run.analysis=a;
-  /* Re-analyzing must reproduce the capture-time caveats, or an imported external run would
-     silently lose the reasons to doubt it. clampedAt falls back to the bare count for files
-     written before the list existed. */
-  const M=run.meta;
-  if(M.clamped) a.warnings.unshift(clampWarning(M.clampedAt&&M.clampedAt.length?M.clampedAt:M.clamped,M.external));
-  if(M.reversals&&M.reversals.length) a.warnings.unshift(reversalWarning(M.reversals,M.external));
-  if(M.backgrounded) a.warnings.unshift(
-    "This tab was in the background during the run, so the countdown may have run slower than requested "+
-    "and the readings may not line up with the patches they are labeled with.");
+  seqCaveats(a,run.meta);
   renderConformance(a);
   if(a.warnings.length) showMsg("seqMsg",a.warnings,"warn"); else clearMsg("seqMsg");
 }
 
 $("btnReanalyze").onclick=()=>analyzeLoadedRun();
-$("btnImport").onclick=()=>$("fileImport").click();
-$("fileImport").onchange=async e=>{
-  const f=e.target.files&&e.target.files[0];
-  e.target.value="";                              // so the same file can be picked again
-  if(!f) return;
-  try{
-    const run=validateRun(JSON.parse(await f.text()));
-    run.meta.sourceFile=f.name.slice(0,120);
-    seq.lastRun=run;
-    if(run.display) $("dispId").value=run.display;
-    /* Restore the capture settings first so the initial re-analysis reproduces the
-       original result; they stay editable for Re-analyze afterwards. */
-    $("seqLamb").value=run.meta.Lamb;
-    $("seqFloor").value=run.meta.floor;
-    applyRefUV(run.meta.refUV);
-    setMode("sequence");
-    log(`imported ${f.name}: ${run.points.length} points, ${run.background.length} background, `+
-        `${run.meta.complete?"complete":"incomplete"}`, "ok");
-    analyzeLoadedRun();
-    updateButtons();
-  }catch(err){
-    showMsg("seqMsg",`Import failed: ${err.message}`,"err");
-    log(`import failed: ${err.message}`,"e");
-  }
-};
+const importFailed=msgId=>err=>{ showMsg(msgId,`Import failed: ${err.message}`,"err"); log(`import failed: ${err.message}`,"e"); };
+wireImport("btnImport","fileImport",(o,name)=>{
+  const run=validateRun(o);
+  run.meta.sourceFile=name.slice(0,120);
+  seq.lastRun=run;
+  restoreRunSettings("seq","dispId",run);
+  setMode("sequence");
+  log(`imported ${name}: ${run.points.length} points, ${run.background.length} background, `+
+      `${run.meta.complete?"complete":"incomplete"}`, "ok");
+  analyzeLoadedRun();
+  updateButtons();
+},importFailed("seqMsg"));
 
-$("btnCopyConf").onclick=async()=>{
+$("btnCopyConf").onclick=()=>{
   if(!lastConf) return;
   const a=lastConf;
   const lines=[
@@ -3872,8 +4069,7 @@ $("btnCopyConf").onclick=async()=>{
        domain" reads as a clean pass. */
     ...(a.warnings && a.warnings.length ? ["","WARNINGS",...a.warnings.map(w=>`- ${w}`)] : []),
   ].join("\n");
-  try{ await navigator.clipboard.writeText(lines); log("conformance copied to clipboard","ok"); }
-  catch(err){ log("copy failed: "+err.message,"e"); }
+  copyText(lines,"conformance");
 };
 
 /* ==========================================================================
@@ -3926,11 +4122,9 @@ const UNI_READ=UNI_POS.map((_,k)=>k)
    the pattern. */
 const MOVE_DELAY_UNI_DEF=2;        // seconds to move the probe between positions
 const UNI_FALLBACK_ASPECT=16/9;    // when a run carries no recorded stage aspect
-const UNI_IDLE_LABEL="Data acquistions are made full screen or full window";
+const UNI_IDLE_LABEL="Data collection uses full screen or full window";
 
 /* ---- stage ---- */
-const grayCss=g=>{ const v=Math.max(0,Math.min(255,Math.round(g))); return `rgb(${v},${v},${v})`; };
-
 /* The nine cells are built once. DOM order is reading order, because CSS grid auto-placement
    flows row-major; the array is indexed by CAPTURE order, so uniCells[i] is always the cell
    the run's position i refers to. */
@@ -3968,30 +4162,19 @@ function setUniMark(i,bg){
 }
 function hideUniMark(){ $("uniMark").hidden=true; }
 
-/* Status text sits at an edge, well away from the probe, and holds FS_CONTRAST gray levels off
-   the field beneath it for the same reason the ramp's does: any fixed color disappears
-   somewhere on the ladder. Only visible once the stage is open.
-   It defaults to the bottom edge and moves to the top while the bottom row is under
-   measurement, so it is never on the patch being read. bg is therefore always the field the
-   text actually sits on - the rest state between cells, not the level under test. */
+/* Status text sits at an edge, well away from the probe, colored off the field beneath it (fsInk).
+   It defaults to the bottom edge and moves to the top while the bottom row is under measurement,
+   so it is never on the patch being read. bg is therefore always the field the text actually sits
+   on - the rest state between cells, not the level under test. */
 function setUniStatus(txt,bg,atTop){
   $("uniLabel").textContent=txt;
-  const el=$("uniStatus"), b=bg|0;
+  const el=$("uniStatus");
   el.textContent=txt+"   ·   Esc to stop";
   el.classList.toggle("top",!!atTop);
-  el.style.color=grayCss(b<FS_FLIP ? Math.min(255,b+FS_CONTRAST) : Math.max(0,b-FS_CONTRAST));
+  el.style.color=fsInk(bg);
 }
-function setUniReadout(Y,up,vp){
-  if(Y==null){ $("uniY").textContent="-"; $("uniUV").textContent="-, -"; return; }
-  $("uniY").textContent=Y.toFixed(Y<10?3:2);
-  $("uniUV").textContent=`${up.toFixed(4)}, ${vp.toFixed(4)}`;
-}
-function setUniExtCount(msLeft){
-  const el=$("uniExtCount");
-  if(msLeft==null){ el.textContent="measuring..."; el.className="count reading"; return; }
-  el.textContent=`${Math.max(0,msLeft/1000).toFixed(1)} s`;
-  el.className="count";
-}
+const setUniReadout=(Y,up,vp)=>setReadout("uni",Y,up,vp);
+const setUniExtCount=ms=>setCount($("uniExtCount"),ms);
 
 /* Full window is a fixed overlay: no API, no permission, never refused, and the only way to
    measure an area smaller than the whole display - the operator sizes the browser to the area
@@ -4009,7 +4192,6 @@ async function closeUniStage(present){
 
 /* ---- capture ---- */
 let lastUniConf=null;
-let uniBackgrounded=false;
 
 const uni={ on:false, external:false, present:"screen", lastRun:null,
   stop(){ this.on=false; updateButtons(); },
@@ -4022,23 +4204,12 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     if(!app.ready){ showMsg("uniMsg","Connect the instrument first.","warn"); return; }
     if(this.on||seq.on) return;
     const ext=!!opts.external;
-    if(cont.on){ cont.on=false; $("btnCont").textContent="Continuous"; }
+    stopCont();
     clearMsg("uniMsg"); clearMsg("uniConfWarn");
+    if(!await requireCoverOff("uniMsg","Uniformity")) return;
 
-    /* Emissive measurement requires the cover open (i1d3.c:2345). Refuse up front and say so in
-       the card rather than logging it into a collapsed panel. */
-    try{ const pos=await dev.getDiffPos(); updateCoverPill(pos);
-      if(pos===1){
-        showMsg("uniMsg","Uniformity requires the diffuser cover to be OFF. Open the cover and start again.","warn");
-        log("uniformity blocked: diffuser cover is closed","w"); return; }
-    }catch(e){
-      showMsg("uniMsg",`Could not read the diffuser position: ${e.message}`,"err");
-      log(`uniformity: ${e.message}`,"e"); return; }
-
-    this.on=true; this.external=ext; updateButtons();
-    $("uniConf").style.display="none"; lastUniConf=null;
-    $("uniMatrices").style.display="none"; $("uniMatHost").replaceChildren();
-    $("uniMapHost").replaceChildren();
+    this.on=true; this.external=ext;
+    renderUniConformance(null);          // clears the previous results; updates the buttons
 
     /* Read once, with the other settings: editing a field mid-run must not move a grid the
        operator is already pacing against. */
@@ -4046,7 +4217,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     const sc=numInput("uniScale",1.0,{min:1e-9});
     const Lamb=numInput("uniLamb",0,{min:0});
     const floor=numInput("uniFloor",5,{min:0});
-    const refUV=uniCurrentRef().slice();
+    const refUV=refOf("uni");
     const delayMs=Math.round(numInput("uniDelay",MOVE_DELAY_UNI_DEF,{min:1,max:300})*1000);
     const field=ext?"none":$("uniField").value;
     const present=ext?"none":this.present;
@@ -4178,9 +4349,9 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
         try{ m=await timedRead(); }
         catch(err){ log(`  ${p.label} DDL ${ddl}: measure failed - ${err.message}`,"e"); continue; }
         if(m===null) break;                          // stopped between averages
-        const Y=m.Y*sc, [up,vp]=uvFromXYZ(m.XYZ[0],m.XYZ[1],m.XYZ[2]);
+        const Y=m.Y*sc, [up,vp]=uvFromXYZ(...m.XYZ);
         setUniReadout(Y,up,vp);
-        if(ext) $("uniExtPrev").textContent=`last: ${p.label} → ${Y.toFixed(Y<10?3:2)} cd/m²`;
+        if(ext) $("uniExtPrev").textContent=`last: ${p.label} → ${fmtL(Y)} cd/m²`;
         results.push({pos:i,label:p.label,ddl,Y,up,vp});
         log(`  ${p.label}  DDL ${String(ddl).padStart(3)}  →  ${Y.toFixed(4)} cd/m²   `+
             `(u' ${up.toFixed(4)}, v' ${vp.toFixed(4)})`,"");
@@ -4232,12 +4403,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     const a=uniAnalyze(this.lastRun,Lamb,floor,refUV);
     if(!a){ showMsg("uniMsg","Could not analyze the run.","warn"); return; }
     this.lastRun.analysis=a;
-    /* Throttling stretches the countdown without stretching the operator's sense of it, so the
-       pace they were keeping and the pace on screen came apart at some point in the run. */
-    if(uniBackgrounded) a.warnings.unshift(
-      `This tab was in the background during the run. Browsers throttle timers in hidden tabs, `+
-      `so the countdown may have run slower than the ${(delayMs/1000).toFixed(1)} s requested `+
-      `and the readings may not line up with the positions they are labeled with.`);
+    if(uniBackgrounded) a.warnings.unshift(bgWarning("positions",delayMs));
 
     renderUniAnalysis(a);
     if(a.warnings.length) showMsg("uniMsg",a.warnings,"warn");
@@ -4247,14 +4413,6 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
   }
 };
 
-/* An external run has no stage holding the tab in front, so the operator can alt-tab away
-   mid-run. Recorded rather than fatal, for the same reason the ramp records it. */
-document.addEventListener("visibilitychange",()=>{
-  if(document.hidden && uni.on && uni.external && !uniBackgrounded){
-    uniBackgrounded=true;
-    log("tab hidden during an external uniformity run - timer throttling may have stretched the interval","w");
-  }
-});
 /* Full window has no browser-provided way out, so Esc has to be wired here: it stops the run,
    and startUni's finally closes the stage. A fullscreen presentation gets this for free - the
    browser leaves fullscreen on Esc and the fullscreenchange handler above does the rest. */
@@ -4313,31 +4471,6 @@ $("btnUniStop").onclick=()=>uni.stop();
 function uniMedian(asc){
   const n=asc.length;
   return n%2 ? asc[(n-1)/2] : (asc[n/2-1]+asc[n/2])/2;
-}
-/* White point the display is compared against. Deliberately a separate control from the luminance
-   card's: the two cards can reasonably be run against different targets, and sharing one would
-   make a change on one page silently rewrite the other's results. Same options and the same
-   coercion, so an operator learns it once. */
-function uniCurrentRef(){
-  const sel=$("uniRef").value;
-  if(sel==="custom") return [numInput("uniRefU",REFS.d65[0],{min:0,max:1}),
-                             numInput("uniRefV",REFS.d65[1],{min:0,max:1})];
-  return REFS[sel];
-}
-$("uniRef").onchange=()=>{
-  const custom=$("uniRef").value==="custom";
-  $("uniRefU").disabled=!custom; $("uniRefV").disabled=!custom;
-  if(!custom){ const [up,vp]=REFS[$("uniRef").value]; $("uniRefU").value=up; $("uniRefV").value=vp; }
-};
-/* Points the selector at a u'v' pair, falling back to Custom when it matches no preset - the
-   uniformity twin of applyRefUV, so an imported run or a config file restores selector, values
-   and disabled state together rather than one of the three. */
-function applyUniRefUV([up,vp]){
-  const key=Object.keys(REFS).find(k=>Math.abs(REFS[k][0]-up)<1e-6&&Math.abs(REFS[k][1]-vp)<1e-6);
-  const listed=key && [...$("uniRef").options].some(o=>o.value===key);
-  $("uniRef").value=listed?key:"custom";
-  $("uniRefU").value=up; $("uniRefV").value=vp;
-  $("uniRefU").disabled=!!listed; $("uniRefV").disabled=!!listed;
 }
 function uniAnalyze(run,Lamb,floor,refUV){
   const gls=[...new Set(run.points.map(p=>p.ddl))].sort((a,b)=>a-b);
@@ -4439,9 +4572,8 @@ function renderUniAnalysis(a){ renderUniConformance(a); renderUniMatrices(a); re
 function renderUniConformance(a){
   if(!a){
     lastUniConf=null;
-    $("uniConf").style.display="none";
-    $("uniMatrices").style.display="none"; $("uniMatHost").replaceChildren();
-    $("uniMapHost").replaceChildren();
+    $("uniConf").hidden=$("uniMatrices").hidden=true;
+    $("uniMatHost").replaceChildren(); $("uniMapHost").replaceChildren();
     updateButtons(); return;
   }
   lastUniConf=a;
@@ -4461,11 +4593,8 @@ function renderUniConformance(a){
     ["Chromaticity reference (u', v')", a.refUV?`(${a.refUV[0]}, ${a.refUV[1]})`:"n/a"],
     ["Positions used for Δu'v' (≥"+a.floor+" cd/m²)", `${a.maxDuv?a.maxDuv.nUsed:0} of ${a.n}`],
   ];
-  /* Keys are app-authored literals and may contain markup; values are toFixed() numbers, DDLs
-     and labels from UNI_POS, so neither carries anything device- or file-supplied. The one
-     field-derived string, `Pattern`, is built from validated enums (see validateUniRun). */
-  $("uniConfGrid").innerHTML=rows.map(([k,v])=>
-    `<div class="conf-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join("");
+  /* The one field-derived value, `Pattern`, is built from validated enums (see validateUniRun). */
+  setConfRows("uniConfGrid",rows);
   $("uniConfHead").textContent = a.maxLUDM
     ? `Uniformity - max LUDM ${upct(a.maxLUDM.v)} at DDL ${a.maxLUDM.gl}`
     : "Uniformity";
@@ -4477,7 +4606,7 @@ function renderUniConformance(a){
     `separately at each gray level. The mean Δu'v' about the display mean is chromaticity <i>uniformity</i>. `+
     `The ref Δu'v' is how far the display sits from the reference white point. The matrices below report `+
     `measured luminance L in cd/m².`;
-  $("uniConf").style.display="";
+  $("uniConf").hidden=false;
   $("uniConf").open=true;
   updateButtons();
 }
@@ -4486,8 +4615,8 @@ function renderUniConformance(a){
    sit on the display, which is also the layout the Luni file carries. */
 function renderUniMatrices(a){
   const host=$("uniMatHost"); host.replaceChildren();
-  if(!a){ $("uniMatrices").style.display="none"; return; }
-  $("uniMatrices").style.display="";
+  $("uniMatrices").hidden=!a;
+  if(!a) return;
   for(const r of a.byLevel){
     const t=document.createElement("table"); t.className="unimat";
     const cap=document.createElement("caption");
@@ -4563,14 +4692,9 @@ function renderUniMap(a){
   const host=$("uniMapHost"); host.replaceChildren();
   if(!a || !a.byLevel.length) return;
 
-  /* Wrapped in the same markup chartFrame produces, so chartExportBtns works unchanged. `uni`
-     marks it as belonging to the uniformity card, which has its own Display ID and timestamp. */
-  const wrap=document.createElement("div"); wrap.className="chart";
-  wrap.chartMeta={title:"Deviation from median",slug:"uniformity-map",legend:null,note:"",uni:true};
-  const head=document.createElement("div"); head.className="charthead";
-  const h3=document.createElement("h3"); h3.textContent=wrap.chartMeta.title;
-  head.append(h3,chartExportBtns(wrap));
-  wrap.appendChild(head);
+  /* `uni` marks the chart as belonging to the uniformity card, which has its own Display ID and
+     timestamp. */
+  const {wrap,h3}=chartShell({title:"Deviation from median",slug:"uniformity-map",legend:null,note:"",uni:true});
 
   const bar=document.createElement("div"); bar.className="unimapbar";
   const mkField=(text,el)=>{ const l=document.createElement("label");
@@ -4633,10 +4757,10 @@ function renderUniMap(a){
       sEl("text",{x:cx,y:cy-6,fill:ink,"font-size":12,"font-weight":600,
                   "text-anchor":"middle"},svg).textContent=p.label;
       sEl("text",{x:cx,y:cy+11,fill:ink,"font-size":14,"text-anchor":"middle",
-                  "font-family":"ui-monospace,monospace"},svg)
+                  "font-family":MONO},svg)
         .textContent=(r.dev[k]>=0?"+":"")+r.dev[k].toFixed(1)+"%";
       sEl("text",{x:cx,y:cy+26,fill:ink,"font-size":10.5,"text-anchor":"middle",opacity:.85,
-                  "font-family":"ui-monospace,monospace"},svg)
+                  "font-family":MONO},svg)
         .textContent=r.L[k].toFixed(3)+" cd/m²";
     }
 
@@ -4651,7 +4775,7 @@ function renderUniMap(a){
                 stroke:C_AXIS,"stroke-width":1},svg);
     for(const [x,t] of [[bx,`-${scale.toFixed(1)}%`],[bx+BAR_W/2,"0"],[bx+BAR_W,`+${scale.toFixed(1)}%`]])
       sEl("text",{x,y:BAR_TOP+BAR_H+13,fill:C_TICK,"font-size":10.5,"text-anchor":"middle",
-                  "font-family":"ui-monospace,monospace"},svg).textContent=t;
+                  "font-family":MONO},svg).textContent=t;
 
     metrics.textContent=`LUDM ${upct(r.ludm)}   ·   MLD ${upct(r.mld)}`;
     /* Title and note carry the level and the scale because the two selects above them are page
@@ -4676,12 +4800,15 @@ function renderUniMap(a){
 }
 
 /* ---- export ---- */
-function uniExportStamp(){ return (uni.lastRun?.meta.started||new Date().toISOString())
-  .replace(/[:.]/g,"-").replace("T","_").slice(0,19); }
 
 /* The Luni "Mode" field names the level set: 1, 3, 18 or External. */
 const UNI_MODE_TEXT={"1":"1 step(s)","3":"3 step(s)","18":"18 step(s)",ext:"External step(s)"};
 const uniGl3=g=>String(g).padStart(3,"0");        // gray levels are written three digits wide
+const f3=v=>v==null?"n/a":v.toFixed(3);
+/* One gray level as the Luni file and the analysis copy both write it: a metrics line, then the
+   3x3 matrix in reading order. */
+const uniLevelBlock=r=>[`GL ${uniGl3(r.gl)} (LUDM ${f3(r.ludm)}) (MLD ${f3(r.mld)})`,
+  ...[0,1,2].map(row=>[0,1,2].map(col=>r.L[UNI_READ[row*3+col]].toFixed(3)).join("\t")), ""];
 
 /* Shared by the TSV comment and the Luni header so the two cannot disagree. Both units, not mm
    alone: the pitch is a claim, so a reader who doubts it needs what it was derived from. */
@@ -4701,13 +4828,9 @@ function uniAreaText(s){
    Header line 1 keeps the cLR writer's three-token title discipline (see CLR_TITLE). */
 const LUNI_TITLE="pdweb uniformity 1.0";
 function buildLuni(run,a){
-  const m=run.meta, t2=n=>String(n).padStart(2,"0"), d=new Date(m.started);
-  const stamp=`${t2(d.getMonth()+1)}/${t2(d.getDate())}/${t2(d.getFullYear()%100)} `+
-              `${t2(d.getHours())}:${t2(d.getMinutes())}:${t2(d.getSeconds())}`;
-  const f3=v=>v==null?"n/a":v.toFixed(3);
-  const out=[];
-  out.push(`#\t${LUNI_TITLE} - ${stamp}`);
-  out.push(`#\tDisplay ID: ${uniDisplayName()}`);
+  const m=run.meta, out=[];
+  out.push(`#\t${LUNI_TITLE} - ${hdrStamp(m.started)}`);
+  out.push(`#\tDisplay ID: ${dispName("uniDispId")}`);
   out.push(`#\tAverage # of Readings = ${m.navg}`);
   out.push(`#\tLamb = ${m.Lamb} cd/m^2`);
   out.push(`#\tMeter = ${m.product||"i1d3"} SN=${m.serial||""}`);
@@ -4738,12 +4861,7 @@ function buildLuni(run,a){
   out.push("#\tCL CC CR");
   out.push("#\tLL LC LR");
   out.push("#");
-  for(const r of a.byLevel){
-    out.push(`GL ${uniGl3(r.gl)} (LUDM ${f3(r.ludm)}) (MLD ${f3(r.mld)})`);
-    for(let row=0;row<3;row++)
-      out.push([0,1,2].map(col=>r.L[UNI_READ[row*3+col]].toFixed(3)).join("\t"));
-    out.push("");
-  }
+  for(const r of a.byLevel) out.push(...uniLevelBlock(r));
   return joinEOL(out);
 }
 
@@ -4754,12 +4872,11 @@ function buildUniTSV(run){
   const m=run.meta;
   const head=[
     `# pdweb uniformity - ${m.started}`,
-    `# display: ${uniDisplayName()}   meter: ${m.product||"i1d3"} ${m.serial||""}`.trimEnd(),
+    `# display: ${dispName("uniDispId")}   meter: ${m.product||"i1d3"} ${m.serial||""}`.trimEnd(),
     `# mode: ${UNI_MODE_TEXT[m.mode]||m.mode}   positions: ${UNI_N}   complete: ${m.complete}`+
       `   navg: ${m.navg}   scale: ${m.scale}   L_amb: ${m.Lamb} cd/m2`,
     `# chromaticity reference: u' ${m.refUV?m.refUV[0]:"n/a"}   v' ${m.refUV?m.refUV[1]:"n/a"}`,
-    `# pattern: `+(m.external?"external display"
-      :`${m.field==="full"?"full field":"single cell"}, ${m.present==="window"?"full window":"full screen"}`),
+    `# pattern: ${uniFieldText(m)}`,
     `# acquisition: `+(m.external
       ? `external display, ${((m.moveDelayMs??0)/1000).toFixed(1)} s move delay `+
         `(${m.moveDelayCovers||"move+settle"})`
@@ -4778,19 +4895,13 @@ function buildUniTSV(run){
     `# measured area: ${uniAreaText(m.stagePx)}`);
   const gls=[...new Set(run.points.map(p=>p.ddl))].sort((a,b)=>a-b);
   const byKey=new Map(run.points.map(p=>[`${p.pos}|${p.ddl}`,p]));
-  const cols=["DDL","Pos","L_cd_m2","L'_cd_m2","u'","v'"];
   const rows=[];
   for(const gl of gls) for(const k of UNI_READ){
     const p=byKey.get(`${k}|${gl}`); if(!p) continue;
     rows.push([String(gl),UNI_POS[k].label,p.Y.toFixed(6),(p.Y+m.Lamb).toFixed(6),
                p.up.toFixed(6),p.vp.toFixed(6)]);
   }
-  /* Labels padded to the width of the widest value in their column, so a tab lands the header
-     on the same stop as the numbers beneath it - see buildTSV for the same treatment. */
-  const w=cols.map((c,i)=>rows.reduce((mx,r)=>Math.max(mx,r[i].length),c.length));
-  head.push(cols.map((c,i)=>i<cols.length-1?c.padEnd(w[i]):c).join("\t"));
-  for(const r of rows) head.push(r.join("\t"));
-  return head.join("\n")+"\n";
+  return tsvTable(head,["DDL","Pos","L_cd_m2","L'_cd_m2","u'","v'"],rows);
 }
 
 $("btnUniExpLuni").onclick=()=>{
@@ -4798,16 +4909,11 @@ $("btnUniExpLuni").onclick=()=>{
   /* Gated on a complete run and on an analysis: a matrix with a hole in it would be written as
      if it were whole, and the header carries metrics that only exist once it is scored. */
   if(!run||!run.meta.complete||!run.analysis) return;
-  download(`Luni_${uniDisplayNameF()}.txt`, buildLuni(run,run.analysis), "text/plain;charset=utf-8");
-  log(`Luni written for ${uniDisplayName()} (${run.analysis.levels.length} level(s), `+
+  download(`Luni_${dispFile("uniDispId")}.txt`, buildLuni(run,run.analysis), "text/plain;charset=utf-8");
+  log(`Luni written for ${dispName("uniDispId")} (${run.analysis.levels.length} level(s), `+
       `${run.points.length} readings)`,"ok");
 };
-$("btnUniCopyData").onclick=async()=>{
-  if(!uni.lastRun) return;
-  try{ await navigator.clipboard.writeText(buildUniTSV(uni.lastRun));
-       log("uniformity table copied to clipboard","ok"); }
-  catch(e){ log("copy failed: "+e.message,"e"); }
-};
+$("btnUniCopyData").onclick=()=>{ if(uni.lastRun) copyText(buildUniTSV(uni.lastRun),"uniformity table"); };
 /* Field whitelist, not a rename: `pos` is the capture index and `label` rides along so a file
    read by anything other than this page does not have to know the serpentine order. */
 const uniExpPoint=p=>({pos:p.pos, label:p.label, ddl:p.ddl, Y:p.Y, up:p.up, vp:p.vp});
@@ -4819,121 +4925,82 @@ $("btnUniExpJson").onclick=()=>{
      export for the full reasoning). */
   const {analysis, display:_prior, points, ...rest}=uni.lastRun;
   const payload={ format:"pdweb-uniformity/1", exported:new Date().toISOString(), ...rest,
-                  points:points.map(uniExpPoint), display:uniDisplayName(),
+                  points:points.map(uniExpPoint), display:dispName("uniDispId"),
                   analysis: analysis ? {Lamb:analysis.Lamb, floor:analysis.floor,
                     refUV:analysis.refUV, levels:analysis.levels, maxLUDM:analysis.maxLUDM,
                     maxMLD:analysis.maxMLD, maxDuv:analysis.maxDuv,
                     maxDuvRef:analysis.maxDuvRef} : null };
-  download(`pdweb_${uniDisplayNameF()}_${uniExportStamp()}_uniformity.json`,
+  download(`pdweb_${dispFile("uniDispId")}_${fileStamp(uni.lastRun?.meta.started)}_uniformity.json`,
            JSON.stringify(payload,null,2),"application/json");
   log("uniformity run exported as JSON","ok");
 };
-$("btnUniCopyConf").onclick=async()=>{
+$("btnUniCopyConf").onclick=()=>{
   if(!lastUniConf) return;
   const a=lastUniConf;
+  const mx=(x,d,u="")=>x?`${x.v.toFixed(d)}${u} (GL ${uniGl3(x.gl)}, ${x.at})`:"n/a";
   const lines=[
     `Uniformity (${a.n} positions, ${a.levels.length} gray level(s), L_amb ${a.Lamb} cd/m2)`,
     `Pattern\t${uniFieldText(a)}`,
-    `Max. LUDM\t${a.maxLUDM?a.maxLUDM.v.toFixed(3)+"% (GL "+uniGl3(a.maxLUDM.gl)+", "+a.maxLUDM.at+")":"n/a"}`,
-    `Max. MLD\t${a.maxMLD?a.maxMLD.v.toFixed(3)+"% (GL "+uniGl3(a.maxMLD.gl)+", "+a.maxMLD.at+")":"n/a"}`,
-    `Max. du'v' about display mean (>=${a.floor} cd/m2)\t${a.maxDuv?a.maxDuv.v.toFixed(4)+" (GL "+uniGl3(a.maxDuv.gl)+", "+a.maxDuv.at+")":"n/a"}`,
-    `Max. du'v' from reference\t${a.maxDuvRef?a.maxDuvRef.v.toFixed(4)+" (GL "+uniGl3(a.maxDuvRef.gl)+", "+a.maxDuvRef.at+")":"n/a"}`,
+    `Max. LUDM\t${mx(a.maxLUDM,3,"%")}`,
+    `Max. MLD\t${mx(a.maxMLD,3,"%")}`,
+    `Max. du'v' about display mean (>=${a.floor} cd/m2)\t${mx(a.maxDuv,4)}`,
+    `Max. du'v' from reference\t${mx(a.maxDuvRef,4)}`,
     `Chromaticity reference\t${a.refUV?`u' ${a.refUV[0]}, v' ${a.refUV[1]}`:"n/a"}`,
     `Positions used for du'v'\t${a.maxDuv?a.maxDuv.nUsed:0} of ${a.n}`,
     "",
     "Luminance (L, not L') in cd/m2, in reading order: UL UC UR / CL CC CR / LL LC LR",
-    ...a.byLevel.flatMap(r=>[
-      `GL ${uniGl3(r.gl)} (LUDM ${r.ludm==null?"n/a":r.ludm.toFixed(3)}) (MLD ${r.mld==null?"n/a":r.mld.toFixed(3)})`,
-      ...[0,1,2].map(row=>[0,1,2].map(col=>r.L[UNI_READ[row*3+col]].toFixed(3)).join("\t")),
-      ""]),
+    ...a.byLevel.flatMap(uniLevelBlock),
     /* Warnings travel with the numbers, as they do for the ramp. */
     ...(a.warnings.length ? ["WARNINGS",...a.warnings.map(w=>`- ${w}`)] : []),
   ].join("\n");
-  try{ await navigator.clipboard.writeText(lines); log("uniformity analysis copied to clipboard","ok"); }
-  catch(err){ log("copy failed: "+err.message,"e"); }
+  copyText(lines,"uniformity analysis");
 };
 
 /* ---- import / re-analysis ----
    Same discipline as validateRun: everything in the file is untrusted, so fields are coerced,
    range-checked and length-capped before reaching the metrics or the DOM. */
 function validateUniRun(o){
-  if(!o||typeof o!=="object"||Array.isArray(o)) throw new Error("not a pdweb export");
-  if(typeof o.format==="string" && !o.format.startsWith("pdweb-uniformity/"))
-    throw new Error(`unrecognized format "${o.format.slice(0,40)}"`);
-  if(!Array.isArray(o.points)) throw new Error("no readings array");
+  const {m,meta,display}=importBase(o,"pdweb-uniformity/","readings");
   /* Capped at one reading per position per level of the largest set, so a padded file cannot
      make the matrices or the Luni file run on indefinitely. */
   const CAP=UNI_N*UNI_LEVELS[18].length;
   if(o.points.length>CAP) throw new Error(`too many readings (${o.points.length}, max ${CAP})`);
-  const points=o.points.map((p,i)=>{
-    if(!p||typeof p!=="object") throw new Error(`reading ${i} is not an object`);
-    const pos=num(p.pos,`reading ${i} position`,{min:0,max:UNI_N-1});
-    if(!Number.isInteger(pos)) throw new Error(`reading ${i} position is not a whole number`);
+  const points=objs(o.points,"reading",(p,t)=>{
+    const pos=num(p.pos,`${t} position`,{min:0,max:UNI_N-1});
+    if(!Number.isInteger(pos)) throw new Error(`${t} position is not a whole number`);
     /* label is derived from pos, never taken from the file: the two could disagree, and every
        reader here trusts pos. */
-    return { pos, label:UNI_POS[pos].label,
-             ddl:num(p.ddl,`reading ${i} DDL`,{min:0,max:255}),
-             Y:num(p.Y,`reading ${i} Y`,{min:0}),
-             up:num(p.up,`reading ${i} u'`,{min:0,max:1}),
-             vp:num(p.vp,`reading ${i} v'`,{min:0,max:1}) };
+    return {pos, label:UNI_POS[pos].label, ddl:num(p.ddl,`${t} DDL`,{min:0,max:255}), ...readYuv(p,t)};
   });
   if(!points.length) throw new Error("no readings");
-
-  const m=(o.meta&&typeof o.meta==="object")?o.meta:{};
   const levels=[...new Set(points.map(p=>p.ddl))].sort((a,b)=>a-b);
   /* Completeness is recomputed from the readings rather than trusted: it gates the Luni export,
      and a file claiming to be complete with a hole in it would be written as if it were. */
   const seen=new Set(points.map(p=>`${p.pos}|${p.ddl}`));
-  const complete=levels.every(g=>UNI_POS.every((_,k)=>seen.has(`${k}|${g}`)));
   const pick=(v,list,dflt)=>list.includes(v)?v:dflt;
-  return {
-    meta:{
-      started: typeof m.started==="string"?m.started.slice(0,40):new Date().toISOString(),
-      mode: String(m.mode??levels.length).slice(0,16),
-      field: pick(m.field,["cell","full","none"],"cell"),
-      present: pick(m.present,["screen","window","none"],"screen"),
-      navg:numOr(m.navg,1), scale:numOr(m.scale,1), Lamb:numOr(m.Lamb,0),
-      floor:numOr(m.floor,5),
-      /* Same coercion as validateRun's: a pair or nothing, range-checked, defaulting to D65 so
-         a run captured before this field existed still analyzes against something stated. */
-      refUV:(Array.isArray(m.refUV)&&m.refUV.length===2)
-        ? [num(m.refUV[0],"reference u'",{min:0,max:1}), num(m.refUV[1],"reference v'",{min:0,max:1})]
-        : REFS.d65.slice(),
-      product:String(m.product||"").slice(0,64), serial:String(m.serial||"").slice(0,64),
-      complete, stopped:!!m.stopped, external:!!m.external,
-      /* Both uniformity modes move the probe, so unlike the luminance card a null here means
-         the field was absent rather than inapplicable - clamp it to the default instead. */
-      moveDelayMs: Number.isFinite(+m.moveDelayMs)&&m.moveDelayMs!==null
-        ? Math.min(3.6e6,Math.max(0,+m.moveDelayMs)) : MOVE_DELAY_UNI_DEF*1000,
-      moveDelayCovers: m.moveDelayCovers==="move+settle"||m.moveDelayCovers==="move"
-        ? m.moveDelayCovers : (m.external?"move+settle":"move"),
-      settleMs:numOr(m.settleMs,SETTLE_MS),
-      /* Clamped to a shape a display could plausibly have. It only sets the map's proportions,
-         but an absurd value would collapse the map to a line. */
-      stageAspect: Number.isFinite(+m.stageAspect)&&+m.stageAspect>0
-        ? Math.min(3,Math.max(0.6,+m.stageAspect)) : null,
-      /* Provenance only - taken or dropped whole rather than clamped. The mm fields are optional
-         and re-derived from the file's own pitch rather than trusted, so a file cannot claim an
-         area that disagrees with the pitch beside it; an out-of-range pitch drops all three. */
-      stagePx: (m.stagePx && Number.isFinite(+m.stagePx.w) && Number.isFinite(+m.stagePx.h)
-                && +m.stagePx.w>0 && +m.stagePx.h>0)
-        ? (()=>{ const s=m.stagePx,
-                 w=Math.round(+s.w), h=Math.round(+s.h),
-                 dpr=Number.isFinite(+s.dpr)&&+s.dpr>0 ? +s.dpr : 1,
-                 p=Number.isFinite(+s.pitchMm)&&+s.pitchMm>=PITCH_MIN&&+s.pitchMm<=PITCH_MAX
-                   ? +s.pitchMm : null,
-                 mm=p ? p*dpr : null;
-                 return {w, h, dpr, pitchMm:p,
-                         wMm: mm ? +(w*mm).toFixed(1) : null,
-                         hMm: mm ? +(h*mm).toFixed(1) : null}; })()
-        : null,
-      backgrounded:!!m.backgrounded,
-      readMsMean: Number.isFinite(+m.readMsMean)&&m.readMsMean!==null ? +m.readMsMean : null,
-      env:m.env||null, imported:true, sourceFile:""
-    },
-    levels, positions:UNI_POS.map(p=>p.label), points, analysis:null,
-    display: typeof o.display==="string"?o.display.slice(0,120):""
-  };
+  const s=m.stagePx;
+  Object.assign(meta,{
+    mode:String(m.mode??levels.length).slice(0,16),
+    field:pick(m.field,["cell","full","none"],"cell"),
+    present:pick(m.present,["screen","window","none"],"screen"),
+    complete:levels.every(g=>UNI_POS.every((_,k)=>seen.has(`${k}|${g}`))),
+    /* Both uniformity modes move the probe, so unlike the luminance card a missing delay means
+       the field was absent rather than inapplicable - fall back to the default. */
+    moveDelayMs:meta.moveDelayMs??MOVE_DELAY_UNI_DEF*1000,
+    moveDelayCovers:meta.moveDelayCovers??(meta.external?"move+settle":"move"),
+    /* Clamped to a shape a display could plausibly have. It only sets the map's proportions,
+       but an absurd value would collapse the map to a line. */
+    stageAspect: +m.stageAspect>0 ? Math.min(3,Math.max(0.6,+m.stageAspect)) : null,
+    /* Provenance only - taken or dropped whole rather than clamped. The mm fields are re-derived
+       from the file's own pitch rather than trusted, so a file cannot claim an area that
+       disagrees with the pitch beside it; an out-of-range pitch drops all three. */
+    stagePx: (s && +s.w>0 && +s.h>0 && Number.isFinite(+s.w) && Number.isFinite(+s.h)) ? (()=>{
+      const w=Math.round(+s.w), h=Math.round(+s.h), dpr=+s.dpr>0 ? +s.dpr : 1;
+      const p=validPitch(s.pitchMm)||null, mm=p ? p*dpr : null;
+      return {w, h, dpr, pitchMm:p, wMm:mm ? +(w*mm).toFixed(1) : null, hMm:mm ? +(h*mm).toFixed(1) : null};
+    })() : null,
+  });
+  return { meta, levels, positions:UNI_POS.map(p=>p.label), points, analysis:null, display };
 }
 
 /* Re-runs the metrics on the loaded run against the current L_amb, color floor and white point,
@@ -4947,45 +5014,548 @@ function analyzeLoadedUniRun(){
     return;
   }
   const Lamb=numInput("uniLamb",0,{min:0}), floor=numInput("uniFloor",5,{min:0});
-  const refUV=uniCurrentRef().slice();
+  const refUV=refOf("uni");
   Object.assign(run.meta,{Lamb,floor,refUV});   // keep metadata aligned with what was analyzed
   const a=uniAnalyze(run,Lamb,floor,refUV);
   if(!a){ showMsg("uniMsg","Could not analyze the loaded run.","warn"); return; }
   run.analysis=a;
-  /* Re-analyzing must reproduce the capture-time caveats, or an imported external run would
+  /* Re-analyzing must reproduce the capture-time caveat, or an imported external run would
      silently lose the reason to doubt it. */
-  if(run.meta.backgrounded) a.warnings.unshift(
-    "This tab was in the background during the run, so the countdown may have run slower than "+
-    "requested and the readings may not line up with the positions they are labeled with.");
+  if(run.meta.backgrounded) a.warnings.unshift(bgWarning("positions",run.meta.moveDelayMs));
   renderUniAnalysis(a);
   if(a.warnings.length) showMsg("uniMsg",a.warnings,"warn"); else clearMsg("uniMsg");
 }
 
 $("btnUniReanalyze").onclick=()=>analyzeLoadedUniRun();
-$("btnUniImport").onclick=()=>$("uniFileImport").click();
-$("uniFileImport").onchange=async e=>{
-  const f=e.target.files&&e.target.files[0];
-  e.target.value="";                              // so the same file can be picked again
-  if(!f) return;
-  try{
-    const run=validateUniRun(JSON.parse(await f.text()));
-    run.meta.sourceFile=f.name.slice(0,120);
-    uni.lastRun=run;
-    if(run.display) $("uniDispId").value=run.display;
-    /* Restore the capture settings first so the initial re-analysis reproduces the original
-       result; they stay editable for Re-analyze afterwards. */
-    $("uniLamb").value=run.meta.Lamb;
-    $("uniFloor").value=run.meta.floor;
-    applyUniRefUV(run.meta.refUV);
-    setMode("uniformity");
-    log(`imported ${f.name}: ${run.points.length} readings, ${run.levels.length} level(s), `+
-        `${run.meta.complete?"complete":"incomplete"}`,"ok");
-    analyzeLoadedUniRun();
-    updateButtons();
-  }catch(err){
-    showMsg("uniMsg",`Import failed: ${err.message}`,"err");
-    log(`import failed: ${err.message}`,"e");
+wireImport("btnUniImport","uniFileImport",(o,name)=>{
+  const run=validateUniRun(o);
+  run.meta.sourceFile=name.slice(0,120);
+  uni.lastRun=run;
+  restoreRunSettings("uni","uniDispId",run);
+  setMode("uniformity");
+  log(`imported ${name}: ${run.points.length} readings, ${run.levels.length} level(s), `+
+      `${run.meta.complete?"complete":"incomplete"}`,"ok");
+  analyzeLoadedUniRun();
+  updateButtons();
+},importFailed("uniMsg"));
+
+/* ==========================================================================
+   Test patterns
+   Pattern drawing code Copyright (C) 2026 Nick Bevins, GPL v2 or later, like the rest of this file.
+   TG270-pQC and TG270-sQC follow AAPM Report No. 270 and TG18-OIQ follows AAPM TG18 (Online Report
+   No. 3); each is redrawn from the published description. No AAPM pattern files are included.
+
+   Every pattern draws into one canvas whose backing store is sized in DEVICE pixels, and none of it
+   goes through the interface scale (--uiscale / --cm10). Bar and line-pair periods are defined in
+   display pixels, so a 2-pixel pair has to land on two physical pixels whatever the OS scaling; a
+   CSS-pixel canvas at 125% scaling would resample it into something else entirely.
+   ========================================================================== */
+const pat={key:null, st:null, v:null, W:0, H:0, drag:null, raf:0, opener:null};
+const patCv=$("patCanvas"), pctx=patCv.getContext("2d");
+const fillG=(g,x,y,w,h)=>{ pctx.fillStyle=grayCss(g); pctx.fillRect(x,y,w,h); };
+const clampInt=(v,lo,hi,d)=>{ const n=parseInt(v,10); return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):d; };
+/* Toolbar ink. Most patterns keep the fixed #666; the uniform fields hold 100 gray levels off
+   their background so the controls stay findable at any level. */
+const patInk=g=>$("patStage").style.setProperty("--patink",g==null?"":grayCss(g));
+const inkOff=g=>g<120?g+100:g-100;
+
+function patDraw(){ if(pat.key&&pat.W) PAT[pat.key].draw(pctx,pat.W,pat.H,pat.v,pat.st); }
+const patQueue=()=>{ if(!pat.raf) pat.raf=requestAnimationFrame(()=>{ pat.raf=0; patDraw(); }); };
+/* Zoomable patterns keep a view: s is pattern units to device pixels, (ox,oy) the pattern origin
+   on the canvas, s0 the fitted scale. Zoom and pan only ever touch the view. */
+function patResetView(){ const v=PAT[pat.key].fit(pat.W,pat.H); pat.v={...v,s0:v.s,zoom:1}; }
+const patXY=e=>{ const r=patCv.getBoundingClientRect();
+  return [(e.clientX-r.left)*pat.W/r.width,(e.clientY-r.top)*pat.H/r.height]; };
+
+/* In-stage dialog, for pattern results and prompts. Built with textContent throughout. */
+function patDialog(title,msg,btns=[]){
+  $("patDlg").hidden=!title;
+  if(!title){ if(pat.key) patCv.focus(); return; }
+  $("patDlgTitle").textContent=title; $("patDlgMsg").textContent=msg;
+  $("patDlgBtns").replaceChildren(...btns.map(({label,fn})=>{
+    const b=document.createElement("button"); b.textContent=label;
+    b.onclick=()=>{ patDialog(null); fn?.(); }; return b; }));
+  $("patDlgBtns").lastChild?.focus();
+}
+$("patDlg").onclick=e=>{ if(e.target.id==="patDlg") patDialog(null); };
+/* Pattern controls: plain elements, built per open. */
+function ctl(tag,props,on={}){
+  const el=Object.assign(document.createElement(tag),props);
+  for(const [k,f] of Object.entries(on)) el.addEventListener(k,f);
+  return el;
+}
+/* Number box that commits on Enter or blur and reverts on Esc. */
+function numBox(val,title,commit){
+  const el=ctl("input",{value:val,title,maxLength:4},{
+    click:()=>el.select(),
+    blur:()=>commit(el),
+    keydown:e=>{ if(e.key==="Enter") el.blur();
+                 if(e.key==="Escape"){ el.value=el.dataset.v; el.blur(); } }});
+  el.dataset.v=val;
+  return el;
+}
+
+/* The canvas tracks its own size in device pixels - devicePixelContentBoxSize where the browser
+   reports it, else the CSS size times dpr. The last report is kept even with no pattern open: closing
+   one pattern and opening another in the same task never changes the size, so no report arrives and
+   openPattern applies the kept one. Every resize resets the view, as the original pages did. */
+const patRO=new ResizeObserver(([e])=>{
+  /* The exact device size is used only when it agrees with CSS size x dpr to a pixel: DevTools'
+     device emulation reports CSS pixels there even at an emulated dpr of 2. */
+  const d=e.devicePixelContentBoxSize?.[0], r=window.devicePixelRatio||1;
+  const cw=Math.round(e.contentRect.width*r), ch=Math.round(e.contentRect.height*r);
+  const ok=d && Math.abs(d.inlineSize-cw)<=1 && Math.abs(d.blockSize-ch)<=1;
+  pat.cw=ok?d.inlineSize:cw; pat.ch=ok?d.blockSize:ch;
+  patSize();
+});
+try{ patRO.observe(patCv,{box:"device-pixel-content-box"}); }catch(e){ patRO.observe(patCv); }
+/* A dpr change with no CSS resize (a move to a differently scaled monitor) need not reach the
+   observer, so the dpr watcher re-derives the size here. */
+function patDprChanged(){
+  const r=window.devicePixelRatio||1;
+  pat.cw=Math.round(patCv.clientWidth*r); pat.ch=Math.round(patCv.clientHeight*r);
+  patSize();
+}
+function patSize(){
+  if(!pat.key||!pat.cw||!pat.ch) return;
+  patCv.width=pat.W=pat.cw; patCv.height=pat.H=pat.ch;
+  const P=PAT[pat.key];
+  if(P.zoom) patResetView();
+  P.resize?.(pat.st);
+  patDraw();
+}
+
+async function openPattern(key,q=new URLSearchParams(),gesture=false){
+  const P=PAT[key]; if(!P) return;
+  closePattern();
+  pat.opener=document.activeElement;
+  pat.key=key; pat.st=P.init?.(q)||{}; pat.W=pat.H=0;
+  patInk(null); $("patDlg").hidden=true;
+  $("patReset").hidden=!P.zoom;
+  patCv.classList.toggle("pan",!!P.zoom);
+  $("patCtl").replaceChildren(...(P.controls?.(pat.st)||[]));
+  $("patStage").hidden=false;
+  patSize();
+  patCv.focus();                   // off the tile, so Space cannot re-open it
+  if(gesture && $("patFull").checked) await enterStageFullscreen(document.documentElement);
+  P.opened?.(pat.st);
+  log(`pattern opened: ${P.title}`);
+}
+function closePattern(){
+  if(!pat.key) return;
+  pat.key=pat.st=pat.drag=null;
+  $("patStage").hidden=$("patDlg").hidden=true;
+  $("patCtl").replaceChildren();
+  if(document.fullscreenElement===document.documentElement) exitStageFullscreen();
+  pat.opener?.focus?.();
+}
+$("patTiles").onclick=e=>{ const b=e.target.closest(".tile"); if(b) openPattern(b.dataset.pat,undefined,true); };
+$("patClose").onclick=closePattern;
+$("patHelp").onclick=()=>openHelp(pat.key,patCv);
+$("patReset").onclick=()=>{ patResetView(); patDraw(); patCv.focus(); };
+$("patFs").onclick=async()=>{
+  await (document.fullscreenElement ? exitStageFullscreen() : enterStageFullscreen(document.documentElement));
+  patCv.focus();
+};
+
+/* Input routing. Zoomable patterns get Ctrl+wheel zoom about the cursor and drag to pan; everything
+   else goes to the pattern's own handlers. Keys typed into a pattern control stay there, and Esc
+   closes the dialog first, then the pattern. */
+patCv.addEventListener("wheel",e=>{
+  const P=PAT[pat.key]; if(!P) return;
+  if(P.zoom){
+    if(!e.ctrlKey) return;
+    e.preventDefault();
+    const v=pat.v, z=Math.max(1,Math.min(10,v.zoom*(e.deltaY>0?0.9:1.1))), k=z/v.zoom;
+    if(k===1) return;
+    const [mx,my]=patXY(e);
+    v.ox=mx-(mx-v.ox)*k; v.oy=my-(my-v.oy)*k; v.s*=k; v.zoom=z;
+    patQueue();
+  } else if(P.wheel){ e.preventDefault(); P.wheel(e,pat.st); }
+},{passive:false});
+patCv.addEventListener("pointerdown",e=>{
+  const P=PAT[pat.key]; if(!P) return;
+  if(P.zoom && e.button===0){
+    patCv.setPointerCapture(e.pointerId); pat.drag=patXY(e); patCv.classList.add("panning");
   }
+  P.down?.(e,pat.st);
+});
+patCv.addEventListener("pointermove",e=>{
+  if(!pat.drag) return;
+  const [x,y]=patXY(e); pat.v.ox+=x-pat.drag[0]; pat.v.oy+=y-pat.drag[1]; pat.drag=[x,y];
+  patQueue();
+});
+for(const t of ["pointerup","pointercancel"])
+  patCv.addEventListener(t,()=>{ pat.drag=null; patCv.classList.remove("panning"); });
+patCv.addEventListener("click",e=>PAT[pat.key]?.click?.(e,pat.st,...patXY(e)));
+patCv.addEventListener("contextmenu",e=>e.preventDefault());
+function patKey(e){
+  if(!pat.key || !$("helpModal").hidden || e.target.closest?.(".patctl")) return;
+  if(!$("patDlg").hidden){ if(e.type==="keydown" && e.key==="Escape") patDialog(null); return; }
+  if(e.type==="keydown" && e.key==="Escape"){ closePattern(); return; }
+  PAT[pat.key][e.type]?.(e,pat.st);
+}
+document.addEventListener("keydown",patKey);
+document.addEventListener("keyup",patKey);
+
+/* ---- TG270-pQC ----
+   A 1024-unit square fitted to the window height: 18 gray bars (0-255 by 15) between side ramps,
+   with 62-unit bars above and below. Every region edge is snapped to a whole device pixel through
+   ex()/ey(), so neighbors share an edge exactly at any zoom - a fractional edge is antialiased, and
+   where a ramp row is drawn over a bar, the bar showed through as a sliver past the ramp.
+   Modulation, line pairs and the ramp strips use fixed DISPLAY-pixel periods, so they keep their
+   frequency at any zoom; stripes are clipped to their own cell. */
+function drawPQC(c,W,H,v){
+  const s=v.s, ex=u=>Math.round(v.ox+u*s), ey=u=>Math.round(v.oy+u*s), SW=87, BH=50, TH=62;
+  const L=ex(0), Rt=ex(1024), T=ey(0), B=ey(1024), barY=i=>ey(TH+i*BH), colX=i=>ex(SW+i*BH);
+  fillG(0,0,0,W,H);
+  for(let i=0;i<18;i++) fillG(i*15,colX(0),barY(i),colX(17)-colX(0),barY(i+1)-barY(i));
+  /* Alternating g1/g2 stripes of period per across [a,b) - vertical stripes when vert, else
+     horizontal - over the span [c0,c1) of the other axis. */
+  const stripes=(g1,g2,per,vert,a,b,c0,c1)=>{
+    for(let p=a;p<b;p+=per){
+      const m=Math.min(p+per/2,b), e=Math.min(p+per,b);
+      if(vert){ fillG(g1,p,c0,m-p,c1-c0); if(e>m) fillG(g2,m,c0,e-m,c1-c0); }
+      else    { fillG(g1,c0,p,c1-c0,m-p); if(e>m) fillG(g2,c0,m,c1-c0,e-m); }
+    }
+  };
+  /* Modulation at ±con about each bar: horizontal stripes on the left block, vertical on the right.
+     The first and last bars double the side that would otherwise clip at 0 or 255. */
+  const col=(ci,per,con,vert)=>{
+    for(let b=0;b<18;b++){
+      const dk=b*15-con-(b===17?con:0), lt=b*15+con+(b===0?con:0);
+      if(vert) stripes(dk,lt,per,true,colX(ci),colX(ci+1),barY(b),barY(b+1));
+      else     stripes(dk,lt,per,false,barY(b),barY(b+1),colX(ci),colX(ci+1));
+    }
+  };
+  [18,12,6,4].forEach((p,i)=>{ col(i,p,4,false); col(i+4,p,1,false); });
+  [4,6,12,18].forEach((p,i)=>{ col(i+9,p,1,true); col(i+13,p,4,true); });
+  /* Top (64) and bottom (191) bars, each carrying square line-pair cells at 6, 4 and 2 px periods
+     - horizontal on the left, vertical on the right; 128/0 on top, 128/255 below. */
+  fillG(64,L,T,Rt-L,barY(0)-T);
+  fillG(191,L,barY(18),Rt-L,B-barY(18));
+  [6,4,2,2,4,6].forEach((per,i)=>{
+    const ci=i<3?2*i+2:2*i+4, x0=colX(ci), n=colX(ci+1)-x0;
+    for(const [mid,hi] of [[ey(TH/2),0],[ey(1024-TH/2),255]]){
+      const y0=Math.round(mid-n/2);
+      i<3 ? stripes(128,hi,per,false,y0,y0+n,x0,x0+n) : stripes(128,hi,per,true,x0,x0+n,y0,y0+n);
+    }
+  });
+  /* Full-height side ramps with a ±3 GL modulated center strip: left runs 0 down to 255 on a
+     2-pixel period, right runs the other way on 1.5. */
+  const n=B-T;
+  for(const [a,rev,per] of [[0,false,2],[1024-SW,true,1.5]]){
+    const x0=ex(a), x1=ex(a+SW), m0=ex(a+SW/4), m1=ex(a+SW*3/4);
+    for(let y=0;y<n;y++){
+      const gl=Math.floor((rev?n-1-y:y)/(n-1)*1031/1024*255);
+      fillG(gl,x0,T+y,x1-x0,1); fillG(gl+Math.round(3*Math.sin(y/per)),m0,T+y,m1-m0,1);
+    }
+  }
+  c.fillStyle=grayCss(128); c.font=`${18*s}px sans-serif`; c.textAlign="center";
+  c.fillText("TG270-pQC",v.ox+512*s,v.oy+32*s);
+}
+
+/* ---- TG270-sQC ----
+   18 squares, 0-255 by 15 in serpentine order, each with 6-pixel bar patches at -5 (upper left) and
+   +5 (lower right); 0 and 255 use absolute 3/5 and 250/252 instead of clipping. Then 0/128/255
+   squares and a full-width ramp ending in 1-pixel line pairs. */
+function drawSQC(c,W,H,v){
+  const s=v.s, X=v.ox, Y=v.oy, R=Math.round;
+  fillG(128,0,0,W,H);
+  c.textAlign="center";
+  c.fillStyle=grayCss(53); c.font=`${18*s}px sans-serif`; c.fillText("TG270-sQC",X+512*s,Y+32*s);
+  const sub=R(32*s), size=R(128*s);
+  for(let i=0;i<3;i++) for(let j=0;j<6;j++){
+    const n=i*6+2.5-2.5*(-1)**i+j*(-1)**i, gl=n*15;
+    const x=R(X+s*(160*j+48)), y=R(Y+s*(128*(i+1)+(i-1)*32));
+    fillG(gl,x,y,size,size);
+    c.fillStyle=grayCss(n%9*15+75); c.font=`${12*s}px sans-serif`; c.fillText(R(gl),x+size/2,y+16*s);
+    const [a,b]= i===0&&j===0 ? [3,5] : i===2&&j===5 ? [gl-5,gl-3] : [gl-5,gl+5];
+    for(let k=0,m=Math.ceil(sub/6);k<m;k++){
+      fillG(a,R(x+16*s+k*6),R(y+16*s),3,sub);
+      fillG(b,R(x+80*s+k*6),R(y+80*s),3,sub);
+    }
+  }
+  for(let k=0;k<3;k++){      // edges on whole pixels, as in pQC
+    const x0=R(X+s*(128+k*256)), y0=R(Y+s*640);
+    fillG(k*128,x0,y0,R(X+s*(384+k*256))-x0,R(Y+s*896)-y0);
+  }
+  /* The ramp spans the whole zoomed width (W*zoom), anchored to the pattern as it pans. */
+  const gh=Math.floor(64*s), gy=Y+1024*s-gh, cw=W*v.zoom, gx=X-(cw-1024*s)/2;
+  const lp=gx+cw-128*s, vp=gx+cw-64*s, gr=c.createLinearGradient(gx,0,lp,0);
+  gr.addColorStop(0,"#000"); gr.addColorStop(1,"#fff");
+  c.fillStyle=gr; c.fillRect(gx,gy,cw-128*s,gh);
+  const fy=Math.floor(gy), fl=Math.floor(lp), fv=Math.floor(vp);
+  for(let x=fl;x<fv;x++) fillG((x-fl)%2?255:0,x,fy,1,gh);
+  for(let y=fy;y<Math.floor(gy+gh);y++) fillG((y-fy)%2?255:0,fv,y,Math.floor(gx+cw-vp),1);
+}
+
+/* ---- TG18-OIQ ----
+   Laid out on a 102-unit grid about the window center (1024 units fit the shorter side). */
+const OIQ_GRID=[[88,104,120,136,152,168],[72,128,128,128,128,184],[56,128,128,128,128,200],
+                [40,128,128,128,128,216],[24,128,128,128,128,232],[8,0,128,128,255,248]];
+const oiqFrame=(g,x1,y1,x2,y2)=>{ fillG(g,x1,y1,x2-x1,1); fillG(g,x1,y2,x2-x1,1);
+                                  fillG(g,x1,y1,1,y2-y1); fillG(g,x2,y1,1,y2-y1); };
+function oiqBars(x1,y1,x2,y2,vert,per,lo,hi){
+  if(vert) for(let x=x1;x<x2;x++) fillG(Math.floor((x-x1)/per)%2?lo:hi,x,y1,1,y2-y1);
+  else     for(let y=y1;y<y2;y++) fillG(Math.floor((y-y1)/per)%2?lo:hi,x1,y,x2-x1,1);
+}
+/* Spatial resolution block, 2 cells x 1 at (col,row): 0/255 left half, 128/130 right, each split
+   into 1 and 2 pixel bars, vertical above and horizontal below. Periods are display pixels. */
+function oiqRes(col,row,s,cx,cy){
+  const p=102*s, R=Math.round;
+  const x1=R(cx+col*p), y1=R(cy+row*p), x2=R(cx+(col+2)*p), y2=R(cy+(row+1)*p), xm=R(cx+(col+1)*p);
+  const ym=R((y1+y2)/2);
+  fillG(64,x1,y1,x2-x1,y2-y1);
+  for(const [a,b,lo,hi] of [[x1,xm,0,255],[xm,x2,128,130]]){
+    const m=R((a+b)/2);
+    oiqBars(a,y1,m,ym,true,1,lo,hi);  oiqBars(m,y1,b,ym,true,2,lo,hi);
+    oiqBars(a,ym,m,y2,false,1,lo,hi); oiqBars(m,ym,b,y2,false,2,lo,hi);
+  }
+  oiqFrame(64,x1+1,y1+1,x2-1,y2-1);             // 1 px surround
+  oiqFrame(191,x1,y1,x2,y2);                    // grid lines restored
+}
+function drawOIQ(c,W,H,v){
+  const s=v.s, cx=v.ox, cy=v.oy, p=102*s, R=Math.round, gx=a=>R(cx+a*p), gy=b=>R(cy+b*p);
+  fillG(128,0,0,W,H);
+  /* 6x6 gray steps. 0 and 255 carry a centered half-size patch at 13 and 242; every other step
+     except the 128 background carries ±4 corner patches. */
+  const csz=Math.max(1,R(10*s));
+  OIQ_GRID.forEach((cells,row)=>cells.forEach((g,col)=>{
+    const x=gx(col-3), y=gy(row-3), x2=gx(col-2), y2=gy(row-2), w=x2-x, h=y2-y;
+    fillG(g,x,y,w,h);
+    if(g===0||g===255){ const sw=R(w/2), sh=R(h/2); fillG(g?242:13,x+R((w-sw)/2),y+R((h-sh)/2),sw,sh); }
+    else if(g!==128){
+      const hi=Math.min(255,g+4), lo=Math.max(0,g-4);
+      fillG(lo,x,y,csz,csz); fillG(hi,x2-csz,y,csz,csz); fillG(hi,x,y2-csz,csz,csz); fillG(lo,x2-csz,y2-csz,csz,csz);
+    }
+  }));
+  /* 191 crosshatch at the cell pitch, out from the center */
+  c.fillStyle=grayCss(191);
+  for(let x=cx;x<=W;x+=p) c.fillRect(R(x),0,1,H);
+  for(let x=cx-p;x>=0;x-=p) c.fillRect(R(x),0,1,H);
+  for(let y=cy;y<=H;y+=p) c.fillRect(0,R(y),W,1);
+  for(let y=cy-p;y>=0;y-=p) c.fillRect(0,R(y),W,1);
+  /* Luminance ramps, 3/4 of a cell wide: 255 to 0 on the left, 0 to 255 on the right. */
+  const rT=gy(-2.5), rH=gy(2.5)-rT, rW=R(0.75*p), lx=gx(-4.5)-Math.floor(rW/2), rx=gx(4.5)-Math.floor(rW/2);
+  for(let y=0;y<rH;y++){ fillG(R(255*(1-y/(rH-1))),lx,rT+y,rW,1); fillG(R(255*y/(rH-1)),rx,rT+y,rW,1); }
+  /* QUALITY CONTROL panels on black, mid-gray and white, internal grid lines suppressed. */
+  const mT=gy(3), mB=gy(4), mH=mB-mT;
+  const panels=[[-3,-1,0,1],[-1,1,128,1],[1,3,255,-1]].map(([a,b,bg,sign])=>({x1:gx(a),x2:gx(b),bg,sign}));
+  for(const q of panels) fillG(q.bg,q.x1,mT,q.x2-q.x1,mH);
+  c.fillStyle=grayCss(191);
+  for(const k of [-3,-1,1,3]) c.fillRect(gx(k),mT,1,mH);
+  c.fillRect(0,mT,W,1); c.fillRect(0,mB,W,1);
+  /* Window response: black over white across x -4..4, with white-over-black inner strips at -2..2. */
+  const wx1=gx(-4), wx2=gx(4), wT=gy(-3.5), wM=gy(-3.25), wB=gy(-3), iB=gy(-3.375);
+  fillG(0,wx1,wM,wx2-wx1,wB-wM); fillG(255,wx1,wT,wx2-wx1,wM-wT);
+  c.fillStyle=grayCss(191); c.fillRect(wx1,wT,1,wB-wT); c.fillRect(wx2,wT,1,wB-wT); c.fillRect(0,wB,W,1);
+  fillG(255,gx(-2),wM,gx(2)-gx(-2),gy(-3.125)-wM); fillG(0,gx(-2),iB,gx(2)-gx(-2),wM-iB);
+  /* Info box */
+  const ib=[gx(-1),gy(2),gx(1),gy(3)];
+  fillG(128,ib[0],ib[1],ib[2]-ib[0],ib[3]-ib[1]); oiqFrame(191,...ib);
+  const fs=Math.max(6,R(16*s)), lh=fs*1.3;
+  c.font=`${fs}px sans-serif`; c.textBaseline="alphabetic"; c.textAlign="center"; c.fillStyle=grayCss(98);
+  ["Based on TG18-OIQ","(scaled)","pdweb"].forEach((t,i)=>
+    c.fillText(t,(ib[0]+ib[2])/2,(ib[1]+ib[3])/2-1.5*lh+fs+i*lh));
+  /* QUALITY CONTROL lettering, one contrast per letter: Q at ±14 down to L at ±1, lighter on the
+     black and gray panels and darker on the white one. */
+  const fs2=Math.max(8,R(23*s)), lh2=fs2*1.3;
+  c.textAlign="left"; c.font=`bold ${fs2}px sans-serif`;
+  for(const q of panels) ["QUALITY","CONTROL"].forEach((word,wi)=>{
+    let x=(q.x1+q.x2)/2-[...word].reduce((t,ch)=>t+c.measureText(ch).width,0)/2;
+    [...word].forEach((ch,i)=>{
+      c.fillStyle=grayCss(q.bg+q.sign*(14-wi*7-i));
+      c.fillText(ch,x,(mT+mB)/2-lh2+fs2+wi*lh2); x+=c.measureText(ch).width;
+    });
+  });
+  /* Crosstalk: white over black across x ±2.75, with lines of 256 down to 1 units either side of
+     center, 3 units thick - black on the white band, white on the black. */
+  const tx1=gx(-2.75), tx2=gx(2.75), tm=gy(-4.5);
+  fillG(255,tx1,gy(-5),tx2-tx1,tm-gy(-5)); fillG(0,tx1,tm,tx2-tx1,gy(-4)-tm);
+  const th=Math.max(1,Math.ceil(3*s)), lx0=gx(-0.125), rx0=gx(0.125);
+  for(const [g,ly,sgn] of [[0,gy(-4.75),1],[255,gy(-4.25),-1]]){
+    c.fillStyle=grayCss(g);
+    for(let i=0;i<9;i++){
+      const lw=R((256>>i)*s), y=ly+R(sgn*(3*i-12)*s);
+      c.fillRect(lx0-lw,y,lw,th); c.fillRect(rx0,y,lw,th);
+    }
+  }
+  /* Resolution blocks: center, then the four window corners - placed at the fitted scale, 13 units
+     in from each edge. */
+  oiqRes(-1,-0.5,s,cx,cy);
+  const e=13*v.s0, pb=102*v.s0, cl=(e-W/2)/pb, rt=(e-H/2)/pb, cr=(W/2-e)/pb-2, rb=(H/2-e)/pb-1;
+  for(const [a,b] of [[cl,rt],[cr,rt],[cl,rb],[cr,rb]]) oiqRes(a,b,s,cx,cy);
+}
+
+/* ---- Gray levels: one uniform field, stepped by click, wheel or arrow keys ---- */
+const GRAYS={title:"Gray levels",
+  init:q=>({g:clampInt(q.get("gray"),0,255,120), step:[1,5,15].includes(+q.get("step"))?+q.get("step"):15,
+            grid:q.get("grid")==="true"}),
+  set(st,g){ st.g=Math.max(0,Math.min(255,g)); st.box.value=st.box.dataset.v=String(st.g).padStart(3,"0");
+             patInk(inkOff(st.g)); patDraw(); },
+  controls(st){
+    st.box=numBox("",`Gray level (0-255)`,el=>{ const n=parseInt(el.value,10); GRAYS.set(st,Number.isFinite(n)?n:st.g); });
+    const step=ctl("select",{title:"Step size"},{change:e=>{ st.step=+e.target.value; }});
+    step.append(...[1,5,15].map(n=>ctl("option",{value:n,textContent:n})));
+    step.value=st.step;
+    return [st.box,step,ctl("button",{className:"pb",textContent:"⌗",title:"3 x 3 grid"},
+      {click:()=>{ st.grid=!st.grid; patDraw(); patCv.focus(); }})];
+  },
+  opened(st){ GRAYS.set(st,st.g); },
+  draw(c,W,H,v,st){
+    fillG(st.g,0,0,W,H);
+    if(!st.grid) return;
+    const lw=Math.max(1,Math.round(window.devicePixelRatio||1)), R=Math.round, ink=inkOff(st.g);
+    for(const k of [1,2]){ fillG(ink,R(W*k/3),0,lw,H); fillG(ink,0,R(H*k/3),W,lw); }
+  },
+  keydown(e,st){ const d={ArrowUp:1,ArrowDown:-1}[e.key]; if(d){ e.preventDefault(); GRAYS.set(st,st.g+d*st.step); } },
+  click:(e,st)=>GRAYS.set(st,st.g+st.step),
+  down:(e,st)=>{ if(e.button===2) GRAYS.set(st,st.g-st.step); },
+  wheel:(e,st)=>GRAYS.set(st,st.g+(e.deltaY>0?-1:1)*st.step),
+};
+
+/* ---- Uniformity scan: a box stepped across the display in a serpentine path ---- */
+const SCAN_GRAYS=[15,120,240], SCAN_STEP=100;       // step in display pixels
+const SCAN={title:"Uniformity scan",
+  init:q=>({size:clampInt(q.get("size"),1,2000,300), g:SCAN_GRAYS.includes(+q.get("gray"))?+q.get("gray"):120,
+            x:0, y:0, anim:false, auto:false, dir:"forward", held:null}),
+  controls(st){
+    st.sel=ctl("select",{title:"Box gray level"},{change:e=>{ st.g=+e.target.value; patDraw(); }});
+    st.sel.append(...SCAN_GRAYS.map(g=>ctl("option",{value:g,textContent:`Gray ${g}`})));
+    st.sel.value=st.g;
+    return [numBox(st.size,"Box size in display pixels",el=>{
+      const n=parseInt(el.value,10);
+      if(n>0&&n<=2000){ st.size=n; st.x=st.y=0; el.dataset.v=n; patDraw(); } else el.value=st.size;
+    }),st.sel];
+  },
+  draw(c,W,H,v,st){ fillG(0,0,0,W,H); fillG(st.g,st.x,st.y,st.size,st.size); },
+  resize(st){ st.x=Math.min(st.x,Math.max(0,pat.W-st.size)); st.y=Math.min(st.y,Math.max(0,pat.H-st.size)); },
+  gray(st,d){ st.g=SCAN_GRAYS[(SCAN_GRAYS.indexOf(st.g)+d+3)%3]; st.sel.value=st.g; patDraw(); },
+  /* Next box position along the path, or null at either end. Rows alternate direction; between
+     rows the box steps down, and a last partial row is taken flush with the bottom edge. */
+  next(st,dir){
+    const x=Math.round(st.x), y=Math.round(st.y), rh=st.size, maxX=pat.W-st.size, maxY=pat.H-rh;
+    const row=Math.floor(y/rh), even=row%2===0, onRow=y%rh===0;
+    const endL=y>=maxY&&even, endR=y>=maxY&&!even;
+    const rightward=(even&&!endL)||endR, leftward=(!even&&!endR)||endL;
+    if(dir==="forward"){
+      if((endR&&x>=maxX)||(endL&&x<=0)) return null;
+      if(!onRow && y<maxY) return {x, y:Math.min(y+SCAN_STEP,(row+1)*rh,maxY)};
+      if(rightward && x<maxX) return {x:Math.min(x+SCAN_STEP,maxX), y};
+      if(leftward && x>0) return {x:Math.max(x-SCAN_STEP,0), y};
+      if(y>=maxY) return null;
+      return {x, y:Math.min(y+SCAN_STEP,(row+1)*rh,maxY)};
+    }
+    if(x===0&&y===0) return null;
+    if(!onRow && !endL && !endR) return {x, y:Math.max(y-SCAN_STEP,row*rh,0)};
+    if(rightward && x>0) return {x:Math.max(x-SCAN_STEP,0), y};
+    if(leftward && x<maxX) return {x:Math.min(x+SCAN_STEP,maxX), y};
+    if(y<=0) return null;
+    return {x, y:Math.max(y-SCAN_STEP,(endL||endR)?Math.floor(y/rh)*rh:(row-1)*rh,0)};
+  },
+  /* 200 ms linear glide to the next position. Each glide decides on arrival whether autoplay or a
+     held arrow key wants another, so a new request never starts a second glide over a running one. */
+  move(st,dir){
+    const to=SCAN.next(st,dir);
+    if(!to){ st.anim=st.auto=false; st.held=null; return; }
+    st.anim=true;
+    const x0=st.x, y0=st.y, t0=performance.now();
+    const step=t=>{
+      if(pat.st!==st) return;                        // pattern closed mid-glide
+      const k=Math.min(1,(t-t0)/200);
+      st.x=x0+(to.x-x0)*k; st.y=y0+(to.y-y0)*k; patDraw();
+      if(k<1) return requestAnimationFrame(step);
+      st.anim=false; SCAN.cont(st);
+    };
+    requestAnimationFrame(step);
+  },
+  cont(st){ if(st.auto) SCAN.move(st,st.dir); else if(st.held) SCAN.move(st,st.held); },
+  keydown(e,st){
+    if(e.key===" "){ e.preventDefault();
+      if(st.auto){ st.auto=false; return; }
+      st.held=null; st.dir=e.shiftKey?"backward":"forward"; st.auto=true; if(!st.anim) SCAN.cont(st); }
+    else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){ e.preventDefault(); st.auto=false;
+      if(!st.held){ st.held=e.key==="ArrowRight"?"forward":"backward"; if(!st.anim) SCAN.cont(st); } }
+    else if(e.key==="ArrowUp"||e.key==="ArrowDown"){ e.preventDefault(); SCAN.gray(st,e.key==="ArrowUp"?1:-1); }
+  },
+  keyup(e,st){ if({ArrowRight:"forward",ArrowLeft:"backward"}[e.key]===st.held) st.held=null; },
+  wheel(e,st){ st.auto=false; st.held=null; if(!st.anim) SCAN.move(st,e.deltaY>0?"forward":"backward"); },
+  click:(e,st)=>SCAN.gray(st,1),
+  down:(e,st)=>{ if(e.button===2) SCAN.gray(st,-1); },
+};
+
+/* ---- Ambient test: find a faint bar target placed at random ---- */
+const AMB_SIZE=102, AMB_PERIOD=6;                   // display pixels
+const AMB_PREP="Ambient lighting set to reading levels\n - Close or cover nearby windows\n"+
+  " - Reduce overhead lighting\n - Avoid lights reflecting on the display";
+const AMB={title:"Ambient test",
+  init:q=>({con:clampInt(q.get("contrast"),1,255,3), base:0, x:null, y:null, debug:false,
+            lock:q.has("lockcontrast")||q.has("lock"), email:q.get("email")}),
+  controls(st){
+    st.lbl=ctl("span",{className:"pb",title:st.lock?"Contrast is locked":"Click: more contrast. Right click: less."},{
+      click:()=>AMB.adj(st,"con",1), contextmenu:e=>{ e.preventDefault(); AMB.adj(st,"con",-1); }});
+    return [ctl("span",{className:"pb",textContent:"Move",title:"Move the target"},{click:()=>{ AMB.place(st); patCv.focus(); }}),st.lbl];
+  },
+  opened(st){ AMB.show(st); patDialog("Ambient luminance test","Please ensure the following:\n\n"+AMB_PREP,[{label:"OK"}]); },
+  resize(st){ if(st.x==null) AMB.place(st); },
+  /* Anywhere in the central 80% of the canvas. */
+  place(st){ const r=Math.random;
+    st.x=Math.round(pat.W*0.1+r()*(pat.W*0.8-AMB_SIZE)); st.y=Math.round(pat.H*0.1+r()*(pat.H*0.8-AMB_SIZE)); patDraw(); },
+  show(st){ st.lbl.textContent=`${st.base?`Base: ${st.base} | `:""}Contrast: ${st.con} GLs${st.lock?" 🔒":""}`;
+            patInk(st.base>127?st.base-100:st.base+100); },
+  /* Contrast and base both stop where the target would clip at 255. */
+  adj(st,k,d){
+    if(st.lock) return;
+    if(d>0 ? st.base+st.con<255 : st[k]>(k==="con"?1:0)){ st[k]+=d; AMB.show(st); patDraw(); }
+  },
+  draw(c,W,H,v,st){
+    fillG(st.base,0,0,W,H);
+    for(let k=0;k<AMB_SIZE/AMB_PERIOD;k++) fillG(st.base+st.con,st.x+k*AMB_PERIOD+AMB_PERIOD/2,st.y,AMB_PERIOD/2,AMB_SIZE);
+    if(st.debug){ c.strokeStyle="red"; c.lineWidth=2; c.strokeRect(st.x,st.y,AMB_SIZE,AMB_SIZE); }
+  },
+  keydown(e,st){
+    if(e.key==="D"&&e.shiftKey){ st.debug=!st.debug; patDraw(); return; }
+    const a={ArrowUp:["con",1],ArrowDown:["con",-1],ArrowRight:["base",1],ArrowLeft:["base",-1]}[e.key];
+    if(a){ e.preventDefault(); AMB.adj(st,...a); }
+  },
+  down(e,st){ if(e.shiftKey||e.altKey){ e.preventDefault(); AMB.adj(st,e.shiftKey?"con":"base",e.button===2?-1:1); } },
+  click(e,st,x,y){
+    if(e.shiftKey||e.altKey) return;
+    const ok=x>=st.x&&x<=st.x+AMB_SIZE&&y>=st.y&&y<=st.y+AMB_SIZE;
+    const btns=[{label:"Cancel"},{label:"Retry",fn:()=>AMB.place(st)}];
+    if(st.email) btns.unshift({label:"Share Results",fn:()=>AMB.share(st,ok)});
+    log(`ambient test ${ok?"passed":"failed"} at ${st.con} GL contrast, base ${st.base}`,ok?"ok":"w");
+    patDialog(ok?"Success!":"Failure!", ok
+      ? `Low contrast object found!\n\nAmbient lighting is appropriate for ${st.con} gray level contrast visualization.`
+      : "Low contrast object not found!\n\nAdjust ambient lighting or recalibrate the display.",btns);
+  },
+  share(st,ok){
+    const n=navigator, body=[
+      "Ambient Light Test Results","",`Test Date/Time: ${new Date().toLocaleString()}`,
+      `Result: ${ok?"PASSED":"FAILED"}`,`Gray Level Tested: ${st.con} (out of 255)`,`Base Level: ${st.base} (out of 255)`,"",
+      ok ? `The low contrast object was successfully detected.\nAmbient lighting is appropriate for ${st.con} gray level contrast visualization.`
+         : "The low contrast object was not detected.\nAmbient lighting may need adjustment or display recalibration is recommended.",
+      "","Test Parameters:",`- Object Size: ${AMB_SIZE}x${AMB_SIZE} display pixels`,
+      `- Pattern: Vertical bars (${AMB_PERIOD}-pixel period)`,`- Contrast Level: ${st.con} gray levels`,`- Base Level: ${st.base}`,
+      ...(st.lock?["- Contrast Setting: LOCKED"]:[]),
+      "","System Information:",`- Browser: ${n.userAgent}`,`- Screen Resolution: ${screen.width}x${screen.height}`,
+      `- Screen Color Depth: ${screen.colorDepth}-bit`,`- Pixel Ratio: ${window.devicePixelRatio}`,
+      `- Viewport Size: ${innerWidth}x${innerHeight}`,`- Language: ${n.language}`,
+      "","Test Object Position:",`- X: ${st.x}, Y: ${st.y}`,`- Canvas Size: ${pat.W}x${pat.H}`].join("\n");
+    location.href=`mailto:${st.email}?subject=${encodeURIComponent(`Ambient Light Test Results - ${ok?"SUCCESS":"FAILURE"}`)}`+
+                  `&body=${encodeURIComponent(body)}`;
+  },
+};
+
+/* Keyed by the standalone pages' file names, which is also what ?pattern= takes. */
+const zoomPat=(title,draw,fit)=>({title,zoom:true,draw,fit});
+const fitHeight=(W,H)=>({s:H/1024, ox:(W-H)/2, oy:0});
+const PAT={
+  pqc:zoomPat("TG270-pQC",drawPQC,fitHeight),
+  sqc:zoomPat("TG270-sQC",drawSQC,fitHeight),
+  tg18oiq:zoomPat("TG18-OIQ",drawOIQ,(W,H)=>({s:Math.min(W,H)/1024, ox:W/2, oy:H/2})),
+  grays:GRAYS, scan:SCAN, ambtest:AMB,
 };
 
 /* ==========================================================================
@@ -5028,6 +5598,7 @@ const CFG_FIELDS={
     ["uniFloor","colorFloor","num"],    ["uniOneGl","oneLevelDDL","num"],
     ["uniField","field","select"],      ["uniPresent","presentation","select"],
   ],
+  patterns:[["patFull","fullScreen","bool"]],
 };
 
 function buildConfig(){
@@ -5047,11 +5618,11 @@ function buildConfig(){
   }
   /* From the committed value, not the box - see CFG_FIELDS. null means undeclared. */
   out.interface={pixelPitchMm};
-  /* The white point travels as the pair rather than as the selector: applyRefUV derives the
+  /* The white point travels as the pair rather than as the selector: applyRef derives the
      selector from the numbers, so a file cannot restore "D65" alongside custom coordinates.
      The two cards keep separate references and therefore separate entries. */
-  out.lumresponse.referenceUV=currentRef().slice();
-  out.uniformity.referenceUV=uniCurrentRef().slice();
+  out.lumresponse.referenceUV=refOf("seq");
+  out.uniformity.referenceUV=refOf("uni");
   return out;
 }
 
@@ -5064,7 +5635,7 @@ function applyConfig(o){
   if(!o||typeof o!=="object"||Array.isArray(o)) throw new Error("not a pdweb config file");
   if(typeof o.format==="string" && !o.format.startsWith("pdweb-config/"))
     throw new Error(`unrecognized format "${o.format.slice(0,40)}"`);
-  const applied=[], skipped=[];
+  const applied=[], skipped=[], skip=(where,v)=>skipped.push(`${where}="${String(v).slice(0,20)}"`);
   for(const [group,fields] of Object.entries(CFG_FIELDS)){
     const g=o[group];
     if(!g||typeof g!=="object"||Array.isArray(g)) continue;
@@ -5074,12 +5645,12 @@ function applyConfig(o){
       if(kind==="bool"){ el.checked=!!v; applied.push(where); continue; }
       if(kind==="select"){
         if([...el.options].some(op=>op.value===v)){ el.value=v; applied.push(where); }
-        else skipped.push(`${where}="${String(v).slice(0,20)}"`);
+        else skip(where,v);
         continue;
       }
       if(v===null||v===""){ el.value=""; applied.push(where); continue; }
       if(Number.isFinite(+v)){ el.value=+v; applied.push(where); }
-      else skipped.push(`${where}="${String(v).slice(0,20)}"`);
+      else skip(where,v);
     }
   }
   /* Through setPitch - the only writer, and it applies a scale the loop's inert boxes never need.
@@ -5088,17 +5659,16 @@ function applyConfig(o){
      && "pixelPitchMm" in o.interface){
     const p=o.interface.pixelPitchMm, where="interface.pixelPitchMm";
     if(setPitch(p,{quiet:true,close:false})) applied.push(where);
-    else skipped.push(`${where}="${String(p).slice(0,20)}"`);
+    else skip(where,p);
   }
-  /* Routed through applyRefUV / applyUniRefUV rather than written to the boxes, so the selector,
-     the values and their disabled state end up consistent however the file spells the
-     reference. One entry per card - they are independent settings. */
-  for(const [group,apply] of [["lumresponse",applyRefUV],["uniformity",applyUniRefUV]]){
-    const ref=o[group] && o[group].referenceUV;
+  /* Routed through applyRef rather than written to the boxes, so the selector, the values and
+     their disabled state end up consistent however the file spells the reference. One entry per
+     card - they are independent settings. */
+  for(const [group,p] of [["lumresponse","seq"],["uniformity","uni"]]){
+    const ref=o[group]?.referenceUV;
     if(ref===undefined) continue;
-    if(Array.isArray(ref) && ref.length===2 && Number.isFinite(+ref[0]) && Number.isFinite(+ref[1])
-       && +ref[0]>=0 && +ref[0]<=1 && +ref[1]>=0 && +ref[1]<=1){
-      apply([+ref[0],+ref[1]]); applied.push(`${group}.referenceUV`);
+    if(Array.isArray(ref) && ref.length===2 && ref.every(v=>+v>=0 && +v<=1)){   // NaN fails both
+      applyRef(p,ref.map(Number)); applied.push(`${group}.referenceUV`);
     } else skipped.push(`${group}.referenceUV`);
   }
   return {applied,skipped};
@@ -5203,7 +5773,7 @@ function setPitch(v,{quiet=false,close=true}={}){
 /* Delegated, so adding a display class is one <button>. Every preset is a complete answer, "Not
    set" included, so it commits and closes. */
 $("pitchGrid").onclick=e=>{
-  const b=e.target.closest(".pitchbtn");
+  const b=e.target.closest(".tile");
   if(b) setPitch(b.dataset.pitch);
 };
 /* Nothing on input or change - only Set commits. Enter goes the same way. */
@@ -5222,7 +5792,7 @@ $("btnPitch").onclick=()=>{
    commit - the pitch did not change. */
 (function watchDpr(){
   matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`)
-    .addEventListener("change",()=>{ applyPitch(); renderPitch(); watchDpr(); },{once:true});
+    .addEventListener("change",()=>{ applyPitch(); renderPitch(); patDprChanged(); watchDpr(); },{once:true});
 })();
 
 /* A browser can restore the box across a reload without firing change, so commit rather than
@@ -5230,31 +5800,18 @@ $("btnPitch").onclick=()=>{
 setPitch($("uiPitchMm").value,{quiet:true,close:false});
 
 $("btnCfgExport").onclick=()=>{
-  const stamp=new Date().toISOString().replace(/[:.]/g,"-").replace("T","_").slice(0,19);
-  download(`pdweb_config_${stamp}.json`, JSON.stringify(buildConfig(),null,2),
-           "application/json");
+  download(`pdweb_config_${fileStamp()}.json`, JSON.stringify(buildConfig(),null,2), "application/json");
   log("settings exported","ok");
 };
-$("btnCfgImport").onclick=()=>$("cfgFileImport").click();
-$("cfgFileImport").onchange=async e=>{
-  const f=e.target.files&&e.target.files[0];
-  e.target.value="";                              // so the same file can be picked again
-  if(!f) return;
-  try{
-    const {applied,skipped}=applyConfig(JSON.parse(await f.text()));
-    log(`settings imported from ${f.name}: ${applied.length} applied`+
-        (skipped.length?`, ${skipped.length} not recognized (${skipped.join(", ")})`:""),
-        skipped.length?"w":"ok");
-  }catch(err){
-    log(`settings import failed: ${err.message}`,"e");
-  }
-};
+wireImport("btnCfgImport","cfgFileImport",(o,name)=>{
+  const {applied,skipped}=applyConfig(o);
+  log(`settings imported from ${name}: ${applied.length} applied`+
+      (skipped.length?`, ${skipped.length} not recognized (${skipped.join(", ")})`:""),
+      skipped.length?"w":"ok");
+},err=>log(`settings import failed: ${err.message}`,"e"));
 
 $("btnClearLog").onclick=()=>$("log").replaceChildren();
-$("btnCopyLog").onclick=async()=>{
-  try{ await navigator.clipboard.writeText($("log").innerText); log("log copied to clipboard","ok"); }
-  catch(e){ log("copy failed: "+e.message,"e"); }
-};
+$("btnCopyLog").onclick=()=>copyText($("log").innerText,"log");
 
 /* Fields whose default lives in a constant are seeded here rather than carrying a value= in the
    markup, so the constant is the only place the number appears. Anything read with numInput
@@ -5267,8 +5824,17 @@ $("uniOneGl").value =UNI_ONE_GL_DEF;
 setPatch(0);
 uniBuildGrid();                     // nine cells, once; the run only ever recolors them
 updateButtons();                    // derive initial button state from app.ready / HAS_HID
-if(!HAS_HID) showMsg("meterMsg","This browser does not expose WebHID, so the photometer cannot be reached. Use a Chromium-based browser over https:// or file://.","err");
-log("Ready. Connect, then choose a mode. Auto detects the cover position.","ok");
+if(!HAS_HID) showMsg("meterMsg","This browser does not expose WebHID, so the photometer cannot be reached. Use a Chromium-based browser over https:// or file://. The test patterns work in any browser.","err");
+/* ?pattern=<name>&... opens a pattern directly, taking that pattern's own parameters (the old
+   standalone pages' links carry over with the page name as the pattern); ?mode= picks a page.
+   Without WebHID the measurement pages can do nothing, so the patterns page is the better start. */
+{
+  const q=new URLSearchParams(location.search), p=q.get("pattern"), m=q.get("mode");
+  setMode(PAT[p] ? "patterns" : VIEWS[m] ? m : HAS_HID ? "meter" : "patterns");
+  if(PAT[p]) openPattern(p,q);
+}
+log(HAS_HID ? "Ready. Connect, then choose a mode. Auto detects the cover position."
+            : "Ready. Test patterns are available; measurement needs a WebHID browser.","ok");
 </script>
 </body>
 </html>
