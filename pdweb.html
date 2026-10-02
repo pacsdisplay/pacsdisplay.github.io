@@ -796,7 +796,12 @@
         <ul>
           <li>Patterns are drawn in the display's own pixels. Bar and line-pair periods (1, 2, 4, 6 px) land
           on physical pixels at any operating system scaling, and pixel sizes such as the scan box are
-          physical pixels too.</li>
+          physical pixels, too.</li>
+          <li>That needs the canvas size in exact device pixels. A browser that cannot report it at a
+          fractional scaling (125%, 150%) gets a notice when TG270-pQC, TG270-sQC or TG18-OIQ opens; browser
+          zoom at 100% and display scaling at 100% or 200% avoid it.</li>
+          <li>macOS: use the display's default resolution. The "scaled" resolutions resample the whole
+          screen after the browser has drawn it, which no web page can detect or undo.</li>
           <li>The display calibration (pixel pitch) setting sizes the interface and the measurement patch.
           It does not affect the patterns.</li>
           <li>As with the measurement modes, the browser and operating system color-manage what is drawn.
@@ -805,7 +810,7 @@
 
         <h3>Designs</h3>
         <p>TG270-pQC and TG270-sQC follow AAPM Report No. 270; TG18-OIQ follows AAPM TG18 (Online Report
-        No. 3). They are redrawn from the published descriptions and scaled to the window, so they are
+        No. 3). They are redrawn from the published descriptions and scaled to the window; they are
         not the AAPM image files.</p>
       </div>
 
@@ -817,20 +822,21 @@
         <ul>
           <li><b>18 horizontal gray bars</b>, 0 to 255 in steps of 15.</li>
           <li><b>Modulation columns.</b> Left: horizontal modulation at 18, 12, 6 and 4 pixel periods;
-          right: vertical modulation at 4, 6, 12 and 18 pixels. Inner columns are 8 gray levels of
-          contrast, outer columns 2.</li>
+          right: vertical modulation at 4, 6, 12 and 18 pixels. Outer columns are 8 gray levels of
+          contrast, inner columns 2.</li>
           <li><b>Line pairs</b> in the top and bottom bars at 2, 4 and 6 pixel periods, high contrast
           (0/128 top, 128/255 bottom), for spatial resolution.</li>
-          <li><b>Side ramps</b>, 0 to 255 full height, each with a modulated center strip, for gradient
-          reproduction.</li>
+          <li><b>Side ramps</b>, 0 to 255 full height, each with a center strip carrying a ±3 gray level
+          sinusoid (periods 4π ≈ 12.6 px left, 3π ≈ 9.4 px right), for gradient reproduction.</li>
         </ul>
         <h3>Use</h3>
-        <p>On a DICOM-conformant display every modulation pattern should be visible at every gray level.
-        Modulation and line-pair periods are fixed in display pixels and do not change with zoom.</p>
+        <p>On a DICOM-conformant display, each frequency/contrast pair should be equally visible at every gray level.
+        The visibility between different frequencies may vary. The modulation within the grayscale ramps should appear
+        uniform at all levels. The high-contrast line pairs at the top and bottom should appear crisp.</p>
         <h3>Controls</h3>
         <ul>
           <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
-          also resets.</li>
+          also resets. Modulation and line-pair periods are fixed in display pixels and do not change with zoom.</li>
         </ul>
       </div>
 
@@ -839,21 +845,22 @@
         <p class="lead">Quick visual evaluation of display performance, following AAPM Report No. 270.</p>
         <h3>Features</h3>
         <ul>
-          <li><b>18 gray squares</b> (3 rows of 6) covering 0 to 255. Each carries 6-pixel vertical bar
+          <li><b>18 gray squares</b> (3 rows of 6) covering 0 to 255. Each carries 6-pixel-period vertical bar
           patterns: upper left at -5 gray levels, lower right at +5. The first (0) and last (255) squares
           use 3 gray levels of contrast in their outer patterns.</li>
-          <li><b>Three large squares</b> at 0, 128 and 255, for luminance measurements, uniformity and bad
-          pixels.</li>
+          <li><b>Three large squares</b> at 0, 128 and 255, for luminance measurements, uniformity, and bad
+          pixel evaluation.</li>
           <li><b>Ramp</b> along the bottom, 0 to 255 across the width, ending in 1-pixel line pairs that
           verify pixel mapping. Useful for spotting bit-depth limits and contouring.</li>
         </ul>
         <h3>Use</h3>
-        <p>On a DICOM-conformant display all 18 modulation patterns should be about equally visible. The
-        3-level corner patterns may only be visible on the highest-performance displays.</p>
+        <p>On a DICOM-conformant display, all 18 modulation patterns should be about equally visible. The 3-level corner
+        patterns may only be visible on the highest-performance displays. The high-contrast line pairs in the lower-right
+        corner should appear crisp, and the ramp should be smooth with no jumps or artifacts.</p>
         <h3>Controls</h3>
         <ul>
           <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
-          also resets.</li>
+          also resets. Modulation and line-pair periods are fixed in display pixels and do not change with zoom.</li>
         </ul>
       </div>
 
@@ -864,7 +871,7 @@
         <h3>Features</h3>
         <ul>
           <li><b>Gray steps</b>: 16 cells from 8 to 248 in steps of 16, with ±4 low-contrast corner
-          patches. The black cell carries a half-size patch at 13 and the white cell one at 242.</li>
+          patches. The black cell carries a half-size patch at 13 (5%) and the white cell one at 242 (95%).</li>
           <li><b>Luminance ramps</b> either side: 255 to 0 on the left, 0 to 255 on the right.</li>
           <li><b>Window response bands</b> above the grid (black over white, with inner white-over-black
           strips) and a <b>crosstalk</b> section above them, for video signal artifacts.</li>
@@ -874,6 +881,10 @@
           and low contrast (128/130) halves, each with 1 and 2 pixel bars in both directions. Periods are
           fixed in display pixels.</li>
         </ul>
+        <h3>Use</h3>
+        <p>On a DICOM-conformant display, all low-contrast corner patches should be equally visible. High-contrast line
+        pair patterns in the center and corners should appear crisp. All letters of QUALITY CONTROL should be
+        visible. The 0/5% and 95/100% patches are not a reliable indicator of display performance.</p>
         <h3>Controls</h3>
         <ul>
           <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
@@ -1727,17 +1738,17 @@ Public License instead of this License.</pre>
   <!-- ===== TEST PATTERNS ===== Each tile opens its pattern on #patStage. -->
   <div class="card" id="view-patterns" hidden>
     <h2>Test patterns</h2>
-    <p class="placeholder">Visual test patterns for display QC. No instrument needed, and any current
-      browser works. Each pattern opens over the whole window; <b>Esc</b> or ✕ closes it and ? explains it.</p>
+    <p class="placeholder">Visual test patterns for display QC. No instrument needed; works in all modern browsers.
+    <b>Esc</b> or ✕ closes a pattern and ? explains it.</p>
     <div class="tiles" id="patTiles">
-      <button class="tile" data-pat="pqc"><b>TG270-pQC</b><i>Gray bars, modulation, line pairs</i></button>
-      <button class="tile" data-pat="sqc"><b>TG270-sQC</b><i>Quick check: 18 modulated squares</i></button>
+      <button class="tile" data-pat="pqc"><b>TG270-pQC</b><i>Physicist QC</i></button>
+      <button class="tile" data-pat="sqc"><b>TG270-sQC</b><i>Simple QC</i></button>
       <button class="tile" data-pat="tg18oiq"><b>TG18-OIQ</b><i>Overall image quality</i></button>
       <button class="tile" data-pat="grays"><b>Gray levels</b><i>Uniform field, 0 to 255</i></button>
       <button class="tile" data-pat="scan"><b>Uniformity scan</b><i>Moving box: mura, bad pixels</i></button>
-      <button class="tile" data-pat="ambtest"><b>Ambient test</b><i>Find the low-contrast target</i></button>
+      <button class="tile" data-pat="ambtest"><b>Ambient test</b><i>Verify low-contrast visibility</i></button>
     </div>
-    <label class="chk patopt"><input type="checkbox" id="patFull" checked> Open full screen</label>
+    <label class="chk patopt"><input type="checkbox" id="patFull">Open full screen</label>
   </div>
 
   <!-- shared: log (collapsed) -->
@@ -5050,7 +5061,7 @@ wireImport("btnUniImport","uniFileImport",(o,name)=>{
    display pixels, so a 2-pixel pair has to land on two physical pixels whatever the OS scaling; a
    CSS-pixel canvas at 125% scaling would resample it into something else entirely.
    ========================================================================== */
-const pat={key:null, st:null, v:null, W:0, H:0, drag:null, raf:0, opener:null};
+const pat={key:null, st:null, v:null, W:0, H:0, drag:null, raf:0, opener:null, exact:true, warned:false};
 const patCv=$("patCanvas"), pctx=patCv.getContext("2d");
 const fillG=(g,x,y,w,h)=>{ pctx.fillStyle=grayCss(g); pctx.fillRect(x,y,w,h); };
 const clampInt=(v,lo,hi,d)=>{ const n=parseInt(v,10); return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):d; };
@@ -5099,23 +5110,32 @@ function numBox(val,title,commit){
    reports it, else the CSS size times dpr. The last report is kept even with no pattern open: closing
    one pattern and opening another in the same task never changes the size, so no report arrives and
    openPattern applies the kept one. Every resize resets the view, as the original pages did. */
+/* pat.exact says whether that size is known to the pixel. Without it the canvas is resampled by up to
+   a pixel, which a bar pattern shows, so the bar patterns warn once per session. */
+function patDevSize(d,w,h){
+  const r=window.devicePixelRatio||1, cw=w*r, ch=h*r, whole=x=>Math.abs(x-Math.round(x))<0.02;
+  /* The reported size is used only when it agrees with CSS size x dpr to a pixel: DevTools' device
+     emulation reports CSS pixels there even at an emulated dpr of 2, and is not 1:1 either way. */
+  if(d){ const ok=Math.abs(d.inlineSize-cw)<=1 && Math.abs(d.blockSize-ch)<=1;
+         return ok ? [d.inlineSize,d.blockSize,true] : [Math.round(cw),Math.round(ch),false]; }
+  return [Math.round(cw),Math.round(ch),whole(cw)&&whole(ch)];   // unreported: exact only if whole
+}
 const patRO=new ResizeObserver(([e])=>{
-  /* The exact device size is used only when it agrees with CSS size x dpr to a pixel: DevTools'
-     device emulation reports CSS pixels there even at an emulated dpr of 2. */
-  const d=e.devicePixelContentBoxSize?.[0], r=window.devicePixelRatio||1;
-  const cw=Math.round(e.contentRect.width*r), ch=Math.round(e.contentRect.height*r);
-  const ok=d && Math.abs(d.inlineSize-cw)<=1 && Math.abs(d.blockSize-ch)<=1;
-  pat.cw=ok?d.inlineSize:cw; pat.ch=ok?d.blockSize:ch;
+  [pat.cw,pat.ch,pat.exact]=patDevSize(e.devicePixelContentBoxSize?.[0],e.contentRect.width,e.contentRect.height);
   patSize();
 });
 try{ patRO.observe(patCv,{box:"device-pixel-content-box"}); }catch(e){ patRO.observe(patCv); }
 /* A dpr change with no CSS resize (a move to a differently scaled monitor) need not reach the
-   observer, so the dpr watcher re-derives the size here. */
+   observer, so the dpr watcher re-derives the size here. Where the observer does fire, it runs
+   after this and its exact size wins. */
 function patDprChanged(){
-  const r=window.devicePixelRatio||1;
-  pat.cw=Math.round(patCv.clientWidth*r); pat.ch=Math.round(patCv.clientHeight*r);
+  const b=patCv.getBoundingClientRect();
+  [pat.cw,pat.ch,pat.exact]=patDevSize(null,b.width,b.height);
   patSize();
 }
+const PAT_INEXACT="This browser cannot report the window's size in exact display pixels at the "+
+  "current scaling, so the pattern may be resampled and its bar patterns may not show at their true "+
+  "periods.\n\nSet browser zoom to 100% and display scaling to 100% or 200%, or use another browser.";
 function patSize(){
   if(!pat.key||!pat.cw||!pat.ch) return;
   patCv.width=pat.W=pat.cw; patCv.height=pat.H=pat.ch;
@@ -5123,6 +5143,10 @@ function patSize(){
   if(P.zoom) patResetView();
   P.resize?.(pat.st);
   patDraw();
+  if(P.zoom && !pat.exact && !pat.warned){
+    pat.warned=true; log(`pattern canvas size inexact at dpr ${window.devicePixelRatio}`);
+    patDialog("Display scaling",PAT_INEXACT,[{label:"OK"}]);
+  }
 }
 
 async function openPattern(key,q=new URLSearchParams(),gesture=false){
@@ -5135,8 +5159,8 @@ async function openPattern(key,q=new URLSearchParams(),gesture=false){
   patCv.classList.toggle("pan",!!P.zoom);
   $("patCtl").replaceChildren(...(P.controls?.(pat.st)||[]));
   $("patStage").hidden=false;
-  patSize();
   patCv.focus();                   // off the tile, so Space cannot re-open it
+  patSize();                       // after the focus, so a scaling notice keeps it
   if(gesture && $("patFull").checked) await enterStageFullscreen(document.documentElement);
   P.opened?.(pat.st);
   log(`pattern opened: ${P.title}`);
@@ -5241,8 +5265,8 @@ function drawPQC(c,W,H,v){
       i<3 ? stripes(128,hi,per,false,y0,y0+n,x0,x0+n) : stripes(128,hi,per,true,x0,x0+n,y0,y0+n);
     }
   });
-  /* Full-height side ramps with a ±3 GL modulated center strip: left runs 0 down to 255 on a
-     2-pixel period, right runs the other way on 1.5. */
+  /* Full-height side ramps with a ±3 GL sinusoidal center strip: left runs 0 down to 255 with
+     sin(y/2), a 4π (≈12.6 px) period; right runs the other way with sin(y/1.5), 3π (≈9.4 px). */
   const n=B-T;
   for(const [a,rev,per] of [[0,false,2],[1024-SW,true,1.5]]){
     const x0=ex(a), x1=ex(a+SW), m0=ex(a+SW/4), m1=ex(a+SW*3/4);

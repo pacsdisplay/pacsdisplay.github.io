@@ -11,7 +11,7 @@ Quick visual evaluation of display performance per AAPM Report 270.
 **Pattern features:**
 - 18 grayscale squares (3 rows × 6 columns) covering gray levels 0–255
 - Each square contains upper-left (−5 GL) and lower-right (+5 GL) modulation bar patterns
-- Corner squares use reduced contrast (±3 GL)
+- The first and last squares use reduced contrast (3 GL) in their outer patterns
 - Three 256×256 large squares (black, mid-gray, white) for luminance measurement
 - Full-width 0–255 gradient bar with line pattern verification strips
 
@@ -29,9 +29,9 @@ Comprehensive display evaluation based on the TG18-PQC design, per AAPM Report 2
 **Pattern features:**
 - 18 horizontal grayscale bars (0–255 in 15 GL steps)
 - Horizontal and vertical modulation patterns at 4 frequencies (18, 12, 6, 4 px)
-  - Inner columns: 8 GL contrast; outer columns: 2 GL contrast
+  - Outer columns: 8 GL contrast; inner columns: 2 GL contrast
 - High-contrast line pair patterns (2, 4, 6 px) in top/bottom regions
-- Full vertical gradient strips with modulation for uniformity assessment
+- Full vertical gradient strips, each with a ±3 GL sinusoidal center strip (periods 4π ≈ 12.6 px and 3π ≈ 9.4 px)
 
 **Controls:**
 - Click and drag to pan

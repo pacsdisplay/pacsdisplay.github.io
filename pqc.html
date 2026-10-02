@@ -22,11 +22,15 @@ Implementation licensed under the GNU General Public License v2 or later
 
         body {
             background-color: rgb(0, 0, 0);
-            overflow: auto;
+            overflow: hidden;
             font-family: 'Courier New', monospace;
         }
 
         #canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
             display: block;
             cursor: grab;
         }
@@ -134,11 +138,13 @@ Implementation licensed under the GNU General Public License v2 or later
     <div class="help-icon" id="helpBtn" title="Help">?</div>
     <div class="reset-icon" id="resetBtn" title="Reset View">⟲</div>
 
-    <!-- DPI Warning Modal -->
+    <!-- Scaling notice: shown once if the canvas size in device pixels is not exact -->
     <div id="dpiModal" class="modal" onclick="closeModal('dpiModal')">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-title">Display Scaling Detected</div>
-            <div class="modal-message">Your OS is applying pixel scaling to this browser. The bar patterns of this test pattern may not be displayed at the correct frequency.</div>
+            <div class="modal-title">Display Scaling</div>
+            <div class="modal-message">This browser cannot report the window's size in exact display pixels at the current scaling, so the pattern may be resampled and its bar patterns may not show at their true periods.
+
+Set browser zoom to 100% and display scaling to 100% or 200%, or use another browser.</div>
             <div class="modal-buttons">
                 <button class="modal-button" onclick="closeModal('dpiModal')">Ok</button>
             </div>
@@ -160,18 +166,19 @@ MAIN FEATURES:
 
 MODULATION PATTERNS:
  - Left region: Horizontal modulation at 4 frequencies (18, 12, 6, 4 pixels)
-   - Inner columns: 8 gray level contrast
-   - Outer columns: 2 gray level contrast
+   - Inner columns: 2 gray level contrast
+   - Outer columns: 8 gray level contrast
  - Right region: Vertical modulation at 4 frequencies (4, 6, 12, 18 pixels)
-   - Inner columns: 8 gray level contrast
-   - Outer columns: 2 gray level contrast
+   - Inner columns: 2 gray level contrast
+   - Outer columns: 8 gray level contrast
 
 LINE PAIR PATTERNS (Top/Bottom):
  - 6 line pair patterns at different frequencies (2, 4, 6 pixels)
  - High contrast (0/128 or 128/255) for resolution assessment
 
 SIDE GRADIENTS:
- - Full vertical gradients (0-255) with modulation strips
+ - Full vertical gradients (0-255), each with a center strip carrying a
+   ±3 gray level sinusoid: period 4π (≈12.6 px) left, 3π (≈9.4 px) right
  - For uniformity and gradient linearity evaluation
 
 CONTROLS:
@@ -181,12 +188,15 @@ CONTROLS:
  - Window resize: Automatically resets view to fit new window size
 
 NOTES:
- - Modulation patterns maintain fixed screen pixel periods regardless of zoom
+ - Modulation and line-pair periods are fixed in display pixels and do not change with zoom
  - Pattern scales to fit window height while maintaining aspect ratio
- - Bar pattern periods may be scaled by system DPI settings
+ - Bar patterns are drawn in display pixels at any OS scaling or browser zoom. A browser that cannot
+   report the exact canvas size at a fractional scaling shows a notice on load.
+ - macOS: use the display's default resolution. Scaled resolutions resample the whole screen
+   after the browser draws, which no web page can detect or undo.
 
 USAGE:
-For a DICOM-conformant display, all modulation patterns should be visible across all gray levels. The line pair patterns test spatial resolution, while the side gradients assess uniformity and gradient reproduction.</div>
+On a DICOM-conformant display, each frequency/contrast pair should be equally visible at every gray level. The visibility between different frequencies may vary. The modulation within the grayscale ramps should appear uniform at all levels. The high-contrast line pairs at the top and bottom should appear crisp.</div>
             <div class="modal-buttons">
                 <button class="modal-button" onclick="closeModal('helpModal')">Close</button>
             </div>
@@ -194,244 +204,142 @@ For a DICOM-conformant display, all modulation patterns should be visible across
     </div>
 
     <script>
-        // Constants from ImageJ script
-        const BASE_SIZE = 1024;
-
-        // Canvas and context
-        let canvas, ctx;
-        let scale = 1;
-        let zoomLevel = 1.0;
-        let isPanning = false;
-        let panStart = { x: 0, y: 0 };
-        let scrollOffset = { x: 0, y: 0 };
-
-        // Initialize
-        function init() {
-            canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');
-
-            // Disable image smoothing for crisp pixel rendering
-            ctx.imageSmoothingEnabled = false;
-
-            // Help button
-            document.getElementById('helpBtn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('helpModal').style.display = 'block';
-            });
-
-            // Reset button
-            document.getElementById('resetBtn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                resetView();
-            });
-
-            // Resize handler
-            window.addEventListener('resize', resizeCanvas);
-
-            // Mouse wheel zoom (with Ctrl key)
-            canvas.addEventListener('wheel', handleWheel, { passive: false });
-
-            // Mouse panning
-            canvas.addEventListener('mousedown', handleMouseDown);
-            canvas.addEventListener('mousemove', handleMouseMove);
-            canvas.addEventListener('mouseup', handleMouseUp);
-            canvas.addEventListener('mouseleave', handleMouseUp);
-
-            // Initial draw
-            resizeCanvas();
-        }
-
-        function handleWheel(e) {
-            if (e.ctrlKey) {
-                e.preventDefault();
-
-                const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                const newZoom = Math.max(1.0, Math.min(10.0, zoomLevel * delta));
-
-                if (newZoom !== zoomLevel) {
-                    const mouseX = e.clientX;
-                    const mouseY = e.clientY;
-
-                    // Pattern-space coordinate under the mouse cursor before zoom
-                    const patternWidth = BASE_SIZE * scale;
-                    const xOffset = (canvas.width - patternWidth) / 2 + scrollOffset.x;
-                    const yOffset = Math.floor(scrollOffset.y);
-                    const patternX = (mouseX - xOffset) / scale;
-                    const patternY = (mouseY - yOffset) / scale;
-
-                    zoomLevel = newZoom;
-
-                    // Rerender pattern at new size - scale width and height by zoom factor
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-                    canvas.width = viewportWidth * zoomLevel;
-                    canvas.height = viewportHeight * zoomLevel;
-
-                    // Recalculate scale based on zoomed height
-                    scale = (viewportHeight * zoomLevel) / BASE_SIZE;
-
-                    // Adjust scroll offset so the point under the cursor stays fixed
-                    const newXOffset = mouseX - patternX * scale;
-                    scrollOffset.x = newXOffset - (canvas.width - BASE_SIZE * scale) / 2;
-                    scrollOffset.y = mouseY - patternY * scale;
-
-                    // Disable image smoothing
-                    ctx.imageSmoothingEnabled = false;
-                    ctx.webkitImageSmoothingEnabled = false;
-                    ctx.mozImageSmoothingEnabled = false;
-                    ctx.msImageSmoothingEnabled = false;
-
-                    drawPattern();
-                }
-            }
-        }
-
-        function handleMouseDown(e) {
-            // Allow panning at all times
-            isPanning = true;
-            canvas.classList.add('panning');
-            panStart = { x: e.clientX - scrollOffset.x, y: e.clientY - scrollOffset.y };
-        }
-
-        function handleMouseMove(e) {
-            if (isPanning) {
-                scrollOffset.x = e.clientX - panStart.x;
-                scrollOffset.y = e.clientY - panStart.y;
-                drawPattern();
-            }
-        }
-
-        function handleMouseUp() {
-            if (isPanning) {
-                isPanning = false;
-                canvas.classList.remove('panning');
-            }
-        }
-
-        function resizeCanvas() {
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            // Reset zoom and pan on window resize
-            zoomLevel = 1.0;
-            scrollOffset = { x: 0, y: 0 };
-
-            // Calculate base scale from height
-            scale = viewportHeight / BASE_SIZE;
-
-            // Canvas matches window size at 1x
-            canvas.width = viewportWidth;
-            canvas.height = viewportHeight;
-
-            // Disable image smoothing (must be set after canvas resize)
-            ctx.imageSmoothingEnabled = false;
-            ctx.webkitImageSmoothingEnabled = false;
-            ctx.mozImageSmoothingEnabled = false;
-            ctx.msImageSmoothingEnabled = false;
-
-            // Draw the pattern
-            drawPattern();
-        }
-
-        function resetView() {
-            zoomLevel = 1.0;
-            scrollOffset = { x: 0, y: 0 };
-            const viewportWidth = window.innerWidth;
-            const viewportHeight = window.innerHeight;
-
-            // Reset to 1x zoom
-            canvas.width = viewportWidth;
-            canvas.height = viewportHeight;
-
-            // Recalculate scale for 1x zoom
-            scale = viewportHeight / BASE_SIZE;
-
-            // Disable image smoothing
-            ctx.imageSmoothingEnabled = false;
-            ctx.webkitImageSmoothingEnabled = false;
-            ctx.mozImageSmoothingEnabled = false;
-            ctx.msImageSmoothingEnabled = false;
-
-            drawPattern();
-        }
-
-        // Same drawing code as the TG270-pQC pattern in pdweb.html - keep the two in step.
+        /* Device-pixel canvas, view and input - the same shell in pqc.html, sqc.html and tg18oiq.html, taken
+           from the test patterns in pdweb.html; keep them in step. The canvas fills the window in CSS pixels
+           but its backing store is sized in DEVICE pixels, so bar and line-pair periods land on physical
+           pixels at any OS scaling or browser zoom. Zoom and pan only touch the view: s is pattern units to
+           device pixels, (ox,oy) the pattern origin on the canvas, s0 the fitted scale. */
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
         const grayCss = g => { const v = Math.max(0, Math.min(255, Math.round(g))); return `rgb(${v},${v},${v})`; };
         const fillG = (g, x, y, w, h) => { ctx.fillStyle = grayCss(g); ctx.fillRect(x, y, w, h); };
+        const fit = (W, H) => ({ s: H / 1024, ox: (W - H) / 2, oy: 0 })   // fit the height, centered;
+        const st = { W: 0, H: 0, cw: 0, ch: 0, exact: true, warned: false, v: null, drag: null, raf: 0 };
 
-        function drawPattern() {
-            drawPQC(ctx, canvas.width, canvas.height, {
-                s: scale, ox: (canvas.width - BASE_SIZE * scale) / 2 + scrollOffset.x, oy: scrollOffset.y });
+        function resetView() { const v = fit(st.W, st.H); st.v = { ...v, s0: v.s, zoom: 1 }; }
+        function draw() { if (st.W) drawPQC(ctx, st.W, st.H, st.v); }
+        const queue = () => { if (!st.raf) st.raf = requestAnimationFrame(() => { st.raf = 0; draw(); }); };
+        const devXY = e => { const r = canvas.getBoundingClientRect();
+            return [(e.clientX - r.left) * st.W / r.width, (e.clientY - r.top) * st.H / r.height]; };
+        const showModal = id => { document.getElementById(id).style.display = 'block'; };
+        const closeModal = id => { document.getElementById(id).style.display = 'none'; };
+
+        /* Canvas size in device pixels, and whether it is known to the pixel. The browser's own report is used
+           when it agrees with CSS size x dpr to a pixel (DevTools' device emulation reports CSS pixels there,
+           and is not 1:1 either way); without a report the size is exact only when CSS size x dpr is whole.
+           An inexact size is resampled by up to a pixel, which a bar pattern shows, so it warns once. */
+        function devSize(d, w, h) {
+            const r = window.devicePixelRatio || 1, cw = w * r, ch = h * r, whole = x => Math.abs(x - Math.round(x)) < 0.02;
+            if (d) {
+                const ok = Math.abs(d.inlineSize - cw) <= 1 && Math.abs(d.blockSize - ch) <= 1;
+                return ok ? [d.inlineSize, d.blockSize, true] : [Math.round(cw), Math.round(ch), false];
+            }
+            return [Math.round(cw), Math.round(ch), whole(cw) && whole(ch)];
         }
+        /* Every resize resets the view. */
+        function size() {
+            if (!st.cw || !st.ch) return;
+            canvas.width = st.W = st.cw; canvas.height = st.H = st.ch;
+            resetView(); draw();
+            if (!st.exact && !st.warned) { st.warned = true; showModal('dpiModal'); }
+        }
+        const ro = new ResizeObserver(([e]) => {
+            [st.cw, st.ch, st.exact] = devSize(e.devicePixelContentBoxSize?.[0], e.contentRect.width, e.contentRect.height);
+            size();
+        });
+        try { ro.observe(canvas, { box: 'device-pixel-content-box' }); } catch (e) { ro.observe(canvas); }
+        /* A dpr change with no CSS resize (a move to a differently scaled monitor) need not reach the
+           observer, so re-derive the size; where the observer does fire, it runs after this and wins. The
+           media query matches one exact ratio, so re-arm it each time. */
+        (function watchDpr() {
+            matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => {
+                const b = canvas.getBoundingClientRect();
+                [st.cw, st.ch, st.exact] = devSize(null, b.width, b.height);
+                size(); watchDpr();
+            }, { once: true });
+        })();
 
-        /* A 1024-unit square fitted to the window height: 18 gray bars (0-255 by 15) between side ramps,
-           with 62-unit bars above and below. Every region edge is snapped to a whole pixel through
+        /* Ctrl + wheel zooms (1x to 10x) about the cursor; drag pans. */
+        canvas.addEventListener('wheel', e => {
+            if (!e.ctrlKey) return;
+            e.preventDefault();
+            const v = st.v, z = Math.max(1, Math.min(10, v.zoom * (e.deltaY > 0 ? 0.9 : 1.1))), k = z / v.zoom;
+            if (k === 1) return;
+            const [mx, my] = devXY(e);
+            v.ox = mx - (mx - v.ox) * k; v.oy = my - (my - v.oy) * k; v.s *= k; v.zoom = z;
+            queue();
+        }, { passive: false });
+        canvas.addEventListener('pointerdown', e => {
+            if (e.button !== 0) return;
+            canvas.setPointerCapture(e.pointerId); st.drag = devXY(e); canvas.classList.add('panning');
+        });
+        canvas.addEventListener('pointermove', e => {
+            if (!st.drag) return;
+            const [x, y] = devXY(e); st.v.ox += x - st.drag[0]; st.v.oy += y - st.drag[1]; st.drag = [x, y];
+            queue();
+        });
+        for (const t of ['pointerup', 'pointercancel'])
+            canvas.addEventListener(t, () => { st.drag = null; canvas.classList.remove('panning'); });
+        document.getElementById('helpBtn').addEventListener('click', e => { e.stopPropagation(); showModal('helpModal'); });
+        document.getElementById('resetBtn').addEventListener('click', e => { e.stopPropagation(); resetView(); draw(); });
+
+        /* Drawing - the same code as this pattern in pdweb.html. */
+        /* ---- TG270-pQC ----
+           A 1024-unit square fitted to the window height: 18 gray bars (0-255 by 15) between side ramps,
+           with 62-unit bars above and below. Every region edge is snapped to a whole device pixel through
            ex()/ey(), so neighbors share an edge exactly at any zoom - a fractional edge is antialiased, and
            where a ramp row is drawn over a bar, the bar showed through as a sliver past the ramp.
-           Modulation, line pairs and the ramp strips use fixed screen-pixel periods, so they keep their
+           Modulation, line pairs and the ramp strips use fixed DISPLAY-pixel periods, so they keep their
            frequency at any zoom; stripes are clipped to their own cell. */
-        function drawPQC(c, W, H, v) {
-            const s = v.s, ex = u => Math.round(v.ox + u * s), ey = u => Math.round(v.oy + u * s), SW = 87, BH = 50, TH = 62;
-            const L = ex(0), Rt = ex(1024), T = ey(0), B = ey(1024), barY = i => ey(TH + i * BH), colX = i => ex(SW + i * BH);
-            fillG(0, 0, 0, W, H);
-            for (let i = 0; i < 18; i++) fillG(i * 15, colX(0), barY(i), colX(17) - colX(0), barY(i + 1) - barY(i));
-            // Alternating g1/g2 stripes of period per across [a,b) - vertical stripes when vert, else
-            // horizontal - over the span [c0,c1) of the other axis.
-            const stripes = (g1, g2, per, vert, a, b, c0, c1) => {
-                for (let p = a; p < b; p += per) {
-                    const m = Math.min(p + per / 2, b), e = Math.min(p + per, b);
-                    if (vert) { fillG(g1, p, c0, m - p, c1 - c0); if (e > m) fillG(g2, m, c0, e - m, c1 - c0); }
-                    else      { fillG(g1, c0, p, c1 - c0, m - p); if (e > m) fillG(g2, c0, m, c1 - c0, e - m); }
-                }
-            };
-            // Modulation at ±con about each bar: horizontal stripes on the left block, vertical on the right.
-            // The first and last bars double the side that would otherwise clip at 0 or 255.
-            const col = (ci, per, con, vert) => {
-                for (let b = 0; b < 18; b++) {
-                    const dk = b * 15 - con - (b === 17 ? con : 0), lt = b * 15 + con + (b === 0 ? con : 0);
-                    if (vert) stripes(dk, lt, per, true, colX(ci), colX(ci + 1), barY(b), barY(b + 1));
-                    else      stripes(dk, lt, per, false, barY(b), barY(b + 1), colX(ci), colX(ci + 1));
-                }
-            };
-            [18, 12, 6, 4].forEach((p, i) => { col(i, p, 4, false); col(i + 4, p, 1, false); });
-            [4, 6, 12, 18].forEach((p, i) => { col(i + 9, p, 1, true); col(i + 13, p, 4, true); });
-            // Top (64) and bottom (191) bars, each carrying square line-pair cells at 6, 4 and 2 px periods
-            // - horizontal on the left, vertical on the right; 128/0 on top, 128/255 below.
-            fillG(64, L, T, Rt - L, barY(0) - T);
-            fillG(191, L, barY(18), Rt - L, B - barY(18));
-            [6, 4, 2, 2, 4, 6].forEach((per, i) => {
-                const ci = i < 3 ? 2 * i + 2 : 2 * i + 4, x0 = colX(ci), n = colX(ci + 1) - x0;
-                for (const [mid, hi] of [[ey(TH / 2), 0], [ey(1024 - TH / 2), 255]]) {
-                    const y0 = Math.round(mid - n / 2);
-                    i < 3 ? stripes(128, hi, per, false, y0, y0 + n, x0, x0 + n) : stripes(128, hi, per, true, x0, x0 + n, y0, y0 + n);
-                }
-            });
-            // Full-height side ramps with a ±3 GL modulated center strip: left runs 0 down to 255 on a
-            // 2-pixel period, right runs the other way on 1.5.
-            const n = B - T;
-            for (const [a, rev, per] of [[0, false, 2], [1024 - SW, true, 1.5]]) {
-                const x0 = ex(a), x1 = ex(a + SW), m0 = ex(a + SW / 4), m1 = ex(a + SW * 3 / 4);
-                for (let y = 0; y < n; y++) {
-                    const gl = Math.floor((rev ? n - 1 - y : y) / (n - 1) * 1031 / 1024 * 255);
-                    fillG(gl, x0, T + y, x1 - x0, 1); fillG(gl + Math.round(3 * Math.sin(y / per)), m0, T + y, m1 - m0, 1);
-                }
+        function drawPQC(c,W,H,v){
+          const s=v.s, ex=u=>Math.round(v.ox+u*s), ey=u=>Math.round(v.oy+u*s), SW=87, BH=50, TH=62;
+          const L=ex(0), Rt=ex(1024), T=ey(0), B=ey(1024), barY=i=>ey(TH+i*BH), colX=i=>ex(SW+i*BH);
+          fillG(0,0,0,W,H);
+          for(let i=0;i<18;i++) fillG(i*15,colX(0),barY(i),colX(17)-colX(0),barY(i+1)-barY(i));
+          /* Alternating g1/g2 stripes of period per across [a,b) - vertical stripes when vert, else
+             horizontal - over the span [c0,c1) of the other axis. */
+          const stripes=(g1,g2,per,vert,a,b,c0,c1)=>{
+            for(let p=a;p<b;p+=per){
+              const m=Math.min(p+per/2,b), e=Math.min(p+per,b);
+              if(vert){ fillG(g1,p,c0,m-p,c1-c0); if(e>m) fillG(g2,m,c0,e-m,c1-c0); }
+              else    { fillG(g1,c0,p,c1-c0,m-p); if(e>m) fillG(g2,c0,m,c1-c0,e-m); }
             }
-            c.fillStyle = grayCss(128); c.font = `${18 * s}px sans-serif`; c.textAlign = 'center';
-            c.fillText('TG270-pQC', v.ox + 512 * s, v.oy + 32 * s);
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function checkDpiScaling() {
-            if (window.devicePixelRatio !== 1) {
-                document.getElementById('dpiModal').style.display = 'block';
+          };
+          /* Modulation at ±con about each bar: horizontal stripes on the left block, vertical on the right.
+             The first and last bars double the side that would otherwise clip at 0 or 255. */
+          const col=(ci,per,con,vert)=>{
+            for(let b=0;b<18;b++){
+              const dk=b*15-con-(b===17?con:0), lt=b*15+con+(b===0?con:0);
+              if(vert) stripes(dk,lt,per,true,colX(ci),colX(ci+1),barY(b),barY(b+1));
+              else     stripes(dk,lt,per,false,barY(b),barY(b+1),colX(ci),colX(ci+1));
             }
+          };
+          [18,12,6,4].forEach((p,i)=>{ col(i,p,4,false); col(i+4,p,1,false); });
+          [4,6,12,18].forEach((p,i)=>{ col(i+9,p,1,true); col(i+13,p,4,true); });
+          /* Top (64) and bottom (191) bars, each carrying square line-pair cells at 6, 4 and 2 px periods
+             - horizontal on the left, vertical on the right; 128/0 on top, 128/255 below. */
+          fillG(64,L,T,Rt-L,barY(0)-T);
+          fillG(191,L,barY(18),Rt-L,B-barY(18));
+          [6,4,2,2,4,6].forEach((per,i)=>{
+            const ci=i<3?2*i+2:2*i+4, x0=colX(ci), n=colX(ci+1)-x0;
+            for(const [mid,hi] of [[ey(TH/2),0],[ey(1024-TH/2),255]]){
+              const y0=Math.round(mid-n/2);
+              i<3 ? stripes(128,hi,per,false,y0,y0+n,x0,x0+n) : stripes(128,hi,per,true,x0,x0+n,y0,y0+n);
+            }
+          });
+          /* Full-height side ramps with a ±3 GL sinusoidal center strip: left runs 0 down to 255 with
+             sin(y/2), a 4π (≈12.6 px) period; right runs the other way with sin(y/1.5), 3π (≈9.4 px). */
+          const n=B-T;
+          for(const [a,rev,per] of [[0,false,2],[1024-SW,true,1.5]]){
+            const x0=ex(a), x1=ex(a+SW), m0=ex(a+SW/4), m1=ex(a+SW*3/4);
+            for(let y=0;y<n;y++){
+              const gl=Math.floor((rev?n-1-y:y)/(n-1)*1031/1024*255);
+              fillG(gl,x0,T+y,x1-x0,1); fillG(gl+Math.round(3*Math.sin(y/per)),m0,T+y,m1-m0,1);
+            }
+          }
+          c.fillStyle=grayCss(128); c.font=`${18*s}px sans-serif`; c.textAlign="center";
+          c.fillText("TG270-pQC",v.ox+512*s,v.oy+32*s);
         }
 
-        // Initialize on load
-        window.addEventListener('load', () => { init(); checkDpiScaling(); });
     </script>
 </body>
 </html>
