@@ -28,11 +28,11 @@ Licensed under the GNU General Public License v2 or later
         }
 
         .scan-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
         .scan-help-icon {
@@ -167,7 +167,7 @@ Licensed under the GNU General Public License v2 or later
     <div class="scan-help-icon" id="helpBtn" title="Help">?</div>
 
     <div class="scan-controls">
-        <input type="text" id="boxSizeInput" class="scan-box-size-input" value="300" maxlength="4" title="Box size in pixels" />
+        <input type="text" id="boxSizeInput" class="scan-box-size-input" value="300" maxlength="4" title="Box size in display pixels" />
         <select id="graySelect" class="scan-gray-select">
             <option value="15">Gray 15</option>
             <option value="120">Gray 120</option>
@@ -186,7 +186,7 @@ Licensed under the GNU General Public License v2 or later
  - Shift+Space: Toggle auto-play backward
  - Left-click / Up Arrow: Increase gray level to next value
  - Right-click / Down Arrow: Decrease gray level to previous value
- - Box Size Input: Set box dimensions (pixels, square)
+ - Box Size Input: Set box dimensions (display pixels, square)
  - Gray Dropdown: Select box gray level (15, 120, or 240)
 
 USAGE:
@@ -213,359 +213,105 @@ PURPOSE:
     </div>
 
     <script>
-        // Parse URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const INITIAL_BOX_SIZE = parseInt(urlParams.get('size')) || 300;
-        const INITIAL_GRAY_LEVEL = parseInt(urlParams.get('gray')) || 120;
-
-        // Constants
-        const STEP_SIZE = 100; // Horizontal step size
-
-        // State
-        let canvas, ctx;
-        let grayLevel = INITIAL_GRAY_LEVEL;
-        let boxX = 0;
-        let boxY = 0;
-        let boxSize = INITIAL_BOX_SIZE;
-        let boxWidth = boxSize;
-        let rowHeight = boxSize;
-        let isAnimating = false;
-        let isAutoPlaying = false;
-        let autoPlayDirection = 'forward';
-        let heldKeyDirection = null;
-
-        // Elements
-        const graySelect = document.getElementById('graySelect');
-        const boxSizeInput = document.getElementById('boxSizeInput');
-        const helpBtn = document.getElementById('helpBtn');
-
-        // Initialize
-        function init() {
-            canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');
-
-            // Set canvas size
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            // Set initial values from URL parameters
-            graySelect.value = grayLevel;
-            boxSizeInput.value = boxSize;
-
-            // Initial draw
-            drawBox();
-
-            // Event listeners
-            canvas.addEventListener('wheel', handleWheel, { passive: false });
-            canvas.addEventListener('click', handleLeftClick);
-            canvas.addEventListener('contextmenu', handleRightClick);
-            window.addEventListener('resize', handleResize);
-            window.addEventListener('keydown', handleKeydown);
-            window.addEventListener('keyup', handleKeyup);
-
-            // Gray level selector
-            graySelect.addEventListener('change', (e) => {
-                grayLevel = parseInt(e.target.value);
-                drawBox();
-            });
-
-            graySelect.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-
-            // Box size input
-            boxSizeInput.addEventListener('click', (e) => {
-                e.stopPropagation();
-                boxSizeInput.select();
-            });
-
-            boxSizeInput.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-
-            boxSizeInput.addEventListener('blur', handleBoxSizeBlur);
-            boxSizeInput.addEventListener('keydown', handleBoxSizeKeydown);
-
-            // Help button
-            helpBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('helpModal').style.display = 'block';
-            });
+        /* Device-pixel canvas, as in pdweb.html's test patterns: the canvas fills the window in CSS pixels
+           and its backing store is sized in DEVICE pixels, so the box size and step are display pixels. */
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        const devSize = (d, w, h) => { const r = window.devicePixelRatio || 1;
+            return d && Math.abs(d.inlineSize - w * r) <= 1 ? [d.inlineSize, d.blockSize] : [Math.round(w * r), Math.round(h * r)]; };
+        function setSize([w, h]) {
+            if (!w || !h) return;
+            canvas.width = st.W = w; canvas.height = st.H = h;
+            st.x = Math.min(st.x, Math.max(0, w - st.size)); st.y = Math.min(st.y, Math.max(0, h - st.size));
+            draw();
         }
+        const ro = new ResizeObserver(([e]) => setSize(devSize(e.devicePixelContentBoxSize?.[0], e.contentRect.width, e.contentRect.height)));
+        try { ro.observe(canvas, { box: 'device-pixel-content-box' }); } catch (e) { ro.observe(canvas); }
+        (function watchDpr() {      // a move to a differently scaled monitor; the media query matches one ratio
+            matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => {
+                const b = canvas.getBoundingClientRect(); setSize(devSize(null, b.width, b.height)); watchDpr();
+            }, { once: true });
+        })();
 
-        function handleBoxSizeBlur() {
-            const value = parseInt(boxSizeInput.value);
-            if (!isNaN(value) && value > 0 && value <= 2000) {
-                boxSize = value;
-                boxWidth = boxSize;
-                rowHeight = boxSize;
-                // Reset position to start
-                boxX = 0;
-                boxY = 0;
-                drawBox();
-            } else {
-                boxSizeInput.value = boxSize; // Reset to current value
-            }
+        const q = new URLSearchParams(location.search), GRAYS = [15, 120, 240], STEP = 100;    // step in display pixels
+        const graySelect = document.getElementById('graySelect'), boxSizeInput = document.getElementById('boxSizeInput');
+        const size0 = parseInt(q.get('size'), 10);
+        const st = { W: 0, H: 0, size: size0 > 0 && size0 <= 2000 ? size0 : 300, g: GRAYS.includes(+q.get('gray')) ? +q.get('gray') : 120,
+                     x: 0, y: 0, anim: false, auto: false, dir: 'forward', held: null };
+        graySelect.value = st.g; boxSizeInput.value = st.size;
+
+        function draw() {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, st.W, st.H);
+            ctx.fillStyle = `rgb(${st.g},${st.g},${st.g})`; ctx.fillRect(st.x, st.y, st.size, st.size);
         }
+        function setGray(d) { st.g = GRAYS[(GRAYS.indexOf(st.g) + d + 3) % 3]; graySelect.value = st.g; draw(); }
 
-        function handleBoxSizeKeydown(e) {
-            if (e.key === 'Enter') {
-                boxSizeInput.blur();
-            } else if (e.key === 'Escape') {
-                boxSizeInput.value = boxSize; // Reset to current value
-                boxSizeInput.blur();
-            }
-        }
-
-        function drawBox() {
-            // Clear canvas (black background)
-            ctx.fillStyle = 'rgb(0, 0, 0)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw the box using the selected gray level
-            const boxColor = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
-            ctx.fillStyle = boxColor;
-            ctx.fillRect(boxX, boxY, boxWidth, rowHeight);
-        }
-
-        function handleKeydown(e) {
-            // Don't fire when typing in inputs
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-
-            if (e.key === ' ') {
-                e.preventDefault();
-                if (isAutoPlaying) {
-                    stopAutoPlay();
-                } else {
-                    heldKeyDirection = null;
-                    autoPlayDirection = e.shiftKey ? 'backward' : 'forward';
-                    isAutoPlaying = true;
-                    autoPlayStep();
-                }
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                stopAutoPlay();
-                if (!heldKeyDirection) {
-                    heldKeyDirection = 'forward';
-                    if (!isAnimating) heldKeyStep();
-                }
-            } else if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                stopAutoPlay();
-                if (!heldKeyDirection) {
-                    heldKeyDirection = 'backward';
-                    if (!isAnimating) heldKeyStep();
-                }
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                const grayLevels = [15, 120, 240];
-                const currentIndex = grayLevels.indexOf(grayLevel);
-                const nextIndex = (currentIndex + 1) % grayLevels.length;
-                grayLevel = grayLevels[nextIndex];
-                graySelect.value = grayLevel;
-                drawBox();
-            } else if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                const grayLevels = [15, 120, 240];
-                const currentIndex = grayLevels.indexOf(grayLevel);
-                const prevIndex = (currentIndex - 1 + grayLevels.length) % grayLevels.length;
-                grayLevel = grayLevels[prevIndex];
-                graySelect.value = grayLevel;
-                drawBox();
-            }
-        }
-
-        function handleKeyup(e) {
-            if (e.key === 'ArrowRight' && heldKeyDirection === 'forward') heldKeyDirection = null;
-            else if (e.key === 'ArrowLeft' && heldKeyDirection === 'backward') heldKeyDirection = null;
-        }
-
-        function handleWheel(e) {
-            e.preventDefault();
-            stopAutoPlay();
-            heldKeyDirection = null;
-
-            if (isAnimating) return;
-
-            const direction = e.deltaY > 0 ? 1 : -1;
-
-            if (direction > 0) {
-                animateMove('forward');
-            } else {
-                animateMove('backward');
-            }
-        }
-
-        function handleLeftClick(e) {
-            e.preventDefault();
-
-            const grayLevels = [15, 120, 240];
-            const currentIndex = grayLevels.indexOf(grayLevel);
-            const nextIndex = (currentIndex + 1) % grayLevels.length;
-
-            grayLevel = grayLevels[nextIndex];
-            graySelect.value = grayLevel;
-            drawBox();
-        }
-
-        function handleRightClick(e) {
-            e.preventDefault();
-
-            const grayLevels = [15, 120, 240];
-            const currentIndex = grayLevels.indexOf(grayLevel);
-            const prevIndex = (currentIndex - 1 + grayLevels.length) % grayLevels.length;
-
-            grayLevel = grayLevels[prevIndex];
-            graySelect.value = grayLevel;
-            drawBox();
-        }
-
-        function stopAutoPlay() {
-            isAutoPlaying = false;
-        }
-
-        function autoPlayStep() {
-            if (!isAutoPlaying) return;
-            animateMove(autoPlayDirection, () => {
-                if (isAutoPlaying) autoPlayStep();
-            });
-        }
-
-        function heldKeyStep() {
-            if (!heldKeyDirection) return;
-            animateMove(heldKeyDirection, () => {
-                if (heldKeyDirection) heldKeyStep();
-            });
-        }
-
-        function animateMove(direction, onComplete) {
-            isAnimating = true;
-
-            const targetPos = getNextPosition(direction);
-
-            if (targetPos === null) {
-                // Can't move in this direction
-                isAnimating = false;
-                isAutoPlaying = false;
-                heldKeyDirection = null;
-                if (onComplete) onComplete();
-                return;
-            }
-
-            const startX = boxX;
-            const startY = boxY;
-            const endX = targetPos.x;
-            const endY = targetPos.y;
-            const duration = 200; // milliseconds - increased for more frames
-            const startTime = performance.now();
-
-            function animate(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                // Linear motion
-                const easeProgress = progress;
-
-                boxX = startX + (endX - startX) * easeProgress;
-                boxY = startY + (endY - startY) * easeProgress;
-
-                drawBox();
-
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    // Snap to final position
-                    boxX = endX;
-                    boxY = endY;
-                    drawBox();
-                    isAnimating = false;
-                    if (onComplete) onComplete();
-                }
-            }
-
-            requestAnimationFrame(animate);
-        }
-
-        function getNextPosition(direction) {
-            const x = Math.round(boxX);
-            const y = Math.round(boxY);
-            const maxY = canvas.height - rowHeight;
-            const maxX = canvas.width - boxWidth;
-            const row = Math.floor(y / rowHeight);
-            const evenRow = row % 2 === 0;
-            const atRowBoundary = (y % rowHeight) === 0;
-            const atMaxYleft = y >= maxY && evenRow;
-            const atMaxYright = y >= maxY && !evenRow;
-
-            if (direction === 'forward') {
-                // At end - stop
-                if (atMaxYright && x >= maxX) return null;
-                if (atMaxYleft && x <= 0) return null;
-
-                // If between rows but NOT at maxY, continue Y down
-                if (!atRowBoundary && y < maxY) {
-                    const nextRowY = (row + 1) * rowHeight;
-                    return { x, y: Math.min(y + STEP_SIZE, nextRowY, maxY) };
-                }
-
-                // At row boundary OR at maxY - try horizontal
-                if (((evenRow && !atMaxYleft) || atMaxYright) && x < maxX) {
-                    return { x: Math.min(x + STEP_SIZE, maxX), y };
-                }
-                if (((!evenRow && !atMaxYright) || atMaxYleft) && x > 0) {
-                    return { x: Math.max(x - STEP_SIZE, 0), y };
-                }
-
-                // At edge - move Y down (if not already at maxY)
+        /* Next box position along the path, or null at either end. Rows alternate direction; between
+           rows the box steps down, and a last partial row is taken flush with the bottom edge. */
+        function next(dir) {
+            const x = Math.round(st.x), y = Math.round(st.y), rh = st.size, maxX = st.W - st.size, maxY = st.H - rh;
+            const row = Math.floor(y / rh), even = row % 2 === 0, onRow = y % rh === 0;
+            const endL = y >= maxY && even, endR = y >= maxY && !even;
+            const rightward = (even && !endL) || endR, leftward = (!even && !endR) || endL;
+            if (dir === 'forward') {
+                if ((endR && x >= maxX) || (endL && x <= 0)) return null;
+                if (!onRow && y < maxY) return { x, y: Math.min(y + STEP, (row + 1) * rh, maxY) };
+                if (rightward && x < maxX) return { x: Math.min(x + STEP, maxX), y };
+                if (leftward && x > 0) return { x: Math.max(x - STEP, 0), y };
                 if (y >= maxY) return null;
-                const nextRowY = (row + 1) * rowHeight;
-                return { x, y: Math.min(y + STEP_SIZE, nextRowY, maxY) };
-            } else {
-                // Backward - exact reverse
-                if (x === 0 && y === 0) return null;
-
-                // If between rows, continue Y up
-                if (!atRowBoundary && !atMaxYleft && !atMaxYright) {
-                    const prevRowY = row * rowHeight;
-                    return { x, y: Math.max(y - STEP_SIZE, prevRowY, 0) };
-                }
-
-                // At row boundary - move X (reverse of forward)
-                if (((evenRow && !atMaxYleft) || atMaxYright) && x > 0) {
-                    return { x: Math.max(x - STEP_SIZE, 0), y };
-                }
-                if (((!evenRow && !atMaxYright) || atMaxYleft) && x < maxX) {
-                    return { x: Math.min(x + STEP_SIZE, maxX), y };
-                }
-
-                // Can't move X, must move Y
-                if (y <= 0) return null;
-                const targetY = (atMaxYleft || atMaxYright) ? Math.floor(y / rowHeight) * rowHeight : (row - 1) * rowHeight;
-                return { x, y: Math.max(y - STEP_SIZE, targetY, 0) };
+                return { x, y: Math.min(y + STEP, (row + 1) * rh, maxY) };
             }
+            if (x === 0 && y === 0) return null;
+            if (!onRow && !endL && !endR) return { x, y: Math.max(y - STEP, row * rh, 0) };
+            if (rightward && x > 0) return { x: Math.max(x - STEP, 0), y };
+            if (leftward && x < maxX) return { x: Math.min(x + STEP, maxX), y };
+            if (y <= 0) return null;
+            return { x, y: Math.max(y - STEP, (endL || endR) ? Math.floor(y / rh) * rh : (row - 1) * rh, 0) };
         }
-
-        function handleResize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            // Reset position if it's out of bounds
-            if (boxX + boxWidth > canvas.width) {
-                boxX = Math.max(0, canvas.width - boxWidth);
-            }
-            if (boxY + rowHeight > canvas.height) {
-                boxY = Math.max(0, canvas.height - rowHeight);
-            }
-
-            drawBox();
+        /* 200 ms linear glide to the next position. Each glide decides on arrival whether autoplay or a
+           held arrow key wants another, so a new request never starts a second glide over a running one. */
+        function move(dir) {
+            const to = next(dir);
+            if (!to) { st.anim = st.auto = false; st.held = null; return; }
+            st.anim = true;
+            const x0 = st.x, y0 = st.y, t0 = performance.now();
+            const step = t => {
+                const k = Math.min(1, (t - t0) / 200);
+                st.x = x0 + (to.x - x0) * k; st.y = y0 + (to.y - y0) * k; draw();
+                if (k < 1) return requestAnimationFrame(step);
+                st.anim = false; cont();
+            };
+            requestAnimationFrame(step);
         }
+        function cont() { if (st.auto) move(st.dir); else if (st.held) move(st.held); }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        // Initialize on load
-        window.addEventListener('load', init);
+        window.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+            if (e.key === ' ') { e.preventDefault();
+                if (st.auto) { st.auto = false; return; }
+                st.held = null; st.dir = e.shiftKey ? 'backward' : 'forward'; st.auto = true; if (!st.anim) cont(); }
+            else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); st.auto = false;
+                if (!st.held) { st.held = e.key === 'ArrowRight' ? 'forward' : 'backward'; if (!st.anim) cont(); } }
+            else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); setGray(e.key === 'ArrowUp' ? 1 : -1); }
+        });
+        window.addEventListener('keyup', e => { if ({ ArrowRight: 'forward', ArrowLeft: 'backward' }[e.key] === st.held) st.held = null; });
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault(); st.auto = false; st.held = null; if (!st.anim) move(e.deltaY > 0 ? 'forward' : 'backward');
+        }, { passive: false });
+        canvas.addEventListener('click', () => setGray(1));
+        canvas.addEventListener('contextmenu', e => { e.preventDefault(); setGray(-1); });
+        graySelect.addEventListener('change', e => { st.g = +e.target.value; graySelect.blur(); draw(); });
+        // The size box commits on Enter or blur and reverts on Esc; a new size restarts the scan.
+        boxSizeInput.addEventListener('click', () => boxSizeInput.select());
+        boxSizeInput.addEventListener('blur', () => {
+            const n = parseInt(boxSizeInput.value, 10);
+            if (n > 0 && n <= 2000) { st.size = n; st.x = st.y = 0; draw(); } else boxSizeInput.value = st.size;
+        });
+        boxSizeInput.addEventListener('keydown', e => {
+            if (e.key === 'Escape') boxSizeInput.value = st.size;
+            if (e.key === 'Enter' || e.key === 'Escape') boxSizeInput.blur();
+        });
+        document.getElementById('helpBtn').addEventListener('click', () => { document.getElementById('helpModal').style.display = 'block'; });
+        const closeModal = id => { document.getElementById(id).style.display = 'none'; };
     </script>
 </body>
 </html>

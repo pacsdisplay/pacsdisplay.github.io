@@ -798,8 +798,8 @@
           on physical pixels at any operating system scaling, and pixel sizes such as the scan box are
           physical pixels, too.</li>
           <li>That needs the canvas size in exact device pixels. A browser that cannot report it at a
-          fractional scaling (125%, 150%) gets a notice when TG270-pQC, TG270-sQC or TG18-OIQ opens; browser
-          zoom at 100% and display scaling at 100% or 200% avoid it.</li>
+          fractional scaling (125%, 150%) gets a notice when TG270-pQC, TG270-sQC, TG18-OIQ or the ambient
+          test opens; browser zoom at 100% and display scaling at 100% or 200% avoid it.</li>
           <li>macOS: use the display's default resolution. The "scaled" resolutions resample the whole
           screen after the browser has drawn it, which no web page can detect or undo.</li>
           <li>The display calibration (pixel pitch) setting sizes the interface and the measurement patch.
@@ -5111,7 +5111,7 @@ function numBox(val,title,commit){
    one pattern and opening another in the same task never changes the size, so no report arrives and
    openPattern applies the kept one. Every resize resets the view, as the original pages did. */
 /* pat.exact says whether that size is known to the pixel. Without it the canvas is resampled by up to
-   a pixel, which a bar pattern shows, so the bar patterns warn once per session. */
+   a pixel, which a bar pattern shows, so the patterns marked bars warn once per session. */
 function patDevSize(d,w,h){
   const r=window.devicePixelRatio||1, cw=w*r, ch=h*r, whole=x=>Math.abs(x-Math.round(x))<0.02;
   /* The reported size is used only when it agrees with CSS size x dpr to a pixel: DevTools' device
@@ -5143,9 +5143,12 @@ function patSize(){
   if(P.zoom) patResetView();
   P.resize?.(pat.st);
   patDraw();
-  if(P.zoom && !pat.exact && !pat.warned){
+  /* The size can arrive after the pattern's own opening dialog (the ambient test's), so the note
+     then joins that dialog instead of replacing it. */
+  if(P.bars && !pat.exact && !pat.warned){
     pat.warned=true; log(`pattern canvas size inexact at dpr ${window.devicePixelRatio}`);
-    patDialog("Display scaling",PAT_INEXACT,[{label:"OK"}]);
+    if($("patDlg").hidden) patDialog("Display scaling",PAT_INEXACT,[{label:"OK"}]);
+    else $("patDlgMsg").textContent+="\n\nDisplay scaling: "+PAT_INEXACT;
   }
 }
 
@@ -5513,7 +5516,7 @@ const SCAN={title:"Uniformity scan",
 const AMB_SIZE=102, AMB_PERIOD=6;                   // display pixels
 const AMB_PREP="Ambient lighting set to reading levels\n - Close or cover nearby windows\n"+
   " - Reduce overhead lighting\n - Avoid lights reflecting on the display";
-const AMB={title:"Ambient test",
+const AMB={title:"Ambient test", bars:true,
   init:q=>({con:clampInt(q.get("contrast"),1,255,3), base:0, x:null, y:null, debug:false,
             lock:q.has("lockcontrast")||q.has("lock"), email:q.get("email")}),
   controls(st){
@@ -5521,7 +5524,10 @@ const AMB={title:"Ambient test",
       click:()=>AMB.adj(st,"con",1), contextmenu:e=>{ e.preventDefault(); AMB.adj(st,"con",-1); }});
     return [ctl("span",{className:"pb",textContent:"Move",title:"Move the target"},{click:()=>{ AMB.place(st); patCv.focus(); }}),st.lbl];
   },
-  opened(st){ AMB.show(st); patDialog("Ambient luminance test","Please ensure the following:\n\n"+AMB_PREP,[{label:"OK"}]); },
+  /* This dialog replaces any scaling notice patSize showed on open, so it carries the note itself. */
+  opened(st){ if(!pat.exact) pat.warned=true;
+    patDialog("Ambient luminance test","Please ensure the following:\n\n"+AMB_PREP+
+      (pat.exact?"":"\n\nDisplay scaling: "+PAT_INEXACT),[{label:"OK"}]); AMB.show(st); },
   resize(st){ if(st.x==null) AMB.place(st); },
   /* Anywhere in the central 80% of the canvas. */
   place(st){ const r=Math.random;
@@ -5573,7 +5579,7 @@ const AMB={title:"Ambient test",
 };
 
 /* Keyed by the standalone pages' file names, which is also what ?pattern= takes. */
-const zoomPat=(title,draw,fit)=>({title,zoom:true,draw,fit});
+const zoomPat=(title,draw,fit)=>({title,zoom:true,bars:true,draw,fit});
 const fitHeight=(W,H)=>({s:H/1024, ox:(W-H)/2, oy:0});
 const PAT={
   pqc:zoomPat("TG270-pQC",drawPQC,fitHeight),

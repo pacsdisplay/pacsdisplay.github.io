@@ -40,6 +40,30 @@ Comprehensive display evaluation based on the TG18-PQC design, per AAPM Report 2
 
 ---
 
+## TG18-OIQ (`tg18oiq.html`)
+
+Overall image quality evaluation based on AAPM TG18-OIQ (TG18-QC without the Cx patterns), scaled to fit the window.
+
+**Pattern features:**
+- 16 gray steps from 8 to 248 in steps of 16, each with ±4 GL low-contrast corner patches
+- Black and white cells with centered patches at 13 (5%) and 242 (95%)
+- Luminance ramps either side, window response bands and a crosstalk section
+- "QUALITY CONTROL" lettering on black, mid-gray and white panels, one contrast per letter (±14 down to ±1 GL)
+- Spatial resolution blocks at the center and four corners: high (0/255) and low (128/130) contrast, 1 and 2 px bars in both directions
+
+**Usage:**
+- On a DICOM-conformant display, all low-contrast corner patches should be equally visible
+- The high-contrast line pairs in the center and corners should appear crisp
+- All letters of QUALITY CONTROL should be visible
+- The 0/5% and 95/100% patches are not a reliable indicator of display performance
+
+**Controls:**
+- Click and drag to pan
+- Ctrl + scroll wheel to zoom (1×–10×), centered on cursor
+- ⟲ button to reset view
+
+---
+
 ## Ambient Light Verification (`ambtest.html`)
 
 Tests whether ambient lighting conditions are appropriate for diagnostic reading.

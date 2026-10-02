@@ -22,15 +22,14 @@ Licensed under the GNU General Public License v2 or later
             background-color: rgb(120, 120, 120);
             overflow: hidden;
             font-family: 'Courier New', monospace;
-            transition: background-color 0.05s ease;
         }
 
-        #background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+        #canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
             cursor: default;
         }
 
@@ -68,37 +67,6 @@ Licensed under the GNU General Public License v2 or later
 
         .grid-toggle:hover {
             opacity: 0.7;
-        }
-
-        #gridOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: 50;
-            display: none;
-        }
-
-        #gridOverlay.active {
-            display: block;
-        }
-
-        .grid-line {
-            position: absolute;
-            background-color: #666;
-            transition: background-color 0.05s ease;
-        }
-
-        .grid-line.horizontal {
-            width: 100%;
-            height: 1px;
-        }
-
-        .grid-line.vertical {
-            width: 1px;
-            height: 100%;
         }
 
         .controls {
@@ -208,14 +176,7 @@ Licensed under the GNU General Public License v2 or later
     </style>
 </head>
 <body>
-    <div id="background"></div>
-
-    <div id="gridOverlay">
-        <div class="grid-line horizontal" id="gridH1"></div>
-        <div class="grid-line horizontal" id="gridH2"></div>
-        <div class="grid-line vertical" id="gridV1"></div>
-        <div class="grid-line vertical" id="gridV2"></div>
-    </div>
+    <canvas id="canvas"></canvas>
 
     <div class="help-icon" id="helpBtn" title="Help">?</div>
 
@@ -260,234 +221,66 @@ URL PARAMETERS:
     </div>
 
     <script>
-        // Parse URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const INITIAL_GRAY_LEVEL = parseInt(urlParams.get('gray')) || 120;
-        const INITIAL_STEP_SIZE = parseInt(urlParams.get('step')) || 15;
-        const INITIAL_GRID = urlParams.get('grid') === 'true';
+        /* Device-pixel canvas, as in pdweb.html's test patterns: the canvas fills the window in CSS pixels
+           and its backing store is sized in DEVICE pixels, so the grid lines are whole display pixels. */
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        const grayCss = g => { const v = Math.max(0, Math.min(255, Math.round(g))); return `rgb(${v},${v},${v})`; };
+        const fillG = (g, x, y, w, h) => { ctx.fillStyle = grayCss(g); ctx.fillRect(x, y, w, h); };
+        const devSize = (d, w, h) => { const r = window.devicePixelRatio || 1;
+            return d && Math.abs(d.inlineSize - w * r) <= 1 ? [d.inlineSize, d.blockSize] : [Math.round(w * r), Math.round(h * r)]; };
+        function setSize([w, h]) { if (w && h) { canvas.width = w; canvas.height = h; draw(); } }
+        const ro = new ResizeObserver(([e]) => setSize(devSize(e.devicePixelContentBoxSize?.[0], e.contentRect.width, e.contentRect.height)));
+        try { ro.observe(canvas, { box: 'device-pixel-content-box' }); } catch (e) { ro.observe(canvas); }
+        (function watchDpr() {      // a move to a differently scaled monitor; the media query matches one ratio
+            matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => {
+                const b = canvas.getBoundingClientRect(); setSize(devSize(null, b.width, b.height)); watchDpr();
+            }, { once: true });
+        })();
 
-        // State
-        let grayLevel = INITIAL_GRAY_LEVEL;
-        let stepSize = INITIAL_STEP_SIZE;
-        let gridVisible = INITIAL_GRID;
+        const q = new URLSearchParams(location.search), STEPS = [1, 5, 15];
+        const grayInput = document.getElementById('grayInput'), stepSelect = document.getElementById('stepSelect');
+        const helpBtn = document.getElementById('helpBtn'), gridToggle = document.getElementById('gridToggle');
+        const st = { g: Math.max(0, Math.min(255, parseInt(q.get('gray'), 10))), step: STEPS.includes(+q.get('step')) ? +q.get('step') : 15,
+                     grid: q.get('grid') === 'true' };
+        if (Number.isNaN(st.g)) st.g = 120;
+        stepSelect.value = st.step;
+        // Controls and grid hold 100 gray levels off the field, so they stay findable at any level.
+        const inkOff = g => g < 120 ? g + 100 : g - 100;
 
-        // Elements
-        const background = document.getElementById('background');
-        const grayInput = document.getElementById('grayInput');
-        const stepSelect = document.getElementById('stepSelect');
-        const helpBtn = document.getElementById('helpBtn');
-        const gridToggle = document.getElementById('gridToggle');
-        const gridOverlay = document.getElementById('gridOverlay');
-        const gridLines = {
-            h1: document.getElementById('gridH1'),
-            h2: document.getElementById('gridH2'),
-            v1: document.getElementById('gridV1'),
-            v2: document.getElementById('gridV2')
-        };
-
-        // Initialize
-        function init() {
-            // Set initial values from URL parameters
-            stepSelect.value = stepSize;
-
-            updateBackground();
-            positionGridLines();
-            if (gridVisible) gridOverlay.classList.add('active');
-
-            // Background click handlers
-            background.addEventListener('wheel', handleWheel, { passive: false });
-            background.addEventListener('click', handleBackgroundClick);
-            background.addEventListener('contextmenu', handleBackgroundRightClick);
-            background.addEventListener('mousedown', handleBackgroundMouseDown);
-
-            // Help button
-            helpBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('helpModal').style.display = 'block';
-            });
-
-            helpBtn.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-
-            // Grid toggle button
-            gridToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleGrid();
-            });
-
-            gridToggle.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-
-            gridToggle.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-
-            // Keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    setGrayLevel(grayLevel + stepSize);
-                } else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    setGrayLevel(grayLevel - stepSize);
-                }
-            });
-
-            // Reposition grid on window resize
-            window.addEventListener('resize', positionGridLines);
-
-            // Input handlers
-            grayInput.addEventListener('click', (e) => {
-                e.stopPropagation();
-                grayInput.select();
-            });
-
-            grayInput.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-
-            grayInput.addEventListener('blur', handleInputBlur);
-            grayInput.addEventListener('keydown', handleInputKeydown);
-
-            grayInput.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-
-            // Step select handler
-            stepSelect.addEventListener('change', (e) => {
-                stepSize = parseInt(e.target.value);
-            });
-
-            stepSelect.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-
-            stepSelect.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-
-            stepSelect.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
+        function draw() {
+            fillG(st.g, 0, 0, canvas.width, canvas.height);
+            if (!st.grid) return;
+            const W = canvas.width, H = canvas.height, lw = Math.max(1, Math.round(window.devicePixelRatio || 1)), ink = inkOff(st.g);
+            for (const k of [1, 2]) { fillG(ink, Math.round(W * k / 3), 0, lw, H); fillG(ink, 0, Math.round(H * k / 3), W, lw); }
+        }
+        function setGray(g) {
+            st.g = Math.max(0, Math.min(255, g));
+            grayInput.value = String(st.g).padStart(3, '0');
+            helpBtn.style.color = gridToggle.style.color = grayCss(inkOff(st.g));
+            draw();
         }
 
-        function updateBackground() {
-            const rgb = `rgb(${grayLevel}, ${grayLevel}, ${grayLevel})`;
-            document.body.style.backgroundColor = rgb;
-            grayInput.value = String(grayLevel).padStart(3, '0');
-
-            // Update help icon and grid toggle color for visibility
-            // Below 120: use lighter color (background + 100)
-            // At/above 120: use darker color (background - 100)
-            const iconGray = grayLevel < 120 ?
-                Math.min(255, grayLevel + 100) :
-                Math.max(0, grayLevel - 100);
-            const iconColor = `rgb(${iconGray}, ${iconGray}, ${iconGray})`;
-            helpBtn.style.color = iconColor;
-            gridToggle.style.color = iconColor;
-
-            // Update grid line colors
-            Object.values(gridLines).forEach(line => {
-                line.style.backgroundColor = iconColor;
-            });
-        }
-
-        function positionGridLines() {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-
-            // Horizontal lines at 1/3 and 2/3
-            gridLines.h1.style.top = `${height / 3}px`;
-            gridLines.h2.style.top = `${(height * 2) / 3}px`;
-
-            // Vertical lines at 1/3 and 2/3
-            gridLines.v1.style.left = `${width / 3}px`;
-            gridLines.v2.style.left = `${(width * 2) / 3}px`;
-        }
-
-        function toggleGrid() {
-            gridVisible = !gridVisible;
-            if (gridVisible) {
-                gridOverlay.classList.add('active');
-            } else {
-                gridOverlay.classList.remove('active');
-            }
-        }
-
-        function setGrayLevel(value) {
-            grayLevel = Math.max(0, Math.min(255, value));
-            updateBackground();
-        }
-
-        function handleBackgroundClick(e) {
-            // Left click - increase
-            if (e.button === 0) {
-                setGrayLevel(grayLevel + stepSize);
-            }
-        }
-
-        function handleBackgroundMouseDown(e) {
-            // Capture both left and right clicks
-            if (e.button === 2) { // Right click
-                e.preventDefault();
-                setGrayLevel(grayLevel - stepSize);
-            }
-        }
-
-        function handleBackgroundRightClick(e) {
-            e.preventDefault();
-        }
-
-        function handleWheel(e) {
-            e.preventDefault();
-
-            const direction = e.deltaY > 0 ? 1 : -1;
-
-            if (direction > 0) {
-                setGrayLevel(grayLevel - stepSize);
-            } else {
-                setGrayLevel(grayLevel + stepSize);
-            }
-        }
-
-        function handleInputBlur() {
-            const value = parseInt(grayInput.value);
-            if (!isNaN(value)) {
-                setGrayLevel(value);
-            } else {
-                updateBackground(); // Reset to current value
-            }
-        }
-
-        function handleInputKeydown(e) {
-            if (e.key === 'Enter') {
-                grayInput.blur();
-            } else if (e.key === 'Escape') {
-                updateBackground(); // Reset to current value
-                grayInput.blur();
-            }
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        // Close modal when clicking the backdrop (outside modal-content)
-        document.addEventListener('click', (e) => {
-            const modal = document.getElementById('helpModal');
-            if (modal.style.display === 'block' && e.target === modal) {
-                closeModal('helpModal');
-            }
+        canvas.addEventListener('click', () => setGray(st.g + st.step));
+        canvas.addEventListener('mousedown', e => { if (e.button === 2) setGray(st.g - st.step); });
+        canvas.addEventListener('wheel', e => { e.preventDefault(); setGray(st.g + (e.deltaY > 0 ? -1 : 1) * st.step); }, { passive: false });
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            const d = { ArrowUp: 1, ArrowDown: -1 }[e.key];
+            if (d && e.target !== grayInput) { e.preventDefault(); setGray(st.g + d * st.step); }
         });
-
-        // Initialize on load
-        window.addEventListener('load', init);
+        // The gray box commits on Enter or blur and reverts on Esc.
+        grayInput.addEventListener('click', () => grayInput.select());
+        grayInput.addEventListener('blur', () => { const n = parseInt(grayInput.value, 10); setGray(Number.isNaN(n) ? st.g : n); });
+        grayInput.addEventListener('keydown', e => {
+            if (e.key === 'Escape') grayInput.value = String(st.g);
+            if (e.key === 'Enter' || e.key === 'Escape') grayInput.blur();
+        });
+        stepSelect.addEventListener('change', e => { st.step = +e.target.value; stepSelect.blur(); });
+        gridToggle.addEventListener('click', () => { st.grid = !st.grid; draw(); });
+        helpBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'block'; });
+        const closeModal = id => { document.getElementById(id).style.display = 'none'; };
+        document.getElementById('helpModal').addEventListener('click', e => { if (e.target.id === 'helpModal') closeModal('helpModal'); });
+        setGray(st.g);
     </script>
 </body>
 </html>

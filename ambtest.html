@@ -25,11 +25,11 @@ Licensed under the GNU General Public License v2 or later
         }
 
         #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
             cursor: crosshair;
         }
 
@@ -214,15 +214,15 @@ CONTROLS:
  - Alt+right-click anywhere: shift base level down
 
 PATTERN DETAILS:
- - Bar pattern: 6-pixel vertical period
+ - Bar pattern: 6-pixel vertical period, in display pixels at any OS scaling
  - Initial contrast: 3 gray levels (out of 255)
- - Object size: 102x102 pixels
+ - Object size: 102x102 display pixels
 
 URL PARAMETERS:
 Customize the test by adding parameters to the URL:
 
 ?contrast=N
- - Set initial gray level (0-255) [default: 3]
+ - Set initial contrast (1-255) [default: 3]
  - Example: ambtest.html?contrast=10
 
 ?lockcontrast (or ?lock)
@@ -256,7 +256,8 @@ COMBINED EXAMPLES:
 Ambient lighting set to reading levels
  - Close/cover nearby windows
  - Reduce overhead lighting
- - Avoid lights reflecting on the display</div>
+ - Avoid lights reflecting on the display<div id="scaleNote" hidden>
+Display scaling: this browser cannot report the window's size in exact display pixels at the current scaling, so the target may be resampled. Set browser zoom to 100% and display scaling to 100% or 200%, or use another browser.</div></div>
             <div class="modal-buttons">
                 <button class="modal-button" onclick="closeModal('welcomeModal')">OK</button>
             </div>
@@ -264,396 +265,119 @@ Ambient lighting set to reading levels
     </div>
 
     <script>
-        // Constants
-        const OBJECT_WIDTH = 102;
-        const OBJECT_HEIGHT = 102;
-        const BAR_PERIOD = 6;
-
-        // Parse URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const INITIAL_GRAY_LEVEL = parseInt(urlParams.get('contrast')) || 3;
-        const LOCK_CONTRAST = urlParams.has('lockcontrast') || urlParams.has('lock');
-        const SHARE_EMAIL = urlParams.get('email') || null;
-
-        // State
-        let canvas, ctx;
-        let grayLevel = INITIAL_GRAY_LEVEL;
-        let baseLevel = 0;
-        let objectX = 0;
-        let objectY = 0;
-        let patternCanvas;
-        let debugMode = false; // Toggle with 'd' key
-
-        // Initialize
-        function init() {
-            canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');
-
-            // Create pattern canvas first
-            patternCanvas = document.createElement('canvas');
-            patternCanvas.width = OBJECT_WIDTH;
-            patternCanvas.height = OBJECT_HEIGHT;
-
-            // Generate initial pattern
-            updatePattern();
-
-            // Set canvas size (but don't draw yet)
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            window.addEventListener('resize', resizeCanvas);
-
-            // Position object randomly
-            positionObject();
-
-            // Event listeners
-            canvas.addEventListener('click', handleCanvasClick);
-            canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-            document.addEventListener('contextmenu', (e) => {
-                if (e.shiftKey || e.altKey) e.preventDefault();
-            });
-
-            // Shift + click for contrast adjustment anywhere on canvas
-            // Alt + click for base level adjustment (shifts background and object together)
-            canvas.addEventListener('mousedown', (e) => {
-                if (e.shiftKey && !LOCK_CONTRAST) {
-                    if (e.button === 0) { // Left click
-                        changeContrast('up');
-                        e.preventDefault();
-                        e.stopPropagation();
-                    } else if (e.button === 2) { // Right click
-                        changeContrast('down');
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                } else if (e.altKey && !LOCK_CONTRAST) {
-                    if (e.button === 0) { // Alt + left click
-                        changeBaseLevel('up');
-                        e.preventDefault();
-                        e.stopPropagation();
-                    } else if (e.button === 2) { // Alt + right click
-                        changeBaseLevel('down');
-                        e.preventDefault();
-                        e.stopPropagation();
-                    }
-                }
-            });
-
-            // Toolbar buttons
-            document.getElementById('helpBtn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.getElementById('helpModal').style.display = 'block';
-            });
-
-            document.getElementById('moveBtn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                positionObject();
-            });
-
-            document.getElementById('contrastDisplay').addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (!LOCK_CONTRAST) {
-                    changeContrast('up');
-                }
-            });
-
-            document.getElementById('contrastDisplay').addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (!LOCK_CONTRAST) {
-                    changeContrast('down');
-                }
-            });
-
-            // Click anywhere on help or welcome modal to dismiss
-            document.getElementById('helpModal').addEventListener('click', () => closeModal('helpModal'));
-            document.getElementById('welcomeModal').addEventListener('click', () => closeModal('welcomeModal'));
-
-            // Keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                if ((e.key === 'd' || e.key === 'D') && e.shiftKey) {
-                    debugMode = !debugMode;
-                    console.log('Debug mode:', debugMode);
-                    draw();
-                } else if (e.key === 'ArrowUp' && !LOCK_CONTRAST) {
-                    changeContrast('up');
-                    e.preventDefault();
-                } else if (e.key === 'ArrowDown' && !LOCK_CONTRAST) {
-                    changeContrast('down');
-                    e.preventDefault();
-                } else if (e.key === 'ArrowRight' && !LOCK_CONTRAST) {
-                    changeBaseLevel('up');
-                    e.preventDefault();
-                } else if (e.key === 'ArrowLeft' && !LOCK_CONTRAST) {
-                    changeBaseLevel('down');
-                    e.preventDefault();
-                }
-            });
-
-            // Initial draw (pattern already created above)
-            draw();
-
-            // Log initial state
-            console.log('Initial object position:', objectX, objectY);
-            console.log('Canvas size:', canvas.width, canvas.height);
-            console.log('Pattern canvas created:', patternCanvas.width, 'x', patternCanvas.height);
-        }
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            draw();
-        }
-
-        function generateBarPattern(grayLevel) {
-            const pCtx = patternCanvas.getContext('2d');
-            const imageData = pCtx.createImageData(OBJECT_WIDTH, OBJECT_HEIGHT);
-            const data = imageData.data;
-
-            const halfPeriod = Math.floor(BAR_PERIOD / 2);
-
-            for (let y = 0; y < OBJECT_HEIGHT; y++) {
-                for (let x = 0; x < OBJECT_WIDTH; x++) {
-                    const idx = (y * OBJECT_WIDTH + x) * 4;
-
-                    // Vertical bars: alternate based on x position
-                    const value = (x % BAR_PERIOD) < halfPeriod ? baseLevel : baseLevel + grayLevel;
-
-                    data[idx] = value;     // R
-                    data[idx + 1] = value; // G
-                    data[idx + 2] = value; // B
-                    data[idx + 3] = 255;   // A
-                }
+        /* Device-pixel canvas, as in pdweb.html's test patterns: the canvas fills the window in CSS pixels
+           and its backing store is sized in DEVICE pixels, so the target's size and bar period are display
+           pixels at any OS scaling. Where the browser cannot give that size exactly, the welcome note says so. */
+        const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+        const grayCss = g => { const v = Math.max(0, Math.min(255, Math.round(g))); return `rgb(${v},${v},${v})`; };
+        const fillG = (g, x, y, w, h) => { ctx.fillStyle = grayCss(g); ctx.fillRect(x, y, w, h); };
+        function devSize(d, w, h) {     // [width, height, exact] - see pqc.html
+            const r = window.devicePixelRatio || 1, cw = w * r, ch = h * r, whole = x => Math.abs(x - Math.round(x)) < 0.02;
+            if (d) {
+                const ok = Math.abs(d.inlineSize - cw) <= 1 && Math.abs(d.blockSize - ch) <= 1;
+                return ok ? [d.inlineSize, d.blockSize, true] : [Math.round(cw), Math.round(ch), false];
             }
-
-            pCtx.putImageData(imageData, 0, 0);
+            return [Math.round(cw), Math.round(ch), whole(cw) && whole(ch)];
         }
-
-        function updatePattern() {
-            generateBarPattern(grayLevel);
-            const lockIndicator = LOCK_CONTRAST ? ' 🔒' : '';
-            const baseIndicator = baseLevel > 0 ? `Base: ${baseLevel} | ` : '';
-            document.getElementById('contrastDisplay').textContent = `${baseIndicator}Contrast: ${grayLevel} GLs${lockIndicator}`;
+        function setSize([w, h, exact]) {
+            if (!w || !h) return;
+            canvas.width = st.W = w; canvas.height = st.H = h;
+            document.getElementById('scaleNote').hidden = exact;
+            if (st.x == null) place(); else draw();
         }
+        const ro = new ResizeObserver(([e]) => setSize(devSize(e.devicePixelContentBoxSize?.[0], e.contentRect.width, e.contentRect.height)));
+        try { ro.observe(canvas, { box: 'device-pixel-content-box' }); } catch (e) { ro.observe(canvas); }
+        (function watchDpr() {      // a move to a differently scaled monitor; the media query matches one ratio
+            matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`).addEventListener('change', () => {
+                const b = canvas.getBoundingClientRect(); setSize(devSize(null, b.width, b.height)); watchDpr();
+            }, { once: true });
+        })();
+        const devXY = e => { const r = canvas.getBoundingClientRect();
+            return [(e.clientX - r.left) * st.W / r.width, (e.clientY - r.top) * st.H / r.height]; };
 
-        function positionObject() {
-            // Position in central 80% of screen
-            const edgePadding = 0.1; // 10% padding on each side = 80% usable area
-            const minX = canvas.width * edgePadding;
-            const maxX = canvas.width * (1 - edgePadding) - OBJECT_WIDTH;
-            const minY = canvas.height * edgePadding;
-            const maxY = canvas.height * (1 - edgePadding) - OBJECT_HEIGHT;
-
-            objectX = Math.random() * (maxX - minX) + minX;
-            objectY = Math.random() * (maxY - minY) + minY;
-
-            draw();
-        }
+        const SIZE = 102, PERIOD = 6;       // display pixels
+        const q = new URLSearchParams(location.search), con0 = parseInt(q.get('contrast'), 10);
+        const st = { W: 0, H: 0, con: con0 >= 1 && con0 <= 255 ? con0 : 3, base: 0, x: null, y: null, debug: false,
+                     lock: q.has('lockcontrast') || q.has('lock'), email: q.get('email') };
+        const toolbar = document.querySelector('.toolbar'), contrastDisplay = document.getElementById('contrastDisplay');
 
         function draw() {
-            // Clear canvas with base level background
-            const bg = baseLevel;
-            ctx.fillStyle = `rgb(${bg},${bg},${bg})`;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Toolbar text: fixed GL offset from background, hover adds additional contrast
-            const textVal = baseLevel > 127 ? baseLevel - 100 : baseLevel + 100;
-            const hoverVal = baseLevel > 127 ? baseLevel - 150 : baseLevel + 150;
-            const toolbar = document.querySelector('.toolbar');
-            toolbar.style.setProperty('--toolbar-text', `rgb(${textVal},${textVal},${textVal})`);
-            toolbar.style.setProperty('--toolbar-text-hover', `rgb(${hoverVal},${hoverVal},${hoverVal})`);
-
-            // Draw pattern object at integer coordinates to avoid sub-pixel antialiasing
-            ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(patternCanvas, Math.round(objectX), Math.round(objectY));
-
-            // Debug mode - draw red border around object
-            if (debugMode) {
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(objectX, objectY, OBJECT_WIDTH, OBJECT_HEIGHT);
-
-                // Also draw crosshair at center
-                ctx.strokeStyle = 'yellow';
-                ctx.beginPath();
-                ctx.moveTo(objectX + OBJECT_WIDTH/2 - 10, objectY + OBJECT_HEIGHT/2);
-                ctx.lineTo(objectX + OBJECT_WIDTH/2 + 10, objectY + OBJECT_HEIGHT/2);
-                ctx.moveTo(objectX + OBJECT_WIDTH/2, objectY + OBJECT_HEIGHT/2 - 10);
-                ctx.lineTo(objectX + OBJECT_WIDTH/2, objectY + OBJECT_HEIGHT/2 + 10);
-                ctx.stroke();
-            }
+            fillG(st.base, 0, 0, st.W, st.H);
+            for (let k = 0; k < SIZE / PERIOD; k++) fillG(st.base + st.con, st.x + k * PERIOD + PERIOD / 2, st.y, PERIOD / 2, SIZE);
+            if (st.debug) { ctx.strokeStyle = 'red'; ctx.lineWidth = 2; ctx.strokeRect(st.x, st.y, SIZE, SIZE); }
+        }
+        /* Anywhere in the central 80% of the canvas. */
+        function place() {
+            st.x = Math.round(st.W * 0.1 + Math.random() * (st.W * 0.8 - SIZE));
+            st.y = Math.round(st.H * 0.1 + Math.random() * (st.H * 0.8 - SIZE));
+            draw();
+        }
+        /* Toolbar text holds a fixed offset from the background; hover adds more. */
+        function show() {
+            contrastDisplay.textContent = `${st.base ? `Base: ${st.base} | ` : ''}Contrast: ${st.con} GLs${st.lock ? ' 🔒' : ''}`;
+            const hi = st.base > 127 ? -1 : 1;
+            toolbar.style.setProperty('--toolbar-text', grayCss(st.base + hi * 100));
+            toolbar.style.setProperty('--toolbar-text-hover', grayCss(st.base + hi * 150));
+        }
+        /* Contrast and base both stop where the target would clip at 255. */
+        function adj(k, d) {
+            if (st.lock) return;
+            if (d > 0 ? st.base + st.con < 255 : st[k] > (k === 'con' ? 1 : 0)) { st[k] += d; show(); draw(); }
         }
 
-        function handleCanvasClick(e) {
-            if (e.shiftKey || e.altKey) return; // Modified clicks handled separately
+        canvas.addEventListener('click', e => {
+            if (e.shiftKey || e.altKey) return;
+            const [x, y] = devXY(e), ok = x >= st.x && x <= st.x + SIZE && y >= st.y && y <= st.y + SIZE;
+            if (ok) document.getElementById('successMessage').textContent = `Low contrast object found!
 
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            // Check if click is within object bounds
-            if (x >= objectX && x <= objectX + OBJECT_WIDTH &&
-                y >= objectY && y <= objectY + OBJECT_HEIGHT) {
-                showSuccess();
-            } else {
-                showFailure();
-            }
-        }
-
-        function changeContrast(direction) {
-            if (direction === 'up' && baseLevel + grayLevel < 255) {
-                grayLevel++;
-                updatePattern();
-                draw();
-            } else if (direction === 'down' && grayLevel > 1) {
-                grayLevel--;
-                updatePattern();
-                draw();
-            }
-        }
-
-        function changeBaseLevel(direction) {
-            if (direction === 'up' && baseLevel + grayLevel < 255) {
-                baseLevel++;
-                updatePattern();
-                draw();
-            } else if (direction === 'down' && baseLevel > 0) {
-                baseLevel--;
-                updatePattern();
-                draw();
-            }
-        }
-
-        function showSuccess() {
-            const message = `Low contrast object found!
-
-Ambient lighting appropriate for ${grayLevel} gray
+Ambient lighting appropriate for ${st.con} gray
 level contrast visualization
 
 Select "Retry" to move the object and try again
 Select "Cancel" to close this message`;
-
-            document.getElementById('successMessage').textContent = message;
-
-            // Add share button if email is provided
-            const buttonsDiv = document.getElementById('successModal').querySelector('.modal-buttons');
-            const existingShareBtn = buttonsDiv.querySelector('.share-button');
-            if (existingShareBtn) {
-                existingShareBtn.remove();
+            const modal = document.getElementById(ok ? 'successModal' : 'failureModal'), btns = modal.querySelector('.modal-buttons');
+            btns.querySelector('.share-button')?.remove();
+            if (st.email) {
+                const b = Object.assign(document.createElement('button'), { className: 'modal-button share-button', textContent: 'Share Results' });
+                b.onclick = () => share(ok); btns.prepend(b);
             }
+            modal.style.display = 'block';
+        });
+        canvas.addEventListener('mousedown', e => {
+            if (e.shiftKey || e.altKey) { e.preventDefault(); adj(e.shiftKey ? 'con' : 'base', e.button === 2 ? -1 : 1); }
+        });
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('contextmenu', e => { if (e.shiftKey || e.altKey) e.preventDefault(); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'D' && e.shiftKey) { st.debug = !st.debug; draw(); return; }
+            const a = { ArrowUp: ['con', 1], ArrowDown: ['con', -1], ArrowRight: ['base', 1], ArrowLeft: ['base', -1] }[e.key];
+            if (a) { e.preventDefault(); adj(...a); }
+        });
+        document.getElementById('moveBtn').addEventListener('click', place);
+        contrastDisplay.addEventListener('click', () => adj('con', 1));
+        contrastDisplay.addEventListener('contextmenu', e => { e.preventDefault(); adj('con', -1); });
+        document.getElementById('helpBtn').addEventListener('click', () => { document.getElementById('helpModal').style.display = 'block'; });
+        for (const id of ['helpModal', 'welcomeModal']) document.getElementById(id).addEventListener('click', () => closeModal(id));
+        const closeModal = id => { document.getElementById(id).style.display = 'none'; };
+        function retryTest() { closeModal('successModal'); closeModal('failureModal'); place(); }
 
-            if (SHARE_EMAIL) {
-                const shareBtn = document.createElement('button');
-                shareBtn.className = 'modal-button share-button';
-                shareBtn.textContent = 'Share Results';
-                shareBtn.onclick = () => shareResults('success');
-                buttonsDiv.insertBefore(shareBtn, buttonsDiv.firstChild);
-            }
-
-            document.getElementById('successModal').style.display = 'block';
+        function share(ok) {
+            const n = navigator, body = [
+                'Ambient Light Test Results', '', `Test Date/Time: ${new Date().toLocaleString()}`,
+                `Result: ${ok ? 'PASSED' : 'FAILED'}`, `Gray Level Tested: ${st.con} (out of 255)`, `Base Level: ${st.base} (out of 255)`, '',
+                ok ? `The low contrast object was successfully detected.\nAmbient lighting is appropriate for ${st.con} gray level contrast visualization.`
+                   : 'The low contrast object was not detected.\nAmbient lighting may need adjustment or display recalibration is recommended.',
+                '', 'Test Parameters:', `- Object Size: ${SIZE}x${SIZE} display pixels`,
+                `- Pattern: Vertical bars (${PERIOD}-pixel period)`, `- Contrast Level: ${st.con} gray levels`, `- Base Level: ${st.base}`,
+                ...(st.lock ? ['- Contrast Setting: LOCKED'] : []),
+                '', 'System Information:', `- Browser: ${n.userAgent}`, `- Screen Resolution: ${screen.width}x${screen.height}`,
+                `- Screen Color Depth: ${screen.colorDepth}-bit`, `- Pixel Ratio: ${window.devicePixelRatio}`,
+                `- Viewport Size: ${innerWidth}x${innerHeight}`, `- Language: ${n.language}`,
+                '', 'Test Object Position:', `- X: ${st.x}, Y: ${st.y}`, `- Canvas Size: ${st.W}x${st.H}`].join('\n');
+            location.href = `mailto:${st.email}?subject=${encodeURIComponent(`Ambient Light Test Results - ${ok ? 'SUCCESS' : 'FAILURE'}`)}`
+                          + `&body=${encodeURIComponent(body)}`;
         }
-
-        function showFailure() {
-            // Add share button if email is provided
-            const buttonsDiv = document.getElementById('failureModal').querySelector('.modal-buttons');
-            const existingShareBtn = buttonsDiv.querySelector('.share-button');
-            if (existingShareBtn) {
-                existingShareBtn.remove();
-            }
-
-            if (SHARE_EMAIL) {
-                const shareBtn = document.createElement('button');
-                shareBtn.className = 'modal-button share-button';
-                shareBtn.textContent = 'Share Results';
-                shareBtn.onclick = () => shareResults('failure');
-                buttonsDiv.insertBefore(shareBtn, buttonsDiv.firstChild);
-            }
-
-            document.getElementById('failureModal').style.display = 'block';
-        }
-
-        function shareResults(result) {
-            const timestamp = new Date().toLocaleString();
-            const subject = encodeURIComponent(`Ambient Light Test Results - ${result.toUpperCase()}`);
-
-            let body = `Ambient Light Test Results\n\n`;
-            body += `Test Date/Time: ${timestamp}\n`;
-            body += `Result: ${result === 'success' ? 'PASSED' : 'FAILED'}\n`;
-            body += `Gray Level Tested: ${grayLevel} (out of 255)\n`;
-            body += `Base Level: ${baseLevel} (out of 255)\n`;
-            body += `\n`;
-
-            if (result === 'success') {
-                body += `The low contrast object was successfully detected.\n`;
-                body += `Ambient lighting is appropriate for ${grayLevel} gray level contrast visualization.\n`;
-            } else {
-                body += `The low contrast object was not detected.\n`;
-                body += `Ambient lighting may need adjustment or display recalibration is recommended.\n`;
-            }
-
-            body += `\nTest Parameters:\n`;
-            body += `- Object Size: ${OBJECT_WIDTH}x${OBJECT_HEIGHT} pixels\n`;
-            body += `- Pattern: Vertical bars (${BAR_PERIOD}-pixel period)\n`;
-            body += `- Contrast Level: ${grayLevel} gray levels\n`;
-            body += `- Base Level: ${baseLevel}\n`;
-
-            if (LOCK_CONTRAST) {
-                body += `- Contrast Setting: LOCKED\n`;
-            }
-
-            // System/Browser Information
-            body += `\nSystem Information:\n`;
-            body += `- Browser: ${navigator.userAgent}\n`;
-            body += `- Platform: ${navigator.platform}\n`;
-            body += `- Screen Resolution: ${screen.width}x${screen.height}\n`;
-            body += `- Screen Color Depth: ${screen.colorDepth}-bit\n`;
-            body += `- Pixel Ratio: ${window.devicePixelRatio}\n`;
-            body += `- Viewport Size: ${window.innerWidth}x${window.innerHeight}\n`;
-            body += `- Language: ${navigator.language}\n`;
-            body += `- Online Status: ${navigator.onLine ? 'Online' : 'Offline'}\n`;
-
-            // Additional display info if available
-            if (screen.pixelDepth) {
-                body += `- Pixel Depth: ${screen.pixelDepth}-bit\n`;
-            }
-
-            // Touch capability
-            body += `- Touch Support: ${('ontouchstart' in window) || (navigator.maxTouchPoints > 0) ? 'Yes' : 'No'}\n`;
-
-            // Hardware concurrency (CPU cores)
-            if (navigator.hardwareConcurrency) {
-                body += `- CPU Cores: ${navigator.hardwareConcurrency}\n`;
-            }
-
-            // Memory (if available - Chrome/Edge)
-            if (navigator.deviceMemory) {
-                body += `- Device Memory: ${navigator.deviceMemory} GB\n`;
-            }
-
-            // Connection info (if available)
-            if (navigator.connection) {
-                body += `- Connection Type: ${navigator.connection.effectiveType || 'unknown'}\n`;
-            }
-
-            body += `\nTest Object Position:\n`;
-            body += `- X: ${Math.round(objectX)}, Y: ${Math.round(objectY)}\n`;
-            body += `- Canvas Size: ${canvas.width}x${canvas.height}\n`;
-
-            const mailtoLink = `mailto:${SHARE_EMAIL}?subject=${subject}&body=${encodeURIComponent(body)}`;
-            window.location.href = mailtoLink;
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        function retryTest() {
-            closeModal('successModal');
-            closeModal('failureModal');
-            positionObject();
-        }
-
-        // Initialize on load
-        window.addEventListener('load', init);
+        show();
     </script>
 </body>
 </html>
