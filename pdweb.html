@@ -59,26 +59,20 @@
     --field:#101215;
     --text:#e3e5e8;--muted:#8b9199;--faint:#6d737b;
     --btn:#343a42;--btn-active:#454c56;--edge-hi:#565e69;
-    /* Status colors are kept as bare channel triples so the translucent pill and message
-       backgrounds derive from them rather than restating the channels by hand - six
-       hand-copied rgba() literals used to sit here waiting to drift out of step. */
+    /* Bare channel triples, so the translucent pill and message backgrounds derive from them. */
     --ok-rgb:76,175,125;--warn-rgb:217,164,65;--err-rgb:209,84,79;
     --ok:rgb(var(--ok-rgb));--warn:rgb(var(--warn-rgb));--err:rgb(var(--err-rgb));
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
-  /* Global, and !important, because several components set display on a class
-     (.modal is display:flex, .helpdoc is block). Without the override, source order
-     decides whether the [hidden] attribute actually hides them. */
+  /* !important: .modal and .helpdoc set display, which would otherwise beat [hidden]. */
   [hidden]{display:none!important}
   /* ---- physical scale ----
-     CSS fixes 1in at 96px, so a CSS pixel is 0.2646 mm by definition. A fine-pitch display reports
-     dpr 1, so the browser holds to that: at 0.165 mm the type renders tiny AND `width:10cm` renders
-     6.2 cm. Same error, so applyPitch derives both from the pitch:
+     A CSS pixel is 0.2646 mm by definition, so on a 0.165 mm display at dpr 1 type is tiny and 10cm is
+     6.2 cm. applyPitch derives both from the pitch:
        --uiscale  interface only, as the root font size - reaches a rule exactly when it is in rem.
        --cm10     a true 10 cm in CSS px. Measurement surfaces size from this, not from `cm`.
-     Two variables rather than `zoom` on <html>: a stage must never be resizable by a typographic
-     change. Both default to the reference, so an unset pitch renders as before the control. */
+     Two variables, not zoom, so a stage never resizes with the type. Both default to the reference. */
   :root{--uiscale:1;--cm10:10cm}
   html{font-size:calc(16px * var(--uiscale,1))}
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
@@ -90,9 +84,7 @@
   .modebtn{background:transparent;color:var(--muted);border:1px solid var(--edge);border-radius:6px;
     padding:6px 16px;font-weight:600;font-size:0.8125rem;cursor:pointer}
   .modebtn.active,.tile.on{background:var(--btn-active);color:var(--text);border-color:var(--edge-hi)}
-  /* The content column tracks the type: at 45rem it stays the same number of characters wide at
-     every scale, so raising the scale enlarges the text rather than reflowing the cards. The
-     advanced rows are laid out against this width (see .advrow). */
+  /* 45rem: the same character width at every scale, so scaling enlarges rather than reflows. */
   main{max-width:45rem;margin:0 auto;padding:18px 20px}
   .card{background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:14px;margin-bottom:14px}
   /* The one uppercase label style: card headings and the modal heading. */
@@ -114,8 +106,7 @@
   .pill.warn{background:rgba(var(--warn-rgb),.15);color:var(--warn)}
   .pill.err{background:rgba(var(--err-rgb),.18);color:var(--err)}
   .pill.info{background:rgba(139,145,153,.18);color:#c6cbd1}
-  /* Inline card messages. The log panel is collapsed by default, so anything the
-     operator must act on (cover position, incomplete run, GSDF domain) shows here too. */
+  /* Card messages: the log is collapsed, so anything to act on shows here. */
   .msg{margin:10px 0 0;padding:8px 11px;border-radius:6px;display:none}
   .msg.show{display:block}
   .msg.warn{background:rgba(var(--warn-rgb),.12);border:1px solid rgba(var(--warn-rgb),.35);color:#e8c477}
@@ -137,8 +128,7 @@
   /* Recessed inline chip. .kbd and .helpdoc code differ only in the details below. */
   code,.kbd{font-family:var(--mono);background:var(--field);padding:1px 5px;border-radius:4px;font-size:0.75rem}
   .modewrap{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
-  /* Inline field: label beside its control instead of above it (the label{} default).
-     Each user below adds only its own sizing; the shape lives here. */
+  /* Inline field: label beside its control; users add only their sizing. */
   .quantwrap,.lambwrap,.dispwrap,.unihopt{display:flex;align-items:center;gap:7px}
   .quantwrap label,.lambwrap label,.dispwrap label,.unihopt label{margin:0;white-space:nowrap}
   /* Meter quantity: wraps the label back above the select once the row runs out of room. */
@@ -159,16 +149,12 @@
     cursor:pointer;user-select:none;white-space:nowrap}
   .chk input{width:auto;margin:0}
   .advrow{gap:8px}                      /* tighter than .row so six fields clear the 45rem column */
-  /* .row>div carries a min-width, which beats max-width and forces a wrap at six
-     fields. Release it here so the per-field max-widths above actually apply. */
+  /* Release .row>div's min-width, which beats max-width and wraps at six fields. */
   .advrow>div{min-width:0}
   .advrow label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .advrow input,.advrow select{padding:8px 6px}
   .placeholder{color:var(--muted);padding:2px 0 4px}
-  /* ---- instructions modal ----
-     One authored block per mode, both sitting as static markup in the document so the prose
-     can be edited without touching JS and without an innerHTML path existing at all.
-     Hiding is by the [hidden] attribute; the global reset above makes it stick. */
+  /* ---- instructions modal ---- one static block per mode, shown with [hidden]. */
   .headright{grid-column:3;justify-self:end}
   .helpbtn{margin:0;padding:6px 14px;font-size:0.8125rem;font-weight:600}
   .modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;
@@ -189,17 +175,13 @@
   .helpdoc code{border:1px solid var(--edge)}
   .helpdoc .caution{border-left:2px solid var(--warn);padding:6px 0 6px 10px;color:#e8c477}
   .helpdoc .lead{color:var(--muted)}
-  /* Verbatim license text: pre-wrap keeps the original line breaks but still wraps, so the
-     modal never scrolls sideways. */
+  /* Verbatim license: keeps line breaks but wraps. */
   .gpl{font-family:var(--mono);font-size:0.6875rem;line-height:1.45;color:#9aa1a9;background:var(--field);
     border:1px solid var(--edge);border-radius:6px;padding:12px;margin:0;white-space:pre-wrap}
   .quote{border-left:2px solid var(--edge);padding:2px 0 2px 10px;margin:0 0 8px;color:#a8aeb6}
   /* footer */
-  /* Session settings dock. Fixed to the viewport corner rather than placed in a card: the
-     settings it carries belong to all three modes, so any card would be the wrong home and the
-     other two would be places an operator looks and does not find it.
-     z-index 9 puts it under the sticky header (10), the full-window stage (15) and the help
-     modal (20) - a run or a dialog should cover it, not compete with it. */
+  /* Settings dock, in the corner because it serves every mode. z-index 9: under the header (10),
+     stages (15) and help (20). */
   .cfgdock{position:fixed;right:14px;bottom:14px;z-index:9;display:flex;gap:6px;align-items:center;
     background:rgba(30,32,36,.94);border:1px solid var(--edge);border-radius:8px;padding:6px 8px}
   .cfgdock button{margin:0;padding:6px 10px;font-size:0.75rem}
@@ -208,9 +190,8 @@
   /* Reports a setting rather than asking for attention; warn only when nothing is declared. */
   .cfgdock #btnPitch{font-family:var(--mono);font-weight:400;color:var(--muted);white-space:nowrap}
   .cfgdock #btnPitch.unset{color:var(--warn)}
-  /* ---- tiles: the display calibration presets and the pattern list ----
-     auto-fit covers desktop to phone without a media query; the minmax floor is the width of the
-     button's second line, so a label never wraps mid-phrase. */
+  /* ---- tiles: display calibration presets and the pattern list ----
+     The minmax floor is the second line's width, so a label never wraps mid-phrase. */
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:8px}
   /* Overrides button{}: left-aligned two-line block, weight on the number. */
   .tile{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin:0;
@@ -226,8 +207,7 @@
   /* An out-of-range pitch leaves the last good scale in force, so it has to look rejected. */
   .pitchrow input.bad{border-color:var(--err);color:var(--err)}
   .pitchnow.bad{color:var(--err)}
-  /* The footer is the one thing the dock can cover, so it gets clearance at the narrow widths
-     where the two would otherwise overlap. */
+  /* Footer clearance from the dock at narrow widths. */
   @media (max-width:900px){ .cfgdock{right:8px;bottom:8px} .sitefoot{padding-bottom:64px} }
   .sitefoot{max-width:45rem;margin:0 auto;padding:0 20px 26px;color:var(--faint);font-size:0.71875rem;
     line-height:1.6;display:flex;flex-direction:column;gap:2px}
@@ -254,8 +234,7 @@
   .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:0.6875rem;color:var(--muted);margin:0 0 6px}
   .legend .lg{display:flex;align-items:center;gap:5px}
   .legend i{width:15px;height:2px;display:inline-block;border-radius:1px;flex:none}
-  /* Analysis toolbar. Sits directly under the card heading: the run's identity and what can
-     be done with it are settled before the numbers start. */
+  /* Analysis toolbar, under the card heading. */
   .anlbar{display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
   .dispwrap{flex-wrap:wrap}
   .dispwrap input{width:13.125rem}
@@ -266,18 +245,15 @@
   /* Holds the export group against the right edge, and keeps it there once the row wraps. */
   .expbtns.out{margin-left:auto}
   .patchwrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0}
-  /* --cm10, not 10cm - see the physical scale note at the top. max-width can still clamp it, which
-     is why the size that reaches a file is measured off the element (see stagePx). */
+  /* --cm10, not 10cm (see physical scale). max-width can clamp it, so stagePx measures the element. */
   #patch{width:var(--cm10);height:var(--cm10);max-width:100%;border:1px solid var(--edge);border-radius:6px;background:#000}
   .patchlabel,.unilabel{font-family:var(--mono);color:var(--muted)}
   .seqreadout{font-size:0.875rem;color:var(--text);font-family:var(--mono);text-align:center}
   .seqreadout .y{font-size:1.25rem;font-weight:700}
   .seqreadout .u{color:var(--muted);font-size:1.1875rem}
   .seqbtns{display:flex;gap:6px;flex-wrap:wrap}
-  /* External acquisitions: the local screen is not under test, so the patch is hidden outright rather
-     than repurposed - an illuminated square beside the display being measured is stray light in the
-     room and implies the wrong display is the subject. #extStage takes its place, sized so the
-     countdown is readable from arm's length at the meter. */
+  /* External runs hide the patch (stray light beside the display under test); #extStage replaces it,
+     readable from the meter. */
   #patchStage.ext #patch{display:none}
   #patchStage:not(.ext) .extstage{display:none}
   .extstage{display:flex;flex-direction:column;align-items:center;gap:6px;
@@ -290,61 +266,41 @@
   .extstage .prev{font-family:var(--mono);font-size:0.8125rem;color:var(--muted)}
   .extstage .prev.bad{color:var(--warn)}
   /* ---------- uniformity stage ----------
-     The 3x3 grid fills whatever box it is shown in, so one set of rules covers both
-     presentations: full window is a fixed overlay over the page, full screen is the same
-     box handed to the Fullscreen API. It is never shown in the card - see below. */
+     The grid fills its box: a fixed overlay for full window, the same box fullscreened for full screen. */
   .uniwrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0}
   #uniGrid{position:relative;width:var(--cm10);max-width:100%;aspect-ratio:1;
     display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
     gap:0;background:#000;border:1px solid var(--edge);border-radius:6px;overflow:hidden}
   .unicell{background:#000}
-  /* The grid is the run surface, not a card element: at 10cm it is too small to seat a probe
-     against, and its aspect ratio is only correct for the display the window was on at load.
-     Hidden until a run opens the stage, where the .fw / :fullscreen rules below give it the
-     real measurement area. */
+  /* Hidden until a run opens the stage (.fw / :fullscreen below). */
   #uniStage:not(.fw):not(:fullscreen) #uniGrid{display:none}
-  /* Target marker: an outline on the active cell plus a concentric ring the operator centers
-     the probe in. Outline only, never filled - the cell beneath is already black between
-     readings, and a filled patch on a lit full field would change the loading the marker is
-     supposed to leave alone. Its color is set from JS per field level (see markGray), one
-     property driving both shapes. */
+  /* Target marker: cell outline plus a ring to center the probe in. Never filled, so it does not
+     change display loading. Color from markGray. */
   .unimark{position:absolute;box-sizing:border-box;border:6px solid currentColor;color:#808080;
     display:flex;align-items:center;justify-content:center;pointer-events:none}
   .unimark::after{content:"";width:min(200px,55%);aspect-ratio:1;border-radius:50%;
     border:6px solid currentColor}
-  /* Header selects: the shared inline-field shape, sized to their option text
-     rather than to a number field. */
+  /* Header selects, sized to their options. */
   .unihopt select{width:auto;margin:0;padding:5px 6px;font-size:0.75rem}
-  /* ---------- open stages ----------
-     Both run stages in full screen, plus the uniformity full-window overlay. Full window sits
-     above the sticky header (z-index 10) and below the help modal (20), so an accidental Help
-     while armed still comes to the front rather than opening underneath. */
+  /* ---------- open stages ---------- above the header (10), below the help modal (20). */
   #patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw{background:#000;margin:0;gap:0;justify-content:center}
   #patchStage:fullscreen,#uniStage:fullscreen{width:100vw;height:100vh}
   #uniStage.fw{position:fixed;inset:0;z-index:15}
   #patchStage:fullscreen #patch,#uniStage:is(.fw,:fullscreen) #uniGrid{width:100%;height:100%;
     max-width:none;aspect-ratio:auto;border:0;border-radius:0}
   :is(#patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw) :is(.patchlabel,.unilabel,.seqreadout){display:none}
-  /* The patch is the only thing lit. Status sits at the very bottom edge, well away from the meter
-     aperture, so display loading still reflects the level under test. Its color is set from JS per
-     level (see fsInk); no opacity here, because a fixed opacity would undo that contrast. */
+  /* Status at the bottom edge, away from the probe; colored by fsInk, so no opacity. */
   :is(#patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw) .fsstatus{display:block;position:fixed;
     left:0;right:0;bottom:4px;text-align:center;font-family:var(--mono);letter-spacing:.02em}
-  /* Bottom row under measurement: the status bar would sit on the patch being read, so it moves
-     to the top edge, over the rest state rather than the lit cell - which is what setUniStatus
-     colors it against. */
+  /* Top edge while the bottom row is read. */
   .fsstatus.top{bottom:auto!important;top:4px}
-  /* Upper third rather than dead center: the operator seats the photometer over the middle of the
-     screen, which is exactly where a centered box would put the Go button. */
+  /* Upper third: the probe goes in the middle. */
   :is(#patchStage:fullscreen,#uniStage:fullscreen,#uniStage.fw) .goprompt.armed{display:flex;position:fixed;
     inset:0;z-index:5;align-items:flex-start;justify-content:center;padding-top:25vh}
   #uniStage.ext #uniGrid{display:none}
   #uniStage:not(.ext) #uniExtStage{display:none}
-  /* ---------- uniformity results ----------
-     One 3x3 matrix per gray level, in reading order. Right-aligned monospace so the columns
-     line up the way they do in a Luni file. */
-  /* Columns rather than one stack: an 18-level run is 18 matrices, and each is barely a third
-     of the card wide. auto-fill keeps it a single column on a narrow window. */
+  /* ---------- uniformity results ---------- matrices in reading order, aligned as in a Luni file. */
+  /* Columns: 18 narrow matrices; one column on a narrow window. */
   #uniMatHost{display:grid;grid-template-columns:repeat(auto-fill,minmax(13.25rem,1fr));gap:0 18px}
   .unimat{font-size:0.78125rem;border-collapse:collapse;margin:2px 0 12px}
   .unimat caption{caption-side:top;text-align:left;color:var(--muted);font-size:0.75rem;padding-bottom:3px}
@@ -362,17 +318,12 @@
   .conf-row{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #26292e;padding:3px 0}
   .conf-row .k{color:var(--muted)}.conf-row .v{font-family:var(--mono);text-align:right}
   .conf-row .v.bad{color:var(--warn)}   /* reserved: no acceptance limits are applied yet */
-  /* Subscripts on the gray-tracking keys. The browser default (vertical-align:sub) pushes the
-     line box down and would make those four rows taller than the GSDF rows above them, which
-     shows because the rows carry a border-bottom. Zero line-height plus a relative offset keeps
-     every row the same height. */
+  /* Subscripts that do not make their rows taller than the rest. */
   .conf-row .k sub{font-size:.75em;line-height:0;position:relative;bottom:-.25em;vertical-align:baseline}
   @media(max-width:560px){.conf-grid{grid-template-columns:1fr}}
   /* ---------- pattern stage ----------
-     One full-window overlay for every test pattern; see the Test patterns section of the script for
-     why the canvas is sized in device pixels. Same layer as the uniformity full window: over the
-     header, under the help modal. Chrome sizes are px on purpose - the interface scale is for the
-     page, and nothing on the stage should move when it changes. */
+     One full-window overlay for every pattern, at the uniformity window's layer. Chrome is in px, so
+     the interface scale does not reach it. */
   .patopt{margin-top:10px;width:fit-content}
   body:has(#patStage:not([hidden])){overflow:hidden}
   #patStage{position:fixed;inset:0;z-index:15;background:#000}
@@ -405,8 +356,7 @@
   <div class="headright"><button id="btnHelp" class="helpbtn">?</button></div>
 </header>
 
-<!-- ===== INSTRUCTIONS ===== Shows the block matching the current mode; setMode() keeps the blocks in step.
-     -->
+<!-- ===== INSTRUCTIONS ===== one block per mode, picked by setMode(). -->
 <div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
   <div class="modal-back" data-close></div>
   <div class="modal-box">
@@ -1366,9 +1316,8 @@ Public License instead of this License.</pre>
 </div>
 
 <main>
-  <!-- shared: display calibration. Never opens on its own; the dock readout offers it. Buttons
-       rather than a select because the pitch is hardest to set before it is declared, when the
-       interface renders small - no CSS unit fixes that. Percentages from labelPitchOptions. -->
+  <!-- shared: display calibration, opened from the dock. Large buttons: before a pitch is set the
+       interface may render small. Percentages from labelPitchOptions. -->
   <section class="card" id="pitchCard" hidden>
     <h2>Display calibration</h2>
     <p class="placeholder">Pixel pitch of the display. Sets the interface size and the
@@ -1385,8 +1334,7 @@ Public License instead of this License.</pre>
       <button class="tile" data-pitch="0.103"><b>0.103 mm</b><i>32 MP 33"</i></button>
       <button class="tile" data-pitch=""><b>Not set</b><i>96 dpi CSS reference</i></button>
     </div>
-    <!-- An edit buffer: nothing applies until Set or Enter, so 0.1 on the way to 0.165 does not
-         resize the interface mid-entry. -->
+    <!-- Edit buffer: applies on Set or Enter only. -->
     <div class="pitchrow">
       <label for="uiPitchMm">Or enter pitch</label>
       <input type="number" id="uiPitchMm" min="0.05" max="1" step="0.001" placeholder="0.000">
@@ -1510,13 +1458,10 @@ Public License instead of this License.</pre>
 
     <div class="msg" id="seqMsg"></div>
 
-    <!-- patchStage is the fullscreen target: the patch fills the screen and everything
-         else is suppressed, so display loading reflects the gray level under test. -->
+    <!-- patchStage is the fullscreen target. -->
     <div class="patchwrap" id="patchStage">
       <div id="patch"></div>
-      <!-- External acquisitions only (see #patchStage.ext): tells the operator which patch is next and
-           how long they have to get there. Replaces the gray patch, which has no meaning when
-           the display under test is driven by another machine. -->
+      <!-- External runs only (#patchStage.ext): next patch and countdown. -->
       <div class="extstage" id="extStage">
         <div class="next" id="extNext">-</div>
         <div class="count" id="extCount">-</div>
@@ -1542,9 +1487,7 @@ Public License instead of this License.</pre>
 
   </div>
 
-  <!-- ===== ANALYSIS (lumResponse results) =====
-       Separate card so capture and results stay distinct, and so charts have somewhere
-       to live. Shown with the sequence view; contents stay empty until a run completes. -->
+  <!-- ===== ANALYSIS (lumResponse results) ===== shown with the sequence view. -->
   <div class="card" id="view-analysis" hidden>
     <h2>Analysis</h2>
 
@@ -1631,9 +1574,7 @@ Public License instead of this License.</pre>
         <div style="max-width:104px"><label>Color floor (cd/m²)</label><input id="uniFloor" value="5"></div>
         <div style="max-width:92px"><label title="Gray level the 1 level mode measures. Defaults to DDL 210, about the 80% level.">1 level DDL</label><input id="uniOneGl"></div>
       </div>
-      <!-- Second row, mirroring the luminance card. The target is a separate question from
-           uniformity: Max Δu'v' above measures spread across the display and needs no reference,
-           this one measures how far the display sits from an intended white point. -->
+      <!-- Reference white: offset from a target, separate from the spread above. -->
       <div class="row advrow">
         <div style="max-width:132px"><label title="White point the display is compared against. Independent of the spread metric above, which is measured about the display's own mean.">Chromaticity ref</label>
           <select id="uniRef">
@@ -1649,17 +1590,13 @@ Public License instead of this License.</pre>
 
     <div class="msg" id="uniMsg"></div>
 
-    <!-- uniStage is the full screen target and the full window overlay: the grid fills it and
-         everything else is suppressed, so the nine cells are exact thirds of whatever the
-         measurement area is. -->
+    <!-- uniStage: full screen target and full window overlay; the cells are thirds of it. -->
     <div class="uniwrap" id="uniStage">
       <div id="uniGrid">
         <!-- nine .unicell children plus the target marker are built in JS -->
         <div class="unimark" id="uniMark" hidden></div>
       </div>
-      <!-- External acquisitions only (see #uniStage.ext): tells the operator which position is next and
-           how long they have to get there. Replaces the grid, which has no meaning when the
-           display under test is driven by another machine. -->
+      <!-- External runs only (#uniStage.ext): next position and countdown. -->
       <div class="extstage" id="uniExtStage">
         <div class="next" id="uniExtNext">-</div>
         <div class="count" id="uniExtCount">-</div>
@@ -1685,9 +1622,7 @@ Public License instead of this License.</pre>
 
   </div>
 
-  <!-- ===== UNIFORMITY ANALYSIS =====
-       Separate card so capture and results stay distinct, mirroring lumResponse. Shown with
-       the uniformity view; contents stay empty until a run completes. -->
+  <!-- ===== UNIFORMITY ANALYSIS ===== shown with the uniformity view. -->
   <div class="card" id="view-uniAnalysis" hidden>
     <h2>Analysis</h2>
 
@@ -1774,22 +1709,17 @@ Public License instead of this License.</pre>
   specifications.</div>
 </footer>
 
-<!-- Settings for every mode, saved and reloaded as one file. Deliberately not a run export: it
-     carries no readings, no display identity and no timestamps of measurement - only the boxes
-     an operator sets before measuring. -->
+<!-- Settings for every mode, as one file: no readings or display identity. -->
 <div class="cfgdock">
   <span class="lbl">Settings</span>
-  <!-- The pitch in force, and the way back to the card that sets it. A readout rather than a
-       second picker: two controls for one setting is how the box and the selector end up
-       disagreeing, and the card is the picker. -->
+  <!-- The pitch in force; opens the card that sets it (one control per setting). -->
   <button id="btnPitch" title="Pixel pitch of the display under test - click to change"></button>
   <button id="btnCfgExport" title="Save the settings of every mode to a JSON file">Export</button>
   <button id="btnCfgImport" title="Load settings saved from a previous session">Import</button>
   <input type="file" id="cfgFileImport" accept=".json,application/json" hidden>
 </div>
 
-<!-- Pattern stage. The canvas is drawn in device pixels; the controls in .patctl belong to whichever
-     pattern is open and are rebuilt on every open. -->
+<!-- Pattern stage: device-pixel canvas; .patctl is rebuilt per pattern. -->
 <div id="patStage" hidden>
   <canvas id="patCanvas" tabindex="-1"></canvas>
   <div class="patbar">
@@ -1808,22 +1738,19 @@ Public License instead of this License.</pre>
 <script>
 "use strict";
 /* ==========================================================================
-   pdweb. Copyright and license notices: see the comment at the top of this file.
+   pdweb. Copyright and license: see the top of this file.
 
-   Porting rule: where this file looks wrong but matches ArgyllCMS, the Argyll line number is cited inline.
-   Those sites are deliberate - every existing calibration was validated against that behavior. Verify against
-   spotread before changing one. Known cited sites: black[0] in decodeInternal, the doubled rmeas threshold
-   and the unguarded rgb2 update in takeEmisMeasurement.
+   Porting rule: where this file looks wrong but matches ArgyllCMS, the Argyll line is cited inline. Existing
+   calibrations were validated against that behavior, so verify against spotread before changing one
+   (black[0] in decodeInternal; the doubled rmeas threshold and unguarded rgb2 update in takeEmisMeasurement).
 
-   Caveat no code here can detect: patches are painted with CSS rgb(), so the browser and OS color-manage
-   them to the installed display profile. If the clinical viewer under test renders through a different path,
-   the DDLs measured here are not the ones that viewer emits. Stated for the operator in the help modal.
+   Patches are CSS rgb(), so browser and OS color management apply; a viewer that renders another way may
+   emit different DDLs. The help says so.
    ========================================================================== */
 
 const $=id=>document.getElementById(id);
 
-/* Log lines are assembled with textContent, never innerHTML: device-supplied strings
-   (getinfo, productName) pass through a printable-ASCII filter that leaves < > & intact. */
+/* textContent only: device strings (getinfo, productName) can carry < > &. */
 function log(m,c){
   const line=document.createElement("div");
   const ts=document.createElement("span"); ts.className="t";
@@ -1835,10 +1762,8 @@ function log(m,c){
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
-/* Cancelable delay: polls `alive` so Stop is honored mid-wait rather than only at the top of the
-   next step, with an optional per-step callback carrying the milliseconds remaining (the countdown
-   an operator moves against). The wait is measured from the moment it starts - which is when the
-   previous measurement finished - so the operator always gets the whole interval. */
+/* Cancelable delay: polls alive() so Stop lands mid-wait; onTick gets the ms left for a countdown.
+   Timed from when the previous measurement finished, so the operator gets the whole interval. */
 async function sleepTicking(ms,alive,onTick,step=50){
   const end=performance.now()+ms;
   for(;;){
@@ -1852,17 +1777,14 @@ async function sleepTicking(ms,alive,onTick,step=50){
 }
 const sleepWhile=(ms,alive)=>sleepTicking(ms,alive);
 
-/* Numeric field reader. parseFloat(x)||dflt silently swallows a deliberate 0
-   (JS treats it as falsy), which matters for the color floor where 0 means
-   "use every point". Blank/garbage falls back; a real number is only clamped. */
+/* Not parseFloat(x)||dflt, which swallows a deliberate 0 (the color floor's "use every point"). */
 function numInput(id,dflt,{min=-Infinity,max=Infinity,int=false}={}){
   const raw=int?parseInt($(id).value,10):parseFloat($(id).value);
   if(!Number.isFinite(raw)) return dflt;
   return Math.min(max,Math.max(min,raw));
 }
 
-/* Card-level message banner. Accepts a string or a list; builds nodes with
-   textContent so error strings originating at the device stay inert. */
+/* Card message banner: a string or a list, built with textContent so device errors stay inert. */
 function showMsg(id,items,kind){
   const el=$(id), arr=Array.isArray(items)?items:[items];
   el.className=`msg show ${kind||"warn"}`; el.textContent="";
@@ -1876,9 +1798,8 @@ function clearMsg(id){ const el=$(id); el.className="msg"; el.textContent=""; }
 /* ---- small shared helpers ---- */
 const fmtL=Y=>Y.toFixed(Y<10?3:2);                // luminance readout precision
 const grayCss=g=>{ const v=Math.max(0,Math.min(255,Math.round(g))); return `rgb(${v},${v},${v})`; };
-/* Stage status text is drawn over the field, so any fixed color disappears somewhere on the ramp.
-   It holds FS_CONTRAST gray levels off the field instead - lighter over the dark half, darker from
-   mid-scale up - which keeps the separation without ever being the brightest thing on a dark screen. */
+/* Stage text over the field: FS_CONTRAST levels lighter below mid-scale, darker above, so it stays
+   visible at every level without being the brightest thing on a dark screen. */
 const FS_CONTRAST=60, FS_FLIP=128;
 const fsInk=g=>grayCss((g|0)<FS_FLIP ? (g|0)+FS_CONTRAST : (g|0)-FS_CONTRAST);
 /* Printable ASCII only, so device strings can never carry markup or control characters. */
@@ -1948,9 +1869,8 @@ const CIE5=[
 [0.005790,0.002091,0.000000],[0.004109,0.001484,0.000000],[0.002899,0.001047,0.000000],
 [0.002049,0.000740,0.000000],[0.001440,0.000520,0.000000]
 ];
-/* CIE5 is the CIE 1931 2° observer at 5 nm from 380 nm to 730 nm (71 rows). Linearly resampled to 1 nm below
-   to give 351 values, matching the 351-sample sensor spectra in the i1d3's external EEPROM. Alignment
-   verified: ȳ peaks at index 175 (=555 nm) and Σȳ = 106.850 against the exact 1 nm value of 106.857. */
+/* CIE 1931 2° observer, 380-730 nm at 5 nm, resampled linearly to the i1d3 EEPROM's 351 1-nm samples.
+   Checked: ȳ peaks at index 175 (555 nm); Σȳ = 106.850 against the exact 1 nm 106.857. */
 const CIE=(()=>{const out=[];for(let i=0;i<351;i++){const p=i/5,lo=Math.floor(p),f=p-lo;
   const a=CIE5[lo],b=CIE5[Math.min(lo+1,CIE5.length-1)];
   out.push([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f]);}return out;})();
@@ -1969,24 +1889,16 @@ const MTX={
 };
 
 /* ===== DICOM GSDF (PS3.14) =====
-   The Grayscale Standard Display Function comes from Barten's model of human contrast sensitivity; PS3.14
-   tabulates it as 1023 JND indices and gives this 8th-order polynomial in log10(L) as the analytic fit.
-
-   The standard defines the index j over [1, 1023], (i.e., L over [0.05, 4000] cd/m²).*/
+   PS3.14's 8th-order polynomial in log10(L) for JND index j over [1, 1023], i.e. L over [0.05, 4000] cd/m². */
 const GSDF_LMIN=0.05, GSDF_LMAX=4000;   // PS3.14 luminance domain, cd/m²
 
-/* Hard clamp applied to a measured luminance before it reaches log10(). A true-black OLED reading of 0 would
-   otherwise corrupt the analysis with NaN. Deliberately set well below GSDF_LMIN so any point that hits it
-   also trips the domain warning rather than being quietly absorbed. */
+/* Clamp before log10(), so a true-black OLED reading of 0 cannot make NaN. Well below GSDF_LMIN, so a
+   clamped point also trips the domain warning. */
 const Y_FLOOR=0.01;
 
-/* Shared so the live capture path and Re-analyze on an imported run word this identically. meta.clamped and
-   meta.clampedAt survive import, so the warning they explain has to survive too. Accepts either the DDL list
-   or a bare count, because data acquisitions exported before clampedAt existed carry only the count.
-
-   Naming the levels matters: a clamp at DDL 0 is a display black-level property, but a clamp part-way up the
-   ramp is not - on an external run it almost always means the probe was off the display or still moving, and
-   telling that operator to raise their black level sends them the wrong way entirely. */
+/* Shared by live capture and Re-analyze. Takes the DDL list or a bare count (older exports lack
+   clampedAt). A clamp above DDL 0 on an external run means the probe was off the patch, not a black-level
+   problem, so the advice differs. */
 const clampWarning=(at,external)=>{
   const list=Array.isArray(at)?at:null, n=list?list.length:at;
   const where=list?` at DDL ${list.slice(0,12).join(", ")}${list.length>12?` ... (+${list.length-12} more)`:""}`:"";
@@ -2013,9 +1925,8 @@ function jFromL(L){
         F=-1.1878455,G=-0.18014349,H=0.14710899,I=-0.017046845;
   return A+B*x+C*x**2+D*x**3+E*x**4+F*x**5+G*x**6+H*x**7+I*x**8; }
 
-/* Geometric bisection of j(L). The bracket is the PS3.14 domain, so an out-of-range j returns an endpoint
-   instead of diverging - intentional, since the target curve is only meaningful inside the domain and
-   gsdfAnalyze warns about that separately. */
+/* Geometric bisection of j(L) over the PS3.14 domain; an out-of-range j returns an endpoint, and
+   gsdfAnalyze warns about the domain separately. */
 function lFromJ(j){ let lo=GSDF_LMIN,hi=GSDF_LMAX;
   for(let k=0;k<60;k++){ const mid=Math.sqrt(lo*hi); (jFromL(mid)<j)?lo=mid:hi=mid; }
   return Math.sqrt(lo*hi); }
@@ -2038,46 +1949,25 @@ function lFromJ(j){ let lo=GSDF_LMIN,hi=GSDF_LMAX;
      Max ref Δu'v'   = max |(u',v') − ref| over points with Y ≥ color floor
                        (raw measured luminance, as in TG196 - see below)
 */
-/* ---- AAPM Report No. 196 gray tracking metrics ---- Badano et al., "Technical Note: Gray tracking in
-   medical color displays - A report of Task Group 196", Med Phys 43(7):4017-4022 (2016). "TG196" below is
-   shorthand for the same report; the full name is what the user-facing text uses.
-
-     T1     mean Δu'v' from each retained level to the display's own full white   (Eq 1, 2) T2     mean Δu'v'
-     between consecutive retained levels                        (Eq 3, 4) T1max  the largest of those
-     white-referenced distances                       (Eq 5) T2max  the largest of those consecutive-step
-     distances                       (Eq 5)
-
-   The reference is the display's own full white, NOT the D65/D50/custom selector that maxDuv uses. TG196
-   measures whether the ramp holds one consistent color; a display can track gray perfectly while sitting well
-   off D65, and these metrics are deliberately blind to that.
-
-   Discard rule (Sec. 4): keep only levels whose luminance exceeds max(5 cd/m², 1% of full-white luminance).
-   Colorimeter chromaticity near black is mostly noise, and the report excludes it rather than letting it
-   swamp the averages. Raw measured luminance L is used, not L'.
-
-   Both means divide by N-1, N being the retained count: T1 has one fewer term because full white is not
-   compared against itself, T2 because N levels form N-1 consecutive pairs.
-
-   "Consecutive" means adjacent in the retained set ordered by DDL. For the monotonic ramp the report assumes,
-   that is exactly its definition; it also stays well defined if a non-monotonic display leaves a gap in the
-   middle of the retained set.
-
-   Verified against Table I of the paper: T1 0.0023 and T2 0.0005 reproduce exactly. T1max and T2max land one
-   digit in the last place from the printed 0.0035 / 0.0013 because the table's u'v' columns are rounded to
-   four places while its Δ columns are not - the table's own LN10 row disagrees with itself the same way. */
+/* ---- AAPM Report No. 196 gray tracking ---- Badano et al., Med Phys 43(7):4017-4022 (2016).
+     T1            mean Δu'v' from each retained level to the display's own full white   (Eq 1, 2)
+     T2            mean Δu'v' between consecutive retained levels                        (Eq 3, 4)
+     T1max, T2max  the largest of each                                                   (Eq 5)
+   The reference is the display's own white, not maxDuv's D65/D50/custom: TG196 asks whether the ramp holds
+   one color, not which one.
+   Discard rule (Sec. 4): keep levels above max(5 cd/m², 1% of white), on raw L rather than L' - chromaticity
+   near black is noise. Both means divide by N-1; "consecutive" is adjacent in the retained set by DDL.
+   Checked against Table I: T1 0.0023 and T2 0.0005 exact; T1max/T2max are one off in the last digit from the
+   printed 0.0035/0.0013 because the table's u'v' columns are rounded (its LN10 row disagrees the same way). */
 const TG196_LFLOOR=5, TG196_LFRAC=0.01;
-/* The report writes these metrics with a script T. U+1D4AF (MATHEMATICAL SCRIPT CAPITAL T) is the character
-   the AAPM Report No. 196 uses, so the grid matches it rather than keeping a second spelling. HTML-only: the
-   clipboard and JSON stay on plain "T1"/"T2" - useful to paste into a spreadsheet and a font without the
-   math-alphanumeric block. */
+/* The report's script T (U+1D4AF), in HTML only; clipboard and JSON keep plain "T1"/"T2". */
 const TG_T="\u{1D4AF}";
 function tg196(P){
   if(!P || P.length<2) return null;
   const white=P[P.length-1];                       // brightest measured level = full white
   const thr=Math.max(TG196_LFLOOR, TG196_LFRAC*white.L);
   const keep=P.filter(p=>p.L>thr);
-  /* Needs full white itself plus at least one other level. A display whose white is under
-     5 cd/m² discards everything, including its own reference. */
+  /* Needs white plus one other level; a white under 5 cd/m² discards even itself. */
   if(keep.length<2 || keep[keep.length-1]!==white) return {n:keep.length, nTotal:P.length,
     threshold:thr, insufficient:true};
 
@@ -2100,9 +1990,7 @@ function tg196(P){
 
 function gsdfAnalyze(pts, Lamb, refUV, floor, background){
   if(!pts || pts.length<2) return null;
-  /* Sort by DDL rather than trusting capture order. Everything below assumes P[0] is the
-     darkest step and P[N-1] the brightest; sorting here makes that true even if levels are
-     ever measured out of order (randomised sweeps), at no cost for the normal ascending run. */
+  /* Sorted by DDL, not capture order: below, P[0] is the darkest step and P[N-1] the brightest. */
   const P=pts.map(p=>({ddl:p.ddl, L:p.Y, Lp:p.Y+Lamb, up:p.up, vp:p.vp}))
              .sort((a,b)=>a.ddl-b.ddl);
   const N=P.length;
@@ -2111,14 +1999,9 @@ function gsdfAnalyze(pts, Lamb, refUV, floor, background){
 
   const warnings=[];
 
-  /* L'min follows evalQClr: the darkest step is averaged together with the stabilization
-     reads taken at the same DDL before the ramp, then L_amb is added. The original tcl divides by a
-     hardcoded 4 (three stabilization reads plus the first data point); dividing by the count
-     actually present keeps a run with a short or missing background block on the same
-     definition instead of scaling the mean by a phantom read.
-     Only Lp is averaged. P[0].L stays the single raw measurement, because it feeds the color
-     floor and the TG196 discard rule - both of which ask what the meter resolved off the
-     display at that level, not what the black point averages to. */
+  /* L'min as evalQClr: the darkest step averaged with the stabilization reads, plus L_amb. The Tcl divides
+     by a fixed 4; dividing by the count present keeps a short background block on the same definition.
+     Only Lp is averaged - P[0].L stays the raw reading for the color floor and the TG196 discard rule. */
   const bgReads=(background||[]).filter(b=>Number.isFinite(b?.Y));
   P[0].Lp=bgReads.reduce((s,b)=>s+b.Y, P[0].L)/(bgReads.length+1)+Lamb;
 
@@ -2143,9 +2026,7 @@ function gsdfAnalyze(pts, Lamb, refUV, floor, background){
      measured endpoints; Lt is its GSDF inverse. jm is the measured point's own JND index. */
   P.forEach(p=>{ p.jt=jmin+(p.ddl-P[0].ddl)/glSpan*totalJND; p.Lt=lFromJ(p.jt); p.jm=jFromL(p.Lp); });
 
-  /* Per-interval series. Each entry describes the step from the previous measured level to this one, which is
-     exactly what the charts plot: the value at DDL b is the mean over the interval that ends there, so the
-     first measured level has no entry. */
+  /* One entry per step from the previous level, plotted at the DDL where it ends (so none for the first). */
   const intervals=[];
   let maxJNDGLerr=0, jndAt="";
   let maxDLLerr=0,  dllAt="";
@@ -2162,11 +2043,8 @@ function gsdfAnalyze(pts, Lamb, refUV, floor, background){
     intervals.push({from:a.ddl, ddl:b.ddl, dgl, jndgl, dllMeas, dllTgt, eJ, eD});
   }
 
-  /* Chromaticity deviation, restricted to points at or above the color floor: meter chromaticity is dominated
-     by noise near black, so dark steps would produce a large but meaningless Δu'v'. nUsed is reported so the
-     exclusion is visible. Screened on raw measured luminance, not L', to match the TG196 discard rule (see
-     tg196()): the exclusion is about what the colorimeter can resolve off the display, and L_amb is a property
-     of the room. The two floors therefore mean the same quantity. */
+  /* Δu'v' only at or above the color floor - chromaticity near black is noise - screened on raw L like the
+     TG196 discard rule, since it is about what the meter resolves, not the room. nUsed shows the exclusion. */
   let maxDuv=0, duvAt="", nUsed=0;
   for(const p of P){ if(p.L<floor) continue; nUsed++;
     const d=Math.hypot(p.up-refUV[0], p.vp-refUV[1]);
@@ -2196,24 +2074,21 @@ class I1D3{
     this._wait=[];this._inbox=[];this._chain=Promise.resolve();this._onInput=null;}
 
   async connect(){
-    /* Pick first, tear down after. Closing the current device before the picker resolves
-       would leave a working session dead if the operator cancels the dialog. */
+    /* Pick first, tear down after, so canceling the picker keeps a working session. */
     const [d]=await navigator.hid.requestDevice({filters:[{vendorId:0x0765}]});
     if(!d) throw new Error("no device selected");
     if(this.dev && this.dev!==d){ try{ await this.close(); }catch(e){ /* stale handle */ } }
     else this.forget();                       // same device re-picked: just drop the old listener
     this.dev=d; if(!d.opened) await d.open();
     this._wait=[]; this._inbox=[]; this._chain=Promise.resolve();
-    /* Honor byteOffset/byteLength: e.data is a DataView and nothing in the WebHID spec
-       promises it starts at offset 0 of its backing buffer. */
+    /* e.data is a DataView; WebHID does not promise it starts at offset 0 of its buffer. */
     this._onInput=e=>{const b=new Uint8Array(e.data.buffer,e.data.byteOffset,e.data.byteLength);
       if(this._wait.length) this._wait.shift()(b); else this._inbox.push(b);};
     d.addEventListener("inputreport",this._onInput);
     await this.drainStale("open");
     log(`opened ${d.productName}`,"ok");
   }
-  /* Drop local state without touching the handle. Used when the OS has already taken the
-     device away (unplug), where calling close() would just throw. */
+  /* Drop local state without touching the handle - after an unplug, close() would throw. */
   forget(){
     if(this.dev && this._onInput) try{ this.dev.removeEventListener("inputreport",this._onInput); }catch(e){}
     this.dev=null;this._wait=[];this._inbox=[];this._onInput=null;
@@ -2238,10 +2113,8 @@ class I1D3{
   }
   cmd(cc,payload,toMs=2000){const run=()=>this._cmdRaw(cc,payload,toMs);
     const p=this._chain.then(run,run);this._chain=p.then(()=>{},()=>{});return p;}
-  /* Commands are echo-validated: the device repeats the major opcode in byte 1, so a reply that doesn't match
-     belongs to an earlier timed-out command and is skipped (up to 8) rather than mistaken for this one's
-     result. getdiff is exempt - it returns the diffuser position in that byte. Byte 0 carries the status
-     code. */
+  /* Byte 1 echoes the major opcode; a mismatched reply belongs to an earlier timed-out command and is
+     skipped (up to 8). getdiff is exempt - that byte is the diffuser position. Byte 0 is status. */
   async _cmdRaw(cc,payload,toMs){
     const out=new Uint8Array(64); if(payload) out.set(payload.subarray(0,64));
     const major=(cc>>>8)&0xff; out[0]=major; if(major===0x00) out[1]=cc&0xff;
@@ -2328,12 +2201,10 @@ class I1D3{
     this.serial=asciiOf(buf.subarray(0x10,0x10+20));
     this.vers=asciiOf(buf.subarray(0x2C,0x2C+10));
     this.black=[0,0,0];
-    /* NOTE: black[0] inside the loop is deliberate - it mirrors Argyll i1d3.c:2389-2396 verbatim, which
-       writes p->black[0] on every iteration so only the last (blue) offset survives and black[1]/black[2]
-       stay 0. The struct is double black[3] and it is consumed per channel (i1d3.c:2149), so upstream clearly
-       intended black[i]; but this is the behavior every existing calibration was validated against. Do not
-       "fix" without re-validating against spotread. Offsets are val/6e6 Hz, so the effect is small.
-       getUint32(..., true) matches Argyll's little-endian buf2uint (i1d3.c:391). */
+    /* NOTE: black[0] in the loop is deliberate, as Argyll i1d3.c:2389-2396: only the last (blue) offset
+       survives and black[1]/black[2] stay 0. Upstream meant black[i] (consumed per channel, i1d3.c:2149),
+       but existing calibrations were validated against this; re-validate against spotread before "fixing".
+       Offsets are val/6e6 Hz, so the effect is small. Little-endian as Argyll's buf2uint (i1d3.c:391). */
     for(let i=0;i<3;i++){const t1=dv.getUint32(0x0004+4*i,true);this.black[0]=(t1===0xffffffff)?0.0:t1/6e6;}}
 
   decodeSensors(buf){
@@ -2350,10 +2221,8 @@ class I1D3{
     return sens;
   }
 
-  /* Least-squares fit of the three sensor channels to XYZ, using the sensor curves
-     themselves as the sample spectra (Argyll's approach in i1d3_comp_calmat). Returns the
-     3x3 that converts raw channel frequencies to XYZ. The KM/0.683002 pair is a 1e6 scale
-     that cancels against the /1000 applied to the curves in decodeSensors. */
+  /* 3x3 from channel frequencies to XYZ, fitted with the sensor curves as sample spectra (Argyll's
+     i1d3_comp_calmat). KM/0.683002 is a 1e6 scale cancelling decodeSensors' /1000. */
   _calmatFrom(curves){
     const dot=(a,b)=>{let t=0;for(let i=0;i<351;i++)t+=a[i]*b[i];return t;};
     const sampXYZ=[[0,0,0],[0,0,0],[0,0,0]], sampRGB=[[0,0,0],[0,0,0],[0,0,0]];
@@ -2421,12 +2290,9 @@ class I1D3{
       if(mask!==0){
         let mask2=mask;
         for(let i=0;i<3;i++){ if(!(mask&(1<<i))) continue;
-          /* NOTE: the doubled test is not redundant upstream - Argyll i1d3.c:1804 reads
-             `rmeas[i] < 10.0 || (p->btype != i1d3_munkdisp && rmeas[i] < 20.0)`. We only
-             support the i1d3 family, so the btype arm is always true and this reduces to
-             < 20.0. Kept in this shape to stay diff-able against i1d3.c. A ColorMunki
-             Display shares VID 0x0765 and would want the < 10.0 branch plus no 2nd
-             pre-measurement - narrow the device filter rather than branching here. */
+          /* NOTE: Argyll i1d3.c:1804 reads `rmeas[i] < 10.0 || (p->btype != i1d3_munkdisp && rmeas[i] < 20.0)`;
+             for the i1d3 family that is < 20.0, kept in this shape to diff against i1d3.c. A ColorMunki
+             Display (same VID) would need the < 10.0 branch - narrow the device filter instead. */
           if(rmeas[i]<10.0 || rmeas[i]<20.0){ mask2|=1<<i; }
           else{ mask2&=~(1<<i);const freq=(rmeas[i]*0.5)/inttime;rmeas[i]=(0.5*edgec[i]*CLK)/freq; } }
         if(mask2!==0){
@@ -2440,11 +2306,9 @@ class I1D3{
               const inedgec=2*Math.floor(nedgec/2); if(inedgec>edgec[i]){ mask3|=1<<i; edgec[i]=inedgec; } } }
           if(mask3!==0){ let pm2=await this.periodMeasure(edgec,mask3);
             if(pm2.fail){ return await this._permeasfail(); }
-            /* NOTE: the rgb2 update is intentionally outside the mask3 test, matching
-               Argyll i1d3.c:1917-1924. Channels not in mask3 keep edgec[i]==2 and their
-               freq-derived rmeas, so the expression recovers their frequency correctly.
-               The preceding mask2 block guards both lines (i1d3.c:1839-1846) - the
-               asymmetry is upstream's, not a transcription slip. */
+            /* NOTE: rgb2 updates outside the mask3 test, as Argyll i1d3.c:1917-1924 (unlike the mask2
+               block, i1d3.c:1839-1846). Channels not in mask3 keep edgec 2 and their freq-derived rmeas,
+               so it still recovers their frequency. */
             for(let i=0;i<3;i++){ if(mask3&(1<<i)) rmeas[i]=pm2.counts[i];
               if(rmeas[i]>=0.5) rgb2[i]=(CLK*0.5*edgec[i])/rmeas[i]; } }
           detail.push("period pre");
@@ -2482,10 +2346,8 @@ class I1D3{
     for(let i=0;i<3;i++){ rgb[i]-=this.black[i]; if(rgb[i]<0) rgb[i]=0; }
     this.lastDetail="permeasfail 10s freq"; return rgb; }
 
-  /* `alive` is an optional abort predicate checked between averaging passes. A single
-     device transaction cannot be interrupted safely, so worst-case stop latency is one
-     sub-measurement - up to the 10 s frequency fallback at the dark end. Returns null
-     when aborted so callers can distinguish that from a failed read. */
+  /* alive() is checked between averaging passes - a device transaction cannot be interrupted, so Stop
+     can wait one sub-measurement (up to the 10 s fallback). Returns null when aborted. */
   async measure(mode,navg,quantity,alive){
     const calM = quantity==="ill" ? this.ambiCal : this.emisCal;
     let acc=[0,0,0], hzAcc=[0,0,0];
@@ -2508,8 +2370,7 @@ const dev=new I1D3();
 const HAS_HID=("hid" in navigator);
 $("envPill").innerHTML=HAS_HID?`<span class="pill ok">WebHID available</span>`:`<span class="pill err">WebHID unavailable</span>`;
 
-/* Single source of truth for UI state. `ready` is set only after a successful bringUp,
-   so it means "calibrated and usable", not merely "a handle is open". */
+/* ready: bringUp succeeded (calibrated and usable), not merely a handle open. */
 const app={ready:false};
 const cont={on:false};
 let lastReading=null;
@@ -2518,8 +2379,7 @@ let reading=false;
 /* Every button's enabled state derives from here, never from another button's state. */
 const dis=(ids,v)=>{ for(const id of ids) $(id).disabled=v; };
 function updateButtons(){
-  /* `busy` covers both kinds of run: they share one instrument, so each locks out the other
-     and the meter. */
+  /* Either run locks out the other and the meter: one instrument. */
   const on=app.ready, busy=seq.on||uni.on;
   $("btnConnect").disabled=!HAS_HID;
   $("btnClose").disabled=!on;
@@ -2528,10 +2388,8 @@ function updateButtons(){
   $("btnSeqStop").disabled=!seq.on;
   $("btnUniStop").disabled=!uni.on;
   $("btnCopyVal").disabled=!lastReading;
-  /* Import is locked out mid-run - settings included, because the run read its settings once at
-     the start and changing a box now would describe the acquisition wrongly. Exports survive
-     disconnect: captured points stay valid whether or not the meter is still attached. cLR and
-     Luni additionally need a complete run; Copy analysis needs an analysis, not just points. */
+  /* No imports mid-run (settings included: the run read them at its start). Exports survive disconnect;
+     cLR and Luni need a complete run, Copy analysis an analysis. */
   dis(["btnImport","btnUniImport","btnCfgImport"],busy);
   const run=seq.lastRun, havePts=!!(run && run.points.length);
   dis(["btnReanalyze","btnCopyData","btnExpJson"],!havePts||busy);
@@ -2547,8 +2405,7 @@ function updateButtons(){
 
 function stopCont(){ if(cont.on){ cont.on=false; $("btnCont").textContent="Continuous"; } }
 
-/* Cards shown per mode. Each analysis card belongs to its capture card; the instrument card to
-   every mode that measures. */
+/* Cards per mode; the instrument card shows in every mode that measures. */
 const VIEWS={meter:["view-meter"], sequence:["view-sequence","view-analysis"],
              uniformity:["view-uniformity","view-uniAnalysis"], patterns:["view-patterns"]};
 let helpMode="meter";                 // which instruction block the modal will show
@@ -2567,11 +2424,8 @@ function setMode(mode){
 document.querySelectorAll(".modebtn").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 
 /* ---- patch centering ----
-   A windowed lumResponse run puts the probe on #patch where it lands, but it belongs at the center
-   of the display, and scroll cannot get it there - nothing exists above the document origin. Top
-   padding on <main> creates the room, sized to center the patch at scroll 0; the scroll floor then
-   stops it going lower. Only ever adds above the stylesheet's own padding, so an already-centered
-   patch clears the inline style and nothing changes. */
+   The windowed patch belongs at the display center, and scrolling cannot raise it above the document
+   origin, so <main> gets extra top padding to center it at scroll 0. Only ever adds to the stylesheet's. */
 const MAIN=document.querySelector("main");
 const MAIN_PAD_TOP=parseFloat(getComputedStyle(MAIN).paddingTop)||0;
 function centerPatchRoom(){
@@ -2596,9 +2450,7 @@ function queueCenterPatchRoom(){
 window.addEventListener("resize",queueCenterPatchRoom);
 document.addEventListener("fullscreenchange",queueCenterPatchRoom);
 
-/* ---- instructions modal ----
-   Every block is already in the document as static markup; this only chooses which is visible and
-   manages focus. Nothing writes into them, so there is no path from data to markup here. */
+/* ---- instructions modal ---- static markup; this only picks the visible block and manages focus. */
 const HELP_TITLE={meter:"Instructions - meter", sequence:"Instructions - lumResponse",
                   uniformity:"Instructions - uniformity", patterns:"Instructions - patterns",
                   license:"License"};
@@ -2606,9 +2458,7 @@ function showHelpDoc(doc){
   for(const d of $("helpModal").querySelectorAll(".helpdoc")) d.hidden=d.id!==`help-${doc}`;
   $("helpTitle").textContent=HELP_TITLE[doc]||PAT[doc]?.title||"Instructions";
 }
-/* `doc` overrides the current mode - the footer link opens the license from any mode.
-   Callers must not be wired as onclick=openHelp: the event object would arrive as `doc`
-   and match no document, hiding them all. */
+/* doc overrides the mode (the footer opens the license). Not onclick=openHelp: the event would arrive as doc. */
 let helpOpener=null;
 function openHelp(doc,opener){
   if($("helpModal").hidden===false) return;
@@ -2623,9 +2473,7 @@ function closeHelp(){
   if($("helpModal").hidden) return;
   $("helpModal").hidden=true;
   document.removeEventListener("keydown",onHelpKey,true);
-  /* Land on whichever control opened this, never back on whatever was focused before: that
-     could be a run control, and Space on a focused button re-fires it - the same trap the
-     fullscreen arm gate blurs away from. Also keeps focus off the now-hidden dialog. */
+  /* Back to the opener, not the previous focus: that could be a run control Space would re-fire. */
   (helpOpener||$("btnHelp")).focus();
   helpOpener=null;
 }
@@ -2636,8 +2484,7 @@ $("btnLicense").onclick=()=>openHelp("license",$("btnLicense"));
 $("btnHelpClose").onclick=closeHelp;
 $("helpModal").addEventListener("click",e=>{ if(e.target.hasAttribute("data-close")) closeHelp(); });
 
-/* Shared teardown for both the Disconnect button and an unplug event, so the two paths
-   can't drift. `note` is app-authored text only. */
+/* Shared by Disconnect and unplug. note is app-authored text only. */
 function setDisconnectedUI(note){
   app.ready=false;
   stopCont();
@@ -2650,12 +2497,8 @@ function setDisconnectedUI(note){
   updateButtons();
 }
 
-/* ---- diffuser cover tracking ----
-   Argyll uses a background thread polling get_diffpos and raises an event on change
-   (i1d3.c:2896-2917). Same idea on a timer, so the pill is already correct before the
-   operator presses Read rather than only reporting a mismatch after a failed attempt.
-   Skipped whenever a measurement is in flight - commands serialize, but there is no
-   reason to insert a round-trip into someone's integration time. */
+/* ---- diffuser cover tracking ---- polled like Argyll's get_diffpos thread (i1d3.c:2896-2917), so the
+   pill is right before Read. Skipped while measuring, to keep round-trips out of integration time. */
 let coverTimer=null;
 function updateCoverPill(pos){
   $("coverPill").innerHTML = pos===1
@@ -2671,8 +2514,7 @@ function startCoverPoll(){
 }
 function stopCoverPoll(){ if(coverTimer){ clearInterval(coverTimer); coverTimer=null; } }
 
-/* Unplug detection. Without this the UI keeps claiming "ready" and the next command
-   sits until its 40 s timeout. */
+/* Unplug: otherwise the UI stays "ready" and the next command waits out its 40 s timeout. */
 if(HAS_HID){
   navigator.hid.addEventListener("disconnect",e=>{
     if(!dev.dev||e.device!==dev.dev) return;
@@ -2708,8 +2550,7 @@ $("btnConnect").onclick=async()=>{
   }
 };
 $("btnClose").onclick=async()=>{
-  /* Reset in finally: if close() throws (device already surrendered) the UI must not be
-     left claiming a live connection. */
+  /* finally: a throwing close() must not leave the UI claiming a connection. */
   try{ await dev.close(); log("disconnected (device released - other apps can now claim it)"); }
   catch(e){ log(`disconnect: ${e.message}`,"w"); }
   finally{ setDisconnectedUI(); clearMsg("meterMsg"); }
@@ -2721,9 +2562,8 @@ async function resolveQuantity(){
   const coverOn = pos===1;
   updateCoverPill(pos);
   if(sel==="auto") return { quantity: coverOn?"ill":"lum" };
-  /* Argyll aborts on a mode/position mismatch rather than correcting it
-     (i1d3.c:2325 ambient, i1d3.c:2345 emissive) - the calibration matrices differ, so a
-     reading taken through the wrong optical path is not recoverable in software. */
+  /* Mismatch aborts, as Argyll (i1d3.c:2325 ambient, 2345 emissive): the wrong optical path is not
+     recoverable in software. */
   if(sel==="lum" && coverOn)  throw new Error("Luminance selected but the diffuser cover is CLOSED. Open the cover, or switch Quantity to Auto.");
   if(sel==="ill" && !coverOn) throw new Error("Illuminance selected but the diffuser cover is OPEN. Close the cover, or switch Quantity to Auto.");
   return { quantity: sel };
@@ -2748,8 +2588,7 @@ async function doRead(){
   updateButtons();
 }
 
-/* Read failures surface in the card, not only the log - the log panel is collapsed by default,
-   so a cover-position refusal would otherwise be invisible: the readout simply wouldn't change. */
+/* Failures show in the card: the log is collapsed by default. */
 async function tryRead(){
   reading=true;
   try{ clearMsg("meterMsg"); await doRead(); }
@@ -2769,23 +2608,17 @@ $("btnCont").onclick=async e=>{
 $("btnCopyVal").onclick=()=>{ if(lastReading) copyText(lastReading,"measurement"); };
 
 /* ===== reference illuminant selector =====
-   CIE 1976 u'v' of the standard illuminants; Δu'v' is measured against whichever is
-   selected. Values derive from the illuminant xy via u'=4x/(-2x+12y+3), v'=9y/(-2x+12y+3),
-   for the CIE 1931 2° observer: D65 x,y = 0.31271, 0.32902 and D50 x,y = 0.34567, 0.35850.
-   Carried to five places to match pacsDisplay's approach, which hardcodes D65 as
-   0.19783, 0.46833. */
+   CIE 1976 u'v' from 2° observer xy (D65 0.31271, 0.32902; D50 0.34567, 0.35850) via u'=4x/(-2x+12y+3),
+   v'=9y/(-2x+12y+3), to five places as pacsDisplay's hardcoded D65 0.19783, 0.46833. */
 const REFS={ d65:[0.19783,0.46833], d50:[0.20916,0.48808] };
-/* The luminance ("seq") and uniformity ("uni") cards each carry their own selector: the two can
-   reasonably be run against different targets, and sharing one would let a change on one card
-   silently rewrite the other's results. Same options and coercion, so an operator learns it once. */
+/* The seq and uni cards each have a selector, so a change on one cannot rewrite the other's results. */
 function refOf(p){
   const sel=$(`${p}Ref`).value;
   if(sel==="custom") return [numInput(`${p}RefU`,REFS.d65[0],{min:0,max:1}),
                              numInput(`${p}RefV`,REFS.d65[1],{min:0,max:1})];
   return REFS[sel].slice();
 }
-/* Points a selector at a u'v' pair, falling back to Custom when it matches no listed preset, so
-   an imported run or a config file restores selector, values and disabled state together. */
+/* Sets a selector from u'v' - Custom when no preset matches - for imports and config files. */
 function applyRef(p,[up,vp]){
   const key=Object.keys(REFS).find(k=>Math.abs(REFS[k][0]-up)<1e-6&&Math.abs(REFS[k][1]-vp)<1e-6);
   const listed=!!key && [...$(`${p}Ref`).options].some(o=>o.value===key);
@@ -2804,26 +2637,17 @@ const SETTLE_MS=400;                 // patch-change → measure delay, so the m
 const BG_READS=3;                    // background reads at DDL 0 before the ramp (cLR stabilization lines)
 
 /* ---- external-display data acquisitions ----
-   No patch is painted and nothing here drives the display under test: the operator moves the
-   probe across patches on another machine's screen while the run reads on a fixed interval. */
-/* Move delay: the operator's window to reposition the probe, or to advance the pattern on an
-   externally driven display, before the next reading. Different from the uniformity card's
-   MOVE_DELAY_UNI_DEF to create options rather than the two sharing one number.
-   Not to be confused with SETTLE_MS below, which is display settling after a repaint: physics,
-   not logistics, and nothing the operator paces against. */
+   Nothing drives the display under test: the operator moves the probe across another machine's
+   patches while the run reads on a fixed interval. The move delay is the operator's time to do that
+   (SETTLE_MS is display settling, a different thing); it starts when a reading ends, so there is no
+   schedule to fall behind. */
 const MOVE_DELAY_SEQ_DEF=3;          // seconds, when the field is blank or garbage
-/* No cadence-drift accounting here on purpose: the delay starts when a measurement ends, so
-   the operator always gets the whole window and there is no schedule for a slow read to fall
-   behind. A run simply takes as long as it takes. */
-/* A level reading darker than the one below it is a display fault, or - on an external run - a
-   reading taken mid-move. Meter noise near black reverses constantly, so only levels above
-   REVERSAL_LFLOOR count, and only past a REVERSAL_FRAC margin. */
+/* Reversals: near black meter noise reverses constantly, so only above REVERSAL_LFLOOR and past
+   REVERSAL_FRAC. */
 const REVERSAL_LFLOOR=0.2,          // cd/m², noise floor: reversals below this are not reported
       REVERSAL_FRAC=0.02;           // fractional drop required before a reversal is called
 
-/* Countdown to the next external read, on either card's external stage (el). While a read is in
-   flight the caller passes null and the stage shows "measuring", so a slow adaptive read never
-   looks like a hang. */
+/* Countdown on an external stage; null shows "measuring" so a slow read never looks like a hang. */
 function setCount(el,msLeft){
   el.textContent=msLeft==null ? "measuring..." : `${Math.max(0,msLeft/1000).toFixed(1)} s`;
   el.className=msLeft==null ? "count reading" : "count";
@@ -2848,12 +2672,8 @@ function setSeqStatus(ddl,i,n,label){
 }
 
 /* ---- fullscreen stage ----
-   requestFullscreen requires user activation, so it is called from the button handler
-   before anything else awaits. Leaving fullscreen mid-run (Esc, alt-tab on some WMs)
-   aborts the run: once the stage collapses, display loading no longer matches the
-   condition the remaining levels would be measured under, which is the whole point of
-   the option on OLED. The element is a parameter because the uniformity grid is a second
-   fullscreen target with the same requirements. */
+   Called from the button handler before any await (it needs user activation). Leaving fullscreen
+   mid-run stops the run: display loading - the point of the option on OLED - would no longer match. */
 async function enterStageFullscreen(el){
   if(document.fullscreenElement) return true;
   try{ await el.requestFullscreen(); return true; }
@@ -2862,10 +2682,8 @@ async function enterStageFullscreen(el){
 async function exitStageFullscreen(){
   if(document.fullscreenElement){ try{ await document.exitFullscreen(); }catch(e){} }
 }
-/* External acquisitions never enter fullscreen, so a stray fullscreenchange from anywhere else on the
-   page must not kill one - and the display-loading explanation would be wrong for them anyway.
-   A uniformity run loses more than loading when the stage collapses: the nine cells move, so
-   the remaining positions would be measured somewhere other than where they are labeled. */
+/* External runs never use fullscreen, so they ignore it. A uniformity run also loses its cell
+   positions when the stage collapses. */
 document.addEventListener("fullscreenchange",()=>{
   if(!document.fullscreenElement && seq.on && !seq.external){
     seq.stop();
@@ -2879,10 +2697,8 @@ document.addEventListener("fullscreenchange",()=>{
   }
 });
 
-/* An external run has no fullscreen holding the tab in front, so the operator can alt-tab away
-   mid-run. Hidden tabs get their timers throttled hard, which stretches the interval without
-   anything on screen saying so. Recorded rather than fatal: a notification stealing focus for a
-   moment should not discard a three-minute run, but the result has to carry the caveat. */
+/* Hidden tabs throttle timers, stretching an external run's interval unseen. Recorded as a caveat
+   rather than fatal - a moment's focus loss should not discard a run. */
 let seqBackgrounded=false, uniBackgrounded=false;
 document.addEventListener("visibilitychange",()=>{
   if(!document.hidden) return;
@@ -2891,15 +2707,13 @@ document.addEventListener("visibilitychange",()=>{
   else return;
   log("tab hidden during an external run - timer throttling may have stretched the interval","w");
 });
-/* The caveat that travels with a backgrounded run, live or re-analyzed. `what` is what the
-   readings are labeled with; ms is the requested interval when known. */
+/* what: what the readings are labeled with; ms: the requested interval, when known. */
 const bgWarning=(what,ms)=>
   `This tab was in the background during the run. Browsers throttle timers in hidden tabs, so the `+
   `countdown may have run slower than ${ms?`the ${(ms/1000).toFixed(1)} s `:""}requested and the `+
   `readings may not line up with the ${what} they are labeled with.`;
 
-/* Diffuser check at the start of a run. Emissive measurement requires the cover open
-   (i1d3.c:2345), so refuse up front and say so in the card rather than in the collapsed log. */
+/* Emissive runs need the cover open (i1d3.c:2345): refuse up front, in the card. */
 async function requireCoverOff(msgId,label){
   try{
     const pos=await dev.getDiffPos(); updateCoverPill(pos);
@@ -2912,20 +2726,17 @@ async function requireCoverOff(msgId,label){
   }
   return false;
 }
-/* Conformance grid rows. Keys are app-authored literals and may contain markup; values are
-   toFixed() numbers, DDLs and position labels, so neither carries anything device- or file-supplied. */
+/* Keys are app literals (may hold markup); values are numbers and labels - nothing device- or file-supplied. */
 const setConfRows=(id,rows)=>{ $(id).innerHTML=rows.map(([k,v])=>
   `<div class="conf-row"><span class="k">${k}</span><span class="v">${v}</span></div>`).join(""); };
 
 let lastConf=null;
 function fpct(x){ return (x>=0?'+':'')+x.toFixed(1)+'%'; }
 function renderConformance(a){
-  /* Clearing lastConf matters now that Copy analysis lives outside the conformance section:
-     hiding the section is no longer enough to put the stale numbers out of reach. */
+  /* Clear lastConf too: Copy analysis sits outside the hidden section. */
   if(!a){ lastConf=null; $("conf").hidden=true; renderCharts(null); updateButtons(); return; }
   lastConf=a;
-  /* Values are reported without pass/fail styling: acceptance limits differ by display
-     class and by which guidance a site follows, so interpretation is left to the operator. */
+  /* No pass/fail styling: limits differ by display class and site guidance. */
   const rows=[
     ["L'min", a.Lpmin.toFixed(4)+" cd/m²"],
     ["L'max", a.Lpmax.toFixed(2)+" cd/m²"],
@@ -2938,12 +2749,7 @@ function renderConformance(a){
     ["Max ref Δu'v' (≥"+a.floor+" cd/m²)", a.nUsed?a.maxDuv.toFixed(4)+"  ("+a.duvAt+")":"n/a"],
     ["Points used for Δu'v'", `${a.nUsed} of ${a.n}`],
   ];
-  /* Referenced to the display's own white, so these are labeled as their own group rather
-     than sitting unmarked among the GSDF rows. The row keys are narrow, so the metrics carry
-     the TG196 shorthand rather than the full "AAPM Report No. 196" used in prose.
-     Keys are set as markup (see below), so these carry the report's own script-T with real
-     subscripts, matching the instructions modal. The clipboard copy builds its own plain-text
-     list - script characters and <sub> would both be noise in a spreadsheet. */
+  /* TG196 rows, in the report's script-T with subscripts; the clipboard copy uses plain text. */
   const tg=a.tg;
   if(tg && !tg.insufficient) rows.push(
     [`${TG_T}<sub>1</sub> (mean Δu'v' to white)`, tg.T1.toFixed(4)],
@@ -2953,11 +2759,7 @@ function renderConformance(a){
   else if(tg) rows.push(["TG196 gray tracking", "n/a"]);
   setConfRows("confGrid",rows);
 
-  /* T1 and T1max compare each level against white and are largely independent of how
-     finely the ramp was sampled. T2 and T2max are distances between neighbours, so they
-     shrink as the step size shrinks - a 256-point run reports a much smaller T2 than an
-     18-point run of the same display. Say so whenever the sampling is not the TG18-LN set
-     the report is written against. */
+  /* T2 and T2max shrink with step size, so they are only comparable on the report's 18-level set. */
   $("confNote").textContent = (a.tg && !a.tg.insufficient && a.n!==18)
     ? `AAPM Report No. 196 is defined on the 18-level TG18-LN set (DDL 0, 15, 30, ..., 255). This `+
       `run has ${a.n} levels, so T2 and T2max are not comparable with values from an 18-point `+
@@ -2971,11 +2773,7 @@ function renderConformance(a){
   updateButtons();                  // drops the Analysis placeholder, enables export
 }
 
-/* Capture-time caveats, applied identically to a live run and to Re-analyze on an imported one -
-   otherwise an imported external run would silently lose the reasons to doubt it. Clamped points
-   mean the display black is below anything GSDF can describe; a reversal is the one failure an
-   external run cannot detect for itself; a backgrounded tab stretched the countdown without
-   stretching the operator's sense of it. clampedAt falls back to the bare count for old files. */
+/* Capture caveats, for a live run and Re-analyze alike, so an imported run keeps them. */
 function seqCaveats(a,M){
   if(M.clamped) a.warnings.unshift(clampWarning(M.clampedAt?.length?M.clampedAt:M.clamped,M.external));
   if(M.reversals?.length) a.warnings.unshift(reversalWarning(M.reversals,M.external));
@@ -2984,11 +2782,8 @@ function seqCaveats(a,M){
 
 const seq={ on:false, external:false, lastRun:null,
   stop(){ this.on=false; updateButtons(); },
-  /* opts.external drives an EXTERNAL run: no patch is painted and nothing on this machine is
-     coordinated. The operator points the meter at a display driven by something else and moves
-     it from patch to patch while the run takes a reading on a fixed interval. DDLs still come
-     from ddlLevels(), so the points are labeled exactly as an internal run's are and every
-     consumer downstream - analysis, charts, cLR, TSV, JSON - is unchanged. */
+  /* opts.external: no patch is painted; the operator moves the probe on another display at a fixed
+     interval. DDLs still come from ddlLevels(), so everything downstream is unchanged. */
   async run(n,opts={}){
     if(!app.ready){ showMsg("seqMsg","Connect the instrument first.","warn"); return; }
     if(this.on) return;
@@ -3005,8 +2800,7 @@ const seq={ on:false, external:false, lastRun:null,
     const floor=numInput("seqFloor",5,{min:0});
     const refUV=refOf("seq");
     const mode="adaptive";
-    /* Read once, with the other settings: editing the field mid-run must not move a grid the
-       operator is already pacing against. */
+    /* Read once: editing the field mid-run must not change the pace. */
     const intervalMs=ext?Math.round(numInput("seqExtInt",MOVE_DELAY_SEQ_DEF,{min:1,max:300})*1000):0;
     const levels=ddlLevels(n);
     const started=new Date();
@@ -3024,16 +2818,11 @@ const seq={ on:false, external:false, lastRun:null,
     const alive=()=>this.on;
     seqBackgrounded=false;               // per-run; the listener sets it at most once
 
-    /* ---- stage control ----
-       The only thing that genuinely differs between a local and an external run is what happens
-       between measurements: paint a patch and settle, or count down while the operator walks the
-       probe to the next one. Isolating that here keeps both measurement loops below identical to
-       what they were before external mode existed. */
+    /* ---- stage control ---- local and external runs differ only between reads: paint and settle,
+       or count down while the operator moves the probe. */
     $("patchStage").classList.toggle("ext",ext);
     queueCenterPatchRoom();   /* .ext hides #patch for .extstage, changing what is centered */
-    /* Same reason as the uniformity card: the readout and the external "last" line persist
-       after a run ends, so a new acquisition would open showing a reading from the previous
-       one. armFullscreenStart already does this, but only on a local full-screen run. */
+    /* Clear the previous run's readout and "last" line. */
     setSeqReadout(null);
     $("extPrev").textContent="";
     const stagePrep=(ddl,i,n2,phase)=>{
@@ -3045,8 +2834,7 @@ const seq={ on:false, external:false, lastRun:null,
       $("extHint").textContent = phase==="bg" ? "Hold still on DDL 0" : "Hold still";
       setExtCount(null);
     };
-    /* The interval is the operator's move window, so it starts when the previous measurement
-       finished, not when it began.*/
+    /* The move window starts when the previous read finished. */
     const stageWait=async(ddl,i,n2)=>{
       if(!ext) return sleepWhile(SETTLE_MS,alive);
       $("extNext").textContent=`Next: patch ${i} of ${n2} · gray level ${ddl}`;
@@ -3059,8 +2847,7 @@ const seq={ on:false, external:false, lastRun:null,
       else setPatch(0);
     };
     const halt=()=>{ this.on=false; updateButtons(); stageReset(); };
-    /* Times only completed reads. A thrown read is usually a long timeout, and readMsMean is
-       recorded to explain how long a run took, not to flag a fault. */
+    /* Completed reads only: readMsMean explains a run's length, and a throw is usually a timeout. */
     const timedRead=async()=>{
       const t=performance.now();
       const m=await dev.measure(mode,navg,"lum",alive);
@@ -3069,20 +2856,10 @@ const seq={ on:false, external:false, lastRun:null,
     };
 
     /* ---- background reads ----
-       BG_READS consecutive measurements at DDL 0 before the ramp begins. These are the
-       stabilization reads pacsDisplay writes as the three "#  %8.6f  <RGB>" header lines of
-       a cLR, and they serve the same purpose here: the display has just gone from whatever was
-       on screen to full black, and the first level of the ramp should not absorb that
-       settling. They are recorded separately from points[] and never become curve points -
-       the ramp measures DDL 0 on its own, and appending these would put four readings at one
-       gray level into a curve that assumes one per level. They are still passed to
-       gsdfAnalyze, which averages them into the darkest step's L'; see the L'min note there.
-       A failure here aborts before the ramp: with fewer than BG_READS the cLR cannot carry
-       its stabilization block, and a black reading that will not complete is a fault worth
-       stopping for rather than measuring around.
-       EXTERNAL acquisitions get one interval to seat the probe on the external display's black patch,
-       then take all BG_READS plus the DDL 0 ramp point back to back - they are the same patch,
-       so making the operator wait an interval between them would only add dead time. */
+       BG_READS reads at DDL 0 before the ramp - the cLR's stabilization lines - so the first level does not
+       absorb the display settling to black. Kept out of points[] (one reading per level) but averaged into
+       L'min by gsdfAnalyze. A failure aborts the run. External runs get one interval to seat the probe,
+       then take these and the DDL 0 point back to back on the same patch. */
     const background=[];
     stagePrep(0,null,null,"bg");
     if(ext){ $("extNext").textContent="Seat the probe on the BLACK patch"; $("extHint").textContent="Move to next DDL"; }
@@ -3112,11 +2889,8 @@ const seq={ on:false, external:false, lastRun:null,
 
     for(let i=0;i<levels.length && this.on;i++){
       const ddl=levels[i];
-      /* External: level 0 is the black patch the probe is already sitting on, so it follows the
-         background reads with no wait. Every later level waits a full interval first, counted
-         from the end of the previous read. The wait comes first and paints "move the probe",
-         then stagePrep switches the stage to "hold still" for the read itself.
-         Internal keeps its original order - paint, then settle. */
+      /* External: wait ("move the probe"), then prep ("hold still"); level 0 needs no wait, the probe
+         is already on black. Internal: paint, then settle. */
       if(ext){
         if(i>0 && !await stageWait(ddl,i+1,levels.length)) break;
         stagePrep(ddl,i+1,levels.length,"ramp");
@@ -3129,23 +2903,18 @@ const seq={ on:false, external:false, lastRun:null,
       catch(err){ log(`  DDL ${ddl}: measure failed - ${err.message}`,"e"); continue; }
       if(m===null) break;                                 // stopped between averages
       let Y=m.Y*sc;
-      /* Clamp rather than reject: a 0.00 reading is a real result worth showing, it just
-         cannot go through log10(). The domain warning below explains the consequence. */
+      /* Clamp, not reject: 0.00 is a real result, it just cannot go through log10(). */
       if(Y<Y_FLOOR){ clampedAt.push(ddl); Y=Y_FLOOR; }
       const [up,vp]=uvFromXYZ(...m.XYZ);
       setSeqReadout(Y,up,vp);
-      /* A level that reads darker than the one below it is either a display fault or, on an
-         external run, a reading taken while the probe was still moving. Gated above 0.2 cd/m² and
-         outside a 2% band because meter noise at the dark end reverses constantly and would
-         otherwise fire on every healthy run. Surfaced live so the operator can still stop. */
+      /* Reversal (see REVERSAL_LFLOOR), logged live so the operator can still stop. */
       const down = prevY!=null && prevY>REVERSAL_LFLOOR && Y<prevY*(1-REVERSAL_FRAC);
       if(down){ reversals.push({from:prevDdl,to:ddl});
         log(`  DDL ${ddl} read lower than DDL ${prevDdl} (${Y.toFixed(3)} < ${prevY.toFixed(3)} cd/m²)`,"w"); }
       if(ext){ $("extPrev").textContent=`last: DDL ${ddl} → ${fmtL(Y)} cd/m²`;
                $("extPrev").className="prev"+(down?" bad":""); }
       prevY=Y; prevDdl=ddl;
-      /* u'v' only: x,y are shown live in meter mode but nothing downstream of a run reads
-         them, and dropping them here keeps a captured run the same shape as an imported one. */
+      /* u'v' only, the same shape as an imported run; nothing downstream reads x,y. */
       results.push({ddl,Y,up,vp});
       log(`  DDL ${String(ddl).padStart(3)}  →  ${Y.toFixed(4)} cd/m²   (u' ${up.toFixed(4)}, v' ${vp.toFixed(4)})`,"");
     }
@@ -3153,23 +2922,16 @@ const seq={ on:false, external:false, lastRun:null,
     const stopped=!this.on;                               // capture before clearing the flag
     halt();
 
-    /* Completeness gate: analysis runs only when every requested DDL produced a point.
-       A partial set still yields plausible-looking numbers - dropping DDL 0 alone shifts
-       L'min and silently changes the reported ambience ratio and total JND count. */
+    /* Analysis needs every DDL: a partial set gives plausible but wrong numbers (no DDL 0 shifts L'min). */
     const measured=new Set(results.map(r=>r.ddl));
     const missing=levels.filter(d=>!measured.has(d));
     const complete=!stopped && missing.length===0;
 
     const readMsMean=readMs.length?readMs.reduce((s,v)=>s+v,0)/readMs.length:null;
     this.lastRun={
-      /* settleMs is the lead time between a level being presented and its measurement, which is
-         what pacsDisplay's iLdelay means. On an external run that lead time IS the move delay - the
-         operator's move plus settle - so writing SETTLE_MS or 0 there would both be untrue.
-         moveDelayMs is kept separately for anything reading the run as data rather than as a cLR.
-         An internal ramp repaints its own patch and the probe never moves, so it has no move
-         delay at all: null, not 0, so an interpreter can tell "no repositioning in this mode"
-         from "repositioning with no time allowed". moveDelayCovers says whether display settling
-         is inside the number, which cannot be inferred from the number alone. */
+      /* settleMs is presentation-to-measurement lead time (pacsDisplay's iLdelay) - on an external run,
+         the move delay itself. moveDelayMs is null on an internal run (no repositioning), not 0;
+         moveDelayCovers says whether settling is included. */
       meta:{ started:started.toISOString(), points:n, navg, scale:sc, Lamb, floor, refUV,
              product:$("dProd").textContent, serial:dev.serial||"", complete, stopped,
              clamped:clampedAt.length, clampedAt:clampedAt.slice(), missing:missing.slice(),
@@ -3209,20 +2971,12 @@ const seq={ on:false, external:false, lastRun:null,
           `T2 ${a.tg.T2.toFixed(4)} · T2max ${a.tg.T2max.toFixed(4)}  (${a.tg.n} of ${a.tg.nTotal} levels)`,"ok");
   }
 };
-/* Data acquisitions on an opened stage wait for an explicit go. Opening the stage relocates and 
-   resizes the pattern, and the operator still has to seat the photometer against it - starting
-   straight away would fold that handling time into the first measurement, which is exactly
-   the reading you least want to doubt. Space or the Go button starts; Esc cancels (on a
-   fullscreen presentation the browser also leaves fullscreen on Esc, which resolves this the
-   same way through onFs).
-   Shared by lumResponse and uniformity: this is pure event wiring, and two copies of a gate
-   that has to remove every listener on every exit path is exactly the kind of thing that
-   drifts apart. */
+/* A run on an opened stage waits for Space or Go, so seating the probe is not folded into the first
+   reading; Esc cancels (leaving fullscreen does too, via onFs). Shared by lumResponse and uniformity. */
 function armStageStart(promptEl,detailEl,goBtn,detailText){
   return new Promise(resolve=>{
     detailEl.textContent=detailText;
-    /* Drop focus from the button that opened this: otherwise Space would re-fire its
-       click and arm a second run behind this one. */
+    /* Blur the opener, or Space would re-fire it and arm a second run. */
     document.activeElement?.blur?.();
     promptEl.classList.add("armed");
     const finish=ok=>{
@@ -3237,8 +2991,7 @@ function armStageStart(promptEl,detailEl,goBtn,detailText){
       else if(e.key==="Escape"){ finish(false); }
     };
     const onGo=()=>finish(true);
-    /* Only ever fires for a fullscreen presentation; a full-window stage never enters
-       fullscreen, so this is inert there and Esc alone cancels. */
+    /* Fullscreen presentations only; inert on a full-window stage. */
     const onFs=()=>{ if(!document.fullscreenElement) finish(false); };
     document.addEventListener("keydown",onKey,true);   // capture, so the key never reaches a button
     document.addEventListener("fullscreenchange",onFs);
@@ -3251,9 +3004,8 @@ function armFullscreenStart(n){
     `${n}-point run · ${BG_READS} background reads at DDL 0, then the ramp from DDL 0 to 255`);
 }
 
-/* Fullscreen is entered here rather than inside seq.run() so the request still carries
-   the click's user activation. External acquisitions skip all of it: fullscreen exists to control display
-   loading on the display being measured, and on an external run that display is not this one. */
+/* Fullscreen here, not in seq.run(), so it keeps the click's user activation. External runs skip it:
+   the display under test is not this one. */
 async function startSeq(n,opts={}){
   if(seq.on) return;
   if(!opts.external && $("seqFull").checked){
@@ -3280,10 +3032,8 @@ $("btnSeqStop").onclick=()=>seq.stop();
    Export
    ========================================================================== */
 
-/* Environment fingerprint stored with every run. None of this proves what color
-   transform sits between rgb() and the display - no web API exposes that - but it records
-   what the capture environment was, which is the difference between an auditable result
-   and an unexplainable one. See the color-management caveat in the file header. */
+/* Capture environment, stored with every run. It cannot show the color transform (no API does), but
+   it makes a result auditable. */
 function envInfo(){
   const gamut=["rec2020","p3","srgb"].find(g=>matchMedia(`(color-gamut: ${g})`).matches)||"unknown";
   return {
@@ -3291,17 +3041,15 @@ function envInfo(){
     screen:`${screen.width}x${screen.height}`,
     colorDepth:screen.colorDepth,
     devicePixelRatio:window.devicePixelRatio,
-    /* Declared, not measured; null when unset. Turns every length here into millimeters. */
+    /* Declared, not measured; null when unset. */
     pixelPitchMm:pixelPitchMm,
     colorGamut:gamut,
     dynamicRange:matchMedia("(dynamic-range: high)").matches?"high":"standard"
   };
 }
 
-/* Each analysis card carries its own Display ID (dispId / uniDispId): the two are independent runs,
-   and an imported uniformity file must not rename the lumResponse one sitting beside it. For file
-   names, pacsDisplay joins the name with "_"; mirror that, then drop anything a filesystem would
-   object to. */
+/* Each analysis card has its own Display ID, so importing one run cannot rename the other. File names
+   join with "_" as pacsDisplay does, minus anything a filesystem would refuse. */
 const dispName=id=>$(id).value.trim();
 const dispFile=id=>dispName(id).replace(/\s+/g,"_").replace(/[^\w.\-]/g,"");
 
@@ -3314,29 +3062,15 @@ function download(name,text,mime){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-/* ---- cLR writer: byte-layout compatible with pacsDisplay IL_save (Tcl) ----
-   Reproduces the Tcl format specifiers exactly:
+/* ---- cLR writer: byte-compatible with pacsDisplay IL_save (Tcl) ----
      3 header lines  "#  ..."
-     3 stabilization "#  %8.6f  <RGB>"
+     3 stabilization "#  %8.6f  <RGB>"      (the background reads, raw L; written short, never padded)
      N data lines    "%4i  %12.7f  <RGB>  %3i %d  %1.4f  %10.7f  %10.7f"
-                     index, luminance, patch RGB, major phase, minor phase,
-                     dL/L against the previous point, u', v'
-   <RGB> is the patch color as lowercase "#rrggbb" - the gray level repeated across all
-   three channels, matching the hex form pacsDisplay writes.
-   dL/L is ΔL over the mean of the pair, on RAW measured luminance (pacsDisplay's autoLumVal), so
-   ambient is deliberately excluded - matching IL_save, and unlike the L' used by the
-   GSDF panel. First point is 0 by definition.
-   Phase numbering: IL_save cycles minorPnum 1..numPhases and bumps majorPnum on wrap
-   (that is what LUTmode "16x2" encodes). pdweb measures each level exactly once, so
-   numPhases = 1, giving major = point index and minor = 1 throughout.
-   STABILIZATION: the BG_READS background measurements taken at DDL 0 before the ramp, in
-   capture order, on raw measured luminance like the data lines. If a run somehow carries
-   fewer, the block is written short rather than padded with invented values - a fabricated
-   stabilization read is worse downstream than a missing one. */
-/* Header line 1 is positional: evalQClr reads the version, date and time as token indices
-   3, 5 and 6, so the title must be exactly three whitespace-separated tokens - the last of
-   them the version - followed by the "-" separator. Dropping or adding a word silently
-   shifts the date and time out of the QC report header. */
+                     index, luminance, patch RGB, major phase, minor phase, dL/L to the previous point, u', v'
+   <RGB> is lowercase "#rrggbb". dL/L is ΔL over the pair mean on raw L (autoLumVal), no ambient, 0 first.
+   One reading per level, so numPhases = 1: major = point index, minor = 1.
+   Header line 1 is positional: evalQClr takes version, date and time as tokens 3, 5 and 6, so the title is
+   exactly three tokens ending in the version, then "-". */
 const CLR_VERS="1.0";
 const CLR_TITLE=`pdweb lumResponse ${CLR_VERS}`;
 const padL=(s,w)=>String(s).padStart(w);
@@ -3349,11 +3083,8 @@ function buildCLR(run){
   const out=[];
   out.push(`#  ${CLR_TITLE} - ${hdrStamp(meta.started)}`);
   out.push(`#  Display ID: ${dispName("dispId")}`);
-  /* Ldelay comes from the acquisition's own recorded settle time, not the current constant.
-     LUTmode must stay the LAST whitespace-delimited token: evalQClr reads it as
-     [lindex $line end] and strips the 8-char "LUTmode=" prefix. Nothing downstream reads
-     the other fields, so the legacy ILlimit_plus/ILlimit_minus pair was dropped - pdweb
-     applies no acceptance limits. */
+  /* iLdelay is the run's recorded settle time. LUTmode must stay the LAST token: evalQClr reads it with
+     [lindex $line end]. The legacy ILlimit pair is dropped - pdweb applies no limits. */
   out.push(`#  iLdelay=${((meta.settleMs??SETTLE_MS)/1000).toFixed(2)}  avgN=${meta.navg}  `+
            `Meter=${meta.product||"i1d3"} SN=${meta.serial||""} `+
            `Mode=${meta.external?"external":"local"} LUTmode=${meta.points}`);
@@ -3371,8 +3102,7 @@ function buildCLR(run){
   return joinEOL(out);
 }
 
-/* Tab-separated table for pasting into a spreadsheet. Raw measured Y, plus L' so the
-   ambient assumption travels with the numbers. */
+/* Spreadsheet table: raw Y, plus L' so the ambient assumption travels with it. */
 function buildTSV(run){
   const {meta,points}=run;
   const P=[...points].sort((a,b)=>a.ddl-b.ddl);
@@ -3381,31 +3111,22 @@ function buildTSV(run){
     `# display: ${dispName("dispId")}   meter: ${meta.product||"i1d3"} ${meta.serial||""}`.trimEnd(),
     `# points requested: ${meta.points}   measured: ${P.length}   complete: ${meta.complete}`+
       `   navg: ${meta.navg}   scale: ${meta.scale}   L_amb: ${meta.Lamb} cd/m2`,
-    /* How the points were acquired changes how much they can be trusted, so it travels with
-       them rather than living only in the JSON. */
+    /* How they were acquired affects trust, so it travels with the points. */
     `# acquisition: `+(meta.external
       ? `external display, ${((meta.moveDelayMs??0)/1000).toFixed(1)} s move delay `+
         `(${meta.moveDelayCovers||"move+settle"})`
       : `local patch, ${((meta.settleMs??SETTLE_MS)/1000).toFixed(2)} s settle, `+
         `no move delay (the probe does not move)`),
-    /* The one caveat that cannot be read off the numbers: a throttled countdown stretches the
-       interval without changing anything in the table. Written as a flag on every export rather
-       than only when true, so a reader can tell "not backgrounded" from "written before this
-       line existed". Deliberately not called "background" - that word is already taken by the
-       stabilization reads two lines down. */
+    /* Always written, so "no" differs from "line predates this"; not "background", which is taken. */
     `# tab backgrounded during run: ${meta.backgrounded?"yes":"no"}`,
-    /* Background reads sit in the header, not the table: they are all at DDL 0 and would
-       otherwise read as duplicate rows once the table is sorted in a spreadsheet. */
+    /* In the header: as rows they would look like DDL 0 duplicates. */
     `# background (DDL 0): `+
       ((run.background||[]).map(b=>b.Y.toFixed(6)).join("   ") || "none"),
   ];
   return tsvTable(head,["DDL","L_cd_m2","L'_cd_m2","u'","v'"],
     P.map(p=>[String(p.ddl),p.Y.toFixed(6),(p.Y+meta.Lamb).toFixed(6),p.up.toFixed(6),p.vp.toFixed(6)]));
 }
-/* Comment header, then the table. A tab advances to the next 8-column stop, so a label shorter
-   than the numbers beneath it lands a stop early and looks detached from its column in a text
-   viewer. Padding each label to its column's widest value puts the two on the same stop; the
-   trailing spaces are invisible in a spreadsheet, and the last column needs none. */
+/* Labels are padded to their column's widest value so they share its tab stop in a text viewer. */
 function tsvTable(head,cols,rows){
   const w=cols.map((c,i)=>rows.reduce((m,r)=>Math.max(m,r[i].length),c.length));
   return [...head, cols.map((c,i)=>i<cols.length-1?c.padEnd(w[i]):c).join("\t"),
@@ -3413,31 +3134,21 @@ function tsvTable(head,cols,rows){
 }
 
 $("btnCopyData").onclick=()=>{ if(seq.lastRun) copyText(buildTSV(seq.lastRun),"measurement table"); };
-/* Exported measurement shape. CIE 1931 x,y are shown live in meter mode because most
-   display documentation is written in xy, but they carry nothing the export needs - every
-   metric in this file works in u'v', and shipping both invites the two disagreeing in a
-   hand-edited file. These are field whitelists, not renames: `up`/`vp` is the one spelling
-   used from the meter read through the analysis to the file. */
+/* Export field whitelists: u'v' only (every metric uses it), so a hand-edited file cannot disagree with itself. */
 const expPoint=p=>({ddl:p.ddl, Y:p.Y, up:p.up, vp:p.vp});
 const expBg   =b=>({Y:b.Y, up:b.up, vp:b.vp});
 
 $("btnExpJson").onclick=()=>{
   if(!seq.lastRun) return;
-  /* analysis.series/intervals are derived from points and would double the file, so only
-     the summary metrics are kept. display comes from the field, not from an imported run,
-     so an edit to Display ID takes effect on re-export. */
-  /* env is deliberately NOT written at this level. It belongs to meta, stamped once when the
-     run was captured; re-deriving it here describes whichever machine did the export. That is
-     identical for capture-then-export and wrong for import-then-re-export - the two copies
-     diverge, nothing labels which is which, and validateRun carries the exporter's
-     environment forward as if it were the capture environment. */
+  /* Summary metrics only (series/intervals derive from points). display comes from the field, so a
+     Display ID edit takes effect. env stays in meta from capture - re-deriving it here would describe
+     the exporting machine after an import. */
   const {analysis, display:_prior, points, background, ...rest}=seq.lastRun;
   const payload={ format:"pdweb-lumresponse/1", exported:new Date().toISOString(),
                   ...rest,
                   background:(background||[]).map(expBg), points:points.map(expPoint),
                   display:dispName("dispId"),
-  /* tg carries an internal `insufficient` flag; outside this file the presence or absence of
-     the metrics says the same thing more clearly. */
+  /* tg's internal insufficient flag becomes tg: null. */
                   analysis: analysis ? (({series,intervals,tg,...keep})=>
                     ({...keep, tg: (tg && !tg.insufficient) ? (({insufficient,...t})=>t)(tg) : null}))(analysis) : null };
   download(`pdweb_${dispFile("dispId")}_${fileStamp(seq.lastRun?.meta.started)}_lumresponse.json`,
@@ -3454,14 +3165,10 @@ const C_TARGET="#d1544f",  C_T10="#d9a441", C_T20="#8a7040",
 
 const C_LOWGL="#6b7079", C_HIGHGL="#e3e5e8", GL_EMPHASIS=128;
 
-/* Dash patterns live here rather than at the draw sites so a line and its legend swatch are
-   read from one value. The ±20% pattern is deliberately finer than ±10%: the two sit close
-   together on the plot and color alone separates them poorly at 1px. */
+/* One value for a line and its legend swatch. ±20% is finer than ±10%: color alone separates them poorly. */
 const D_T10="5 4", D_T20="2 4", D_RING="4 4", D_CROSS="5 4";
 
-/* x domain for the two DDL charts. Slightly wider than 0–255 so the dots at the endpoints
-   sit inside the frame instead of being bisected by it; the ticks are still drawn at the
-   true 0 and 255. */
+/* Wider than 0-255 so the endpoint dots sit inside the frame. */
 const DDL_DOM=[-5,260];
 const MONO="ui-monospace,monospace";
 /* Shared by the two DDL charts: axis, and a legend of measured / reference / tolerance bands. */
@@ -3486,10 +3193,7 @@ function padDomain(lo,hi,frac=0.10){
   if(!(hi>lo)){ const c=Number.isFinite(lo)?lo:0, d=Math.abs(c)*0.1+1e-3; return [c-d,c+d]; }
   const p=(hi-lo)*frac; return [lo-p,hi+p];
 }
-/* Ticks for a log axis. Both bounds must be > 0; callers check that before choosing a log
-   scale. 1-2-5 per decade is the usual choice, but a run spanning much less than a decade
-   lands only two or three of them on the axis, so a denser mantissa set is tried first and
-   the sparser one used only once it yields enough. */
+/* Log-axis ticks (bounds > 0): 1-2-5 per decade, or a denser set when that gives fewer than min. */
 function logTicks(lo,hi,min=4){
   const gen=ms=>{
     const out=[];
@@ -3508,10 +3212,7 @@ function legendRow(items){
   for(const it of items){
     const s=document.createElement("span"); s.className="lg";
     const i=document.createElement("i");
-    /* The swatch is built from the series' own dash pattern, so a ±20% line drawn "2 4" no
-       longer advertises itself with the same swatch as a ±10% line drawn "5 4". The SVG
-       scales close to 1:1 into the column (a 660 viewBox across ~650 CSS px), so the two
-       lengths carry over as written. */
+    /* Swatch from the series' dash pattern; the SVG renders near 1:1, so lengths carry over. */
     if(it.dash){
       const [on,off]=it.dash.split(/\s+/).map(Number);
       i.style.background=`repeating-linear-gradient(90deg,${it.color} 0 ${on}px,`+
@@ -3523,15 +3224,8 @@ function legendRow(items){
   return d;
 }
 
-/* Builds title + legend + framed SVG with axes, returns the scales for the caller.
-   Every chart shares the same viewBox width so that, with svg{width:100%}, the viewBox→CSS
-   scale is identical across charts and text renders at one size. A chart that needs a
-   different plot shape changes its padding and height, never its width - an earlier square
-   chart used w=380 and came out ~1.7x larger than its neighbours. */
-/* Chart container plus its title row, which carries the per-chart export buttons. What they need -
-   the legend's colors and dash patterns, which are not recoverable from the rendered swatches - is
-   parked on the element as chartMeta rather than re-derived, so the image and the chart on screen
-   cannot end up describing the same series differently. */
+/* Chart container and title row with export buttons. chartMeta keeps the legend's colors and dashes,
+   so an export cannot describe a series differently from the screen. */
 function chartShell(meta){
   const wrap=document.createElement("div"); wrap.className="chart";
   wrap.chartMeta=meta;
@@ -3541,6 +3235,7 @@ function chartShell(meta){
   wrap.appendChild(head);
   return {wrap,h3};
 }
+/* Every chart keeps w=660 so text renders at one size; reshape with pad and h, never w. */
 function chartFrame(host,{title,slug,legend,note,w=660,h=250,pad={l:58,r:14,t:12,b:34},
                           xDom,yDom,xLabel,yLabel,xTicks,yTicks,yLog=false,
                           gridX=true,gridY=true,tickX=true,tickY=true,
@@ -3552,8 +3247,7 @@ function chartFrame(host,{title,slug,legend,note,w=660,h=250,pad={l:58,r:14,t:12
   if(note){ const p=document.createElement("div"); p.className="chartnote"; p.textContent=note; wrap.appendChild(p); }
   host.appendChild(wrap);
 
-  /* yLog maps through log10 so a decade occupies constant height. It is only ever set when
-     the caller has established both bounds are > 0. */
+  /* yLog: constant height per decade; callers set it only when both bounds are > 0. */
   const yTr=yLog?Math.log10:(v=>v), y0=yTr(yDom[0]), y1=yTr(yDom[1]);
   const sx=v=>pad.l+(v-xDom[0])/(xDom[1]-xDom[0])*(w-pad.l-pad.r);
   const sy=v=>h-pad.b-(yTr(v)-y0)/(y1-y0)*(h-pad.t-pad.b);
@@ -3563,9 +3257,7 @@ function chartFrame(host,{title,slug,legend,note,w=660,h=250,pad={l:58,r:14,t:12
   const xT=(xTicks||niceTicks(xDom[0],xDom[1],6)).filter(t=>t>=xDom[0]&&t<=xDom[1]);
   const L=pad.l, R=w-pad.r, T=pad.t, B=h-pad.b, TICK=5;
 
-  /* Grid and tick marks are independent per axis: a line chart reads best with horizontal
-     rules to carry the eye across and bare tick marks on the category-like x axis, where
-     full-height verticals would compete with the data. Labels are always drawn. */
+  /* Grid and ticks per axis: line charts take horizontal rules and bare x ticks. */
   if(gridY) for(const t of yT) sEl("line",{x1:L,x2:R,y1:sy(t),y2:sy(t),stroke:C_AXIS,"stroke-width":1},svg);
   if(gridX) for(const t of xT) sEl("line",{x1:sx(t),x2:sx(t),y1:T,y2:B,stroke:C_AXIS,"stroke-width":1},svg);
   sEl("rect",{x:L,y:T,width:R-L,height:B-T,fill:"none",stroke:C_AXIS,"stroke-width":1},svg);
@@ -3608,24 +3300,17 @@ function series(svg,sx,sy,pts,color,{dash,width=1.6,dots=0}={}){
   if(dots) for(const p of pts) sEl("circle",{cx:sx(p[0]),cy:sy(p[1]),r:dots,fill:color},svg);
 }
 
-/* Describes the interval spacing of a run. Quoting intervals[0].dgl alone was safe while every
-   ladder was uniform, but the 11-point SMPTE set steps 25.5 gray levels and rounds to alternating
-   26/25 - and an imported run can carry any spacing at all. The analysis itself has always used
-   the per-interval dgl, so only this caption was ever at risk. */
+/* Interval spacing for a caption: the 11-point set alternates 26/25, and imports can have any spacing. */
 function gapText(iv){
   const gaps=[...new Set(iv.map(d=>d.dgl))].sort((a,b)=>a-b);
   if(!gaps.length) return "0 GL apart";
   return gaps.length===1 ? `${gaps[0]} GL apart` : `${gaps[0]}–${gaps[gaps.length-1]} GL apart`;
 }
 
-/* Chart 1 - mean JND per gray level over each measured interval, against the run's global
-   mean and the ±10% / ±20% tolerance lines. */
+/* Chart 1 - JND/GL per interval against the global mean, ±10% and ±20%. */
 function chartJndGl(host,a){
   const iv=a.intervals, m=a.meanJNDGL;
-  /* The global mean sits at the vertical center of the plot. This chart is read as departure
-     from that mean, and an off-center reference makes a symmetric departure look one-sided.
-     The half-span takes whichever is larger, the furthest measured interval or the ±20%
-     band, so the data and both tolerance pairs always fit without clipping. */
+  /* Centered on the mean (read as departure from it), spanning the furthest point or ±20%. */
   const spread=iv.map(d=>Math.abs(d.jndgl-m));
   const half=Math.max(...spread, m*0.2)*1.12;
   const yDom=[m-half,m+half];
@@ -3641,25 +3326,15 @@ function chartJndGl(host,a){
   series(svg,sx,sy,iv.map(d=>[d.ddl,d.jndgl]),C_DATA,{width:2.1,dots:2.9});
 }
 
-/* Chart 2 - measured dL/L per JND against the GSDF target curve. The tolerance bands
-   follow the target rather than being flat, because the target itself varies with GL. */
+/* Chart 2 - dL/L per JND against the GSDF target; the bands follow the target. */
 function chartDllJnd(host,a){
   const iv=a.intervals;
   const ys=[...iv.map(d=>d.dllMeas), ...iv.map(d=>d.dllTgt*0.8), ...iv.map(d=>d.dllTgt*1.2)];
-  /* Log y. dL/L per JND falls by more than an order of magnitude from black to white, and on
-     a linear axis the whole bright half of the ramp collapses into the bottom few pixels -
-     precisely where a display is most often out of tolerance. On a log axis a given
-     percentage error occupies the same height everywhere, so the ±10%/±20% bands read
-     equally at both ends.
-     A value at or below zero means luminance fell across that interval (a reversal); log
-     cannot place it, so the axis falls back to linear and the note says why, rather than
-     silently dropping the point that matters most. */
+  /* Log y: dL/L per JND spans over a decade, and a percentage error then has the same height
+     everywhere. A value <= 0 (a reversal) forces linear rather than dropping the point. */
   const lo=Math.min(...ys), hi=Math.max(...ys);
   const yLog=lo>0;
-  /* Minimum axis span, as a high:low ratio. A display that tracks the target closely would
-     otherwise be zoomed until a fraction of a percent fills the plot - magnifying meter
-     noise into what looks like structure, and leaving the log axis with a single labelled
-     tick. Applied geometrically so the data stays centered. */
+  /* Minimum high:low span, so a close fit is not zoomed until meter noise looks like structure. */
   const MIN_SPAN=3;
   let ylo=lo/1.25, yhi=hi*1.25;
   if(yhi/ylo<MIN_SPAN){ const c=Math.sqrt(ylo*yhi), k=Math.sqrt(MIN_SPAN); ylo=c/k; yhi=c*k; }
@@ -3676,11 +3351,8 @@ function chartDllJnd(host,a){
   series(svg,sx,sy,iv.map(d=>[d.ddl,d.dllMeas]),C_DATA,{width:2.1,dots:2.9});
 }
 
-/* Chart 3 - chromaticity excursion in CIE 1976 u'v', centered on the reference illuminant.
-   Rings at Δu'v' 0.01 and 0.02; dashed cross arms span ±0.03. Equal scaling on both axes
-   keeps the rings circular, so distance off center reads directly as Δu'v'.
-   Width matches the other charts (see chartFrame); the square plot area comes from the
-   left/right padding instead, which keeps the text scale identical across all three. */
+/* Chart 3 - u'v' around the reference: rings at Δu'v' 0.01 and 0.02, cross arms ±0.03, equal axis
+   scales. Square by padding, not width (see chartFrame). */
 const CHROMA_R=0.05;                     // half-span of the plot window, u'v' units
 const BAR_R="#d97b76", BAR_G="#6fb87a", BAR_B="#7d83cf";   // subdued primary markers
 function chartChroma(host,a){
@@ -3705,12 +3377,8 @@ function chartChroma(host,a){
 
   const perUnit=side/(2*R);              // px per u'v' unit, equal on both axes
 
-  /* Edge markers showing which way each primary lies from neutral: green to the left,
-     red to the right, blue below. 20% of the axis span long.
-     Green is offset upward by GREEN_UP of the plot height. In the CIE 1976 u'v' diagram the
-     spectral locus puts green well above the neutral point as well as to its left, so a bar
-     centered on the reference row would misstate the direction; red and blue sit close
-     enough to the reference row and column to stay centered. */
+  /* Edge bars toward each primary: green left (raised - in u'v' green is also well above neutral),
+     red right, blue below. */
   const barHalf=R*0.20, inset=4, TH=5, GREEN_UP=0.10;
   const gShift=GREEN_UP*2*R;
   sEl("line",{x1:sx(up0-R)+inset,x2:sx(up0-R)+inset,y1:sy(vp0-barHalf+gShift),y2:sy(vp0+barHalf+gShift),
@@ -3741,15 +3409,11 @@ function chartChroma(host,a){
 }
 
 /* ==========================================================================
-   Chart export - one chart at a time, to the clipboard or to a PNG file.
-   The exported image is assembled rather than screen grabbed: the plot SVG is cloned, and
-   the title, legend and note - which are page HTML, not part of the SVG - are drawn into
-   the copy, so the image carries the same context the operator sees. It is then rasterized
-   through a canvas. No libraries, no network, no foreignObject.
+   Chart export - one chart, to the clipboard or a PNG. The plot SVG is cloned with the title,
+   legend and note (page HTML) drawn in, then rasterized through a canvas. No foreignObject.
    ========================================================================== */
 
-/* Exports are recolored for a white page. The screen palette is built against a dark panel:
-   the data line is near-white and would vanish. Anything not in the map is left alone. */
+/* Recolored for a white page; colors not in the map are kept. */
 const EXPORT_INK="#16181b", EXPORT_MUTED="#4f555d", EXPORT_BG="#ffffff";
 const EXPORT_PAL=new Map([
   [C_DATA,   EXPORT_INK],       // C_HIGHGL is the same value, so it maps with it
@@ -3760,16 +3424,13 @@ const EXPORT_PAL=new Map([
 ]);
 const expC=c=>EXPORT_PAL.get(c)||c;
 
-/* Named outright rather than inherited from the page: the SVG is rasterized detached from
-   the document, where the page's own font stack no longer applies and an unresolved family
-   falls back to a serif. */
+/* Named outright: the detached SVG does not see the page's fonts. */
 const EXPORT_FONT='"Segoe UI",system-ui,-apple-system,Roboto,sans-serif';
 const EXPORT_SCALE=3;               // ~2000px wide - a full text column at 300 dpi
 
 const measureCtx=document.createElement("canvas").getContext("2d");
 function textW(s,font){ measureCtx.font=font; return measureCtx.measureText(s).width; }
-/* SVG has no line wrapping, so the note is broken into lines here against the same
-   measurement the raster will use. */
+/* SVG does not wrap, so the note is wrapped here. */
 function wrapText(text,font,maxW){
   const out=[]; let line="";
   for(const word of text.split(/\s+/)){
@@ -3789,8 +3450,7 @@ function buildChartSVG(chart,scale=EXPORT_SCALE){
   const PAD=14, W=vw+PAD*2, TITLE_H=23, LEG_LINE=17, NOTE_LINE=14;
   const MARK=15, MARK_GAP=6, ITEM_GAP=18;
 
-  /* Legend is laid out before anything is drawn: it may take a second line, and every block
-     below it has to know. */
+  /* Legend first: it may wrap, which moves everything below. */
   const legLines=[]; let row=[], x=0;
   for(const it of legend||[]){
     const iw=MARK+MARK_GAP+textW(it.label,F_LEG);
@@ -3804,8 +3464,7 @@ function buildChartSVG(chart,scale=EXPORT_SCALE){
   const noteTop=plotTop+vh+10;
   const H=noteTop+(noteLines.length?noteLines.length*NOTE_LINE:-10)+PAD;
 
-  /* viewBox holds the layout units while width/height carry the pixel size we want, so the
-     rasterizer has an intrinsic size to work from and nothing has to be scaled twice. */
+  /* viewBox in layout units, width/height in output pixels. */
   const root=document.createElementNS(SVGNS,"svg");
   root.setAttribute("xmlns",SVGNS);
   root.setAttribute("viewBox",`0 0 ${W} ${H}`);
@@ -3828,8 +3487,7 @@ function buildChartSVG(chart,scale=EXPORT_SCALE){
     }
   });
 
-  /* The plot goes in as a nested svg at its own scale: the clone keeps its viewBox, so
-     every coordinate inside it stays exactly as drawn on screen. */
+  /* Nested svg, keeping its own viewBox and coordinates. */
   const plot=src.cloneNode(true);
   for(const el of plot.querySelectorAll("*"))
     for(const attr of ["fill","stroke"]){
@@ -3873,9 +3531,7 @@ async function copyChartImage(chart){
 }
 async function saveChartPNG(chart){
   const blob=await chartPNG(chart);
-  /* chartMeta.uni marks a chart belonging to the uniformity card, which has its own Display
-     ID field and its own run timestamp. Both are read at click time rather than captured when
-     the chart was built, so editing Display ID takes effect on the next export. */
+  /* chartMeta.uni: the uniformity card's Display ID and timestamp, read at click time. */
   const u=chart.chartMeta.uni;
   download(`pdweb_${dispFile(u?"uniDispId":"dispId")}_${fileStamp((u?uni:seq).lastRun?.meta.started)}_`+
            `${chart.chartMeta.slug}.png`, blob,"image/png");
@@ -3883,8 +3539,7 @@ async function saveChartPNG(chart){
   return "Saved";
 }
 
-/* Both buttons run the same way: disabled while the raster is in flight, and the label
-   reports what happened rather than relying on the log panel, which is collapsed. */
+/* Disabled while rasterizing; the label reports the outcome (the log is collapsed). */
 function chartExportBtns(chart){
   const box=document.createElement("div"); box.className="chartbtns";
   const mk=(label,fn)=>{
@@ -3909,8 +3564,7 @@ function renderCharts(a){
 }
 
 $("btnExpClr").onclick=()=>{
-  /* Gated on a complete run: a cLR with missing levels would be read downstream as a
-     full ramp, and the dL/L column would silently span a gap. */
+  /* Complete runs only: downstream reads a cLR as a full ramp. */
   if(!seq.lastRun || !seq.lastRun.meta.complete) return;
   const nbg=(seq.lastRun.background||[]).length;
   download(`cLR_${dispFile("dispId")}.txt`, buildCLR(seq.lastRun), "text/plain;charset=utf-8");
@@ -3919,10 +3573,7 @@ $("btnExpClr").onclick=()=>{
   if(nbg!==BG_READS) notes.push(
     `This run carries ${nbg} background read(s) instead of ${BG_READS}, so the cLR was written `+
     `without a full stabilization block.`);
-  /* pacsDisplay's evalQClr takes a single dGL from its phase file and divides by it. The
-     11-level ladder is 25.5 gray levels apart and rounds to alternating 26/25 steps, so a
-     dGL of 25.5 there carries a ±2% wobble on the per-interval numbers. pdweb's own analysis
-     divides by each interval's real dgl and is unaffected - worth saying, not worth blocking. */
+  /* evalQClr divides by one dGL; the 11-level steps alternate 26/25, a ±2% wobble there (not in pdweb). */
   if(seq.lastRun.points.length===11) notes.push(
     `Written with LUTmode=11. The 11-level ladder steps 25.5 gray levels and rounds to `+
     `alternating 26/25, so a phase file using a single dGL of 25.5 will not land exactly on `+
@@ -3931,11 +3582,8 @@ $("btnExpClr").onclick=()=>{
 };
 
 /* ==========================================================================
-   Import / re-analysis
-   A previously exported run can be reloaded without the instrument attached, then
-   re-analyzed against different settings. Everything in the file is treated as untrusted:
-   fields are coerced, range-checked, and length-capped before reaching the analysis or
-   the DOM, so a corrupt or hand-edited file fails with a message instead of a broken panel.
+   Import / re-analysis - no instrument needed. Files are untrusted: every field is coerced,
+   range-checked and length-capped, so a bad file fails with a message.
    ========================================================================== */
 function num(v,name,{min=-Infinity,max=Infinity}={}){
   const n=typeof v==="number"?v:parseFloat(v);
@@ -3963,18 +3611,17 @@ function importBase(o,fmt,what){
   return { m, display: typeof o.display==="string"?o.display.slice(0,120):"", meta:{
     started: typeof m.started==="string"?m.started.slice(0,40):new Date().toISOString(),
     navg:numOr(m.navg,1), scale:numOr(m.scale,1), Lamb:numOr(m.Lamb,0), floor:numOr(m.floor,5),
-    /* A pair or nothing, range-checked, defaulting to D65 so a run captured before this field
-       existed still analyzes against something stated. */
+    /* D65 when absent (older files). */
     refUV:(Array.isArray(m.refUV)&&m.refUV.length===2)
       ? [num(m.refUV[0],"reference u'",{min:0,max:1}), num(m.refUV[1],"reference v'",{min:0,max:1})]
       : REFS.d65.slice(),
     product:String(m.product||"").slice(0,64), serial:String(m.serial||"").slice(0,64),
     stopped:!!m.stopped, external:!!m.external, backgrounded:!!m.backgrounded,
     settleMs:numOr(m.settleMs,SETTLE_MS), readMsMean:finiteOrNull(m.readMsMean),
-    /* null stays null: a local ramp has no move delay at all, which is not a delay of 0. */
+    /* null stays null: no move delay is not a delay of 0. */
     moveDelayMs: md==null ? null : Math.min(3.6e6,Math.max(0,md)),
     moveDelayCovers:["move+settle","move"].includes(m.moveDelayCovers) ? m.moveDelayCovers : null,
-    /* env lives in meta, stamped once at capture. Nothing writes a top-level copy. */
+    /* env: stamped once at capture. */
     env:m.env||null, imported:true, sourceFile:""
   }};
 }
@@ -3983,21 +3630,17 @@ function validateRun(o){
   const {m,meta,display}=importBase(o,"pdweb-lumresponse/","points");
   const points=objs(o.points,"point",(p,t)=>({ddl:num(p.ddl,`${t} DDL`,{min:0,max:255}),...readYuv(p,t)}));
   if(points.length<2) throw new Error("need at least two points");
-  /* Capped at BG_READS so a padded file cannot push extra stabilization lines into an exported
-     cLR. A missing or short array is tolerated - the cLR writer reports it, which is the only
-     place the count matters. */
+  /* Capped at BG_READS for the cLR; short is tolerated (the cLR writer reports it). */
   const background=objs((Array.isArray(o.background)?o.background:[]).slice(0,BG_READS),"background",readYuv);
   const requested=Array.isArray(o.requested)?o.requested.map(Number).filter(Number.isFinite):[];
   const measured=new Set(points.map(p=>p.ddl));
   const missing=requested.filter(d=>!measured.has(d));
   Object.assign(meta,{
     points:numOr(m.points,points.length),
-    /* Trust the requested list over the stored flag when it is present - it is the same
-       completeness test a live run uses. */
+    /* The requested list, when present, decides - as on a live run. */
     complete: requested.length ? missing.length===0 : !!m.complete,
     clamped:numOr(m.clamped,0), missing,
-    /* DDL list behind the clamp count. Files written before it existed carry only the count, so
-       an empty array means "not recorded", not "none" - clampWarning falls back to the count. */
+    /* Empty means "not recorded" (older files); clampWarning then uses the count. */
     clampedAt: Array.isArray(m.clampedAt)?m.clampedAt.map(Number).filter(Number.isFinite):[],
     reversals: Array.isArray(m.reversals)?m.reversals.filter(r=>r&&typeof r==="object")
       .map(r=>({from:numOr(r.from,0),to:numOr(r.to,0)})) : [],
@@ -4016,8 +3659,7 @@ function restoreRunSettings(p,dispId,run){
   applyRef(p,run.meta.refUV);
 }
 
-/* Re-runs the analysis on the loaded run using the current Advanced settings, so an
-   imported capture can be examined against a different L_amb, color floor, or reference. */
+/* Re-analyzes the loaded run with the current L_amb, color floor and reference. */
 function analyzeLoadedRun(){
   const run=seq.lastRun;
   if(!run||run.points.length<2){ showMsg("seqMsg","No run loaded to analyze.","warn"); return; }
@@ -4076,69 +3718,48 @@ $("btnCopyConf").onclick=()=>{
       `T2max\t${a.tg.T2max.toFixed(4)} (${a.tg.t2At})`,
       ...(a.n!==18 ? [`note\tT2/T2max are sampling dependent; this run has ${a.n} levels, not the TG18-LN 18`] : []),
     ] : []),
-    /* Warnings travel with the numbers: a pasted result that omits "L'min below the GSDF
-       domain" reads as a clean pass. */
+    /* Warnings travel with the numbers, or a paste reads as a clean pass. */
     ...(a.warnings && a.warnings.length ? ["","WARNINGS",...a.warnings.map(w=>`- ${w}`)] : []),
   ].join("\n");
   copyText(lines,"conformance");
 };
 
 /* ==========================================================================
-   Uniformity - nine-position luminance uniformity, reported as LUDM and MLD (AAPM
-   Report No. 270, TG18).
-   Nine positions on a 3x3 grid, each measured at every gray level in the chosen set.
-   The presentation is the part a browser has to solve differently from a desktop tool:
-   there is no way to hand the operator a resizable measurement window, so full screen
-   divides the physical display into thirds and full window divides a window the operator
-   has already sized to the area they care about.
+   Uniformity - nine positions on a 3x3 grid at each gray level, reported as LUDM and MLD (AAPM
+   Report No. 270, TG18). Full screen divides the display into thirds; full window divides a window
+   the operator has sized to the area of interest.
    ========================================================================== */
 
-/* Gray level sets. These are the "1 / 3 / 18" modes: gray level COUNTS, not point counts -
-   all nine positions are measured either way. 210 is about the 80% level; {30,120,210} is
-   about 10/50/80, which AAPM Report No. 270 recommends for routine testing; 18 is every 15
-   gray levels, the TG18-LN set. External carries a nominal 127 - nothing is painted, and the
-   value only labels the readings. */
+/* Gray level counts: 210 is about 80%; {30,120,210} about 10/50/80 (Report No. 270's routine set);
+   18 is TG18-LN. External's 127 only labels the readings. */
 const UNI_ONE_GL_DEF=210;
 const UNI_LEVELS={ 1:[UNI_ONE_GL_DEF], 3:[30,120,210],
                    18:Array.from({length:18},(_,i)=>i*15), ext:[127] };
-/* The 1 level set is the one the operator can retarget - a site measuring uniformity at its
-   own working level should not have to run the 3 level set to get there. Every other set is
-   fixed by the guidance it comes from, so only this one reads the field.
-   Read through here rather than indexing UNI_LEVELS directly, so the run, the pre-arm stage
-   and anything else asking "what will this mode measure" cannot disagree. */
+/* The only place to read a set: the 1-level set takes its level from the field. */
 function uniLevels(key){
   return String(key)==="1"
     ? [numInput("uniOneGl",UNI_ONE_GL_DEF,{min:0,max:255,int:true})]
     : UNI_LEVELS[key];
 }
 
-/* Capture order is serpentine - left to right across the top row, right to left across the
-   middle, left to right across the bottom - so the probe travels the shortest path across the
-   display rather than jumping back to the left edge twice. Written as a table rather than
-   derived arithmetically: it is read by four consumers and needs to be obvious.
+/* Capture order is serpentine (the middle row runs right to left), the shortest probe path.
    col/row are 0-based from the top left. */
 const UNI_POS=[{label:"UL",col:0,row:0},{label:"UC",col:1,row:0},{label:"UR",col:2,row:0},
                {label:"CR",col:2,row:1},{label:"CC",col:1,row:1},{label:"CL",col:0,row:1},
                {label:"LL",col:0,row:2},{label:"LC",col:1,row:2},{label:"LR",col:2,row:2}];
 const UNI_N=UNI_POS.length;
-/* Capture indices in reading order, row-major - derived from the layout above so the two
-   cannot disagree. Only the middle row differs from capture order, and getting it wrong is the
-   one defect here that produces entirely plausible numbers, so every matrix, map, table and
-   file orders through this rather than reordering by hand. */
+/* Capture indices in reading order. Getting the middle row wrong gives plausible numbers, so every
+   matrix, map, table and file orders through this. */
 const UNI_READ=UNI_POS.map((_,k)=>k)
   .sort((a,b)=>(UNI_POS[a].row-UNI_POS[b].row)||(UNI_POS[a].col-UNI_POS[b].col));
 
-/* One move delay for both modes: either way the operator is carrying the probe across the
-   display to the next of the nine positions, which is the same journey whoever is driving
-   the pattern. */
+/* One move delay for both modes: the probe makes the same journey either way. */
 const MOVE_DELAY_UNI_DEF=2;        // seconds to move the probe between positions
 const UNI_FALLBACK_ASPECT=16/9;    // when a run carries no recorded stage aspect
 const UNI_IDLE_LABEL="Data collection uses full screen or full window";
 
 /* ---- stage ---- */
-/* The nine cells are built once. DOM order is reading order, because CSS grid auto-placement
-   flows row-major; the array is indexed by CAPTURE order, so uniCells[i] is always the cell
-   the run's position i refers to. */
+/* DOM order is reading order (grid flows row-major); uniCells is indexed by capture order. */
 let uniCells=null;
 function uniBuildGrid(){
   const g=$("uniGrid"), mark=$("uniMark");
@@ -4150,20 +3771,15 @@ function uniBuildGrid(){
   uniCells=cells;
 }
 
-/* Marker holds half the scale off whatever it sits on: mid gray against black, 82 against
-   DDL 210, 248 against DDL 120. The flip is what makes it one rule for both field modes - a
-   fixed value picked to read against black vanishes on a full field near mid scale. */
+/* Marker sits half the scale off its background, so one rule reads on black and on a full field. */
 const markGray=b => b<128 ? b+128 : b-128;
 
-/* Single cell lights only position i and blacks the other eight; full field lights all nine.
-   ddl null blacks everything, which is the state between readings in single cell mode. */
+/* Single cell lights position i only, full field all nine; ddl null blacks everything. */
 function setUniField(i,ddl,field){
   const full=field==="full" && ddl!=null, lit=ddl==null?0:ddl;
   for(let k=0;k<UNI_N;k++) uniCells[k].style.background=grayCss(full||k===i?lit:0);
 }
-/* Shown between readings and hidden during them, so nothing but the level under test is on
-   screen while the meter integrates. Placed on thirds, so it tracks the cells at any stage
-   size without being told what that size is. */
+/* Shown between readings only; placed on thirds, so it tracks the cells at any stage size. */
 function setUniMark(i,bg){
   const m=$("uniMark"), p=UNI_POS[i];
   m.style.left=`${p.col*100/3}%`; m.style.top=`${p.row*100/3}%`;
@@ -4173,10 +3789,7 @@ function setUniMark(i,bg){
 }
 function hideUniMark(){ $("uniMark").hidden=true; }
 
-/* Status text sits at an edge, well away from the probe, colored off the field beneath it (fsInk).
-   It defaults to the bottom edge and moves to the top while the bottom row is under measurement,
-   so it is never on the patch being read. bg is therefore always the field the text actually sits
-   on - the rest state between cells, not the level under test. */
+/* Status at the bottom edge, or the top while the bottom row is read; bg is the field under the text. */
 function setUniStatus(txt,bg,atTop){
   $("uniLabel").textContent=txt;
   const el=$("uniStatus");
@@ -4187,11 +3800,8 @@ function setUniStatus(txt,bg,atTop){
 const setUniReadout=(Y,up,vp)=>setReadout("uni",Y,up,vp);
 const setUniExtCount=ms=>setCount($("uniExtCount"),ms);
 
-/* Full window is a fixed overlay: no API, no permission, never refused, and the only way to
-   measure an area smaller than the whole display - the operator sizes the browser to the area
-   they want and the nine cells divide that. Full screen is the same box handed to the
-   Fullscreen API, which needs the click's user activation, so both are opened from the button
-   handler before anything awaits. */
+/* Full window is a fixed overlay (never refused); full screen is the same box via the Fullscreen API,
+   so both open from the button handler before any await. */
 async function openUniStage(present){
   if(present!=="screen"){ $("uniStage").classList.add("fw"); return true; }
   return enterStageFullscreen($("uniStage"));
@@ -4206,11 +3816,8 @@ let lastUniConf=null;
 
 const uni={ on:false, external:false, present:"screen", lastRun:null,
   stop(){ this.on=false; updateButtons(); },
-  /* opts.external drives an EXTERNAL run: nothing is painted and nothing on this machine is
-     coordinated. The operator moves the probe across nine positions on a display driven by
-     something else while the run reads on a fixed interval. Positions are labeled exactly as a
-     local run's are, so every consumer downstream - metrics, map, TSV, JSON, Luni - is
-     unchanged. */
+  /* opts.external: nothing is painted; positions are labeled as a local run's, so everything
+     downstream is unchanged. */
   async run(key,opts={}){
     if(!app.ready){ showMsg("uniMsg","Connect the instrument first.","warn"); return; }
     if(this.on||seq.on) return;
@@ -4222,8 +3829,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     this.on=true; this.external=ext;
     renderUniConformance(null);          // clears the previous results; updates the buttons
 
-    /* Read once, with the other settings: editing a field mid-run must not move a grid the
-       operator is already pacing against. */
+    /* Read once: editing a field mid-run must not change the run. */
     const navg=numInput("uniNavg",2,{min:1,max:64,int:true});
     const sc=numInput("uniScale",1.0,{min:1e-9});
     const Lamb=numInput("uniLamb",0,{min:0});
@@ -4248,18 +3854,9 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     const alive=()=>this.on;
     uniBackgrounded=false;
 
-    /* The stage aspect is recorded, not derived later: a full-window run divides the browser
-       window rather than the screen, and env.screen would describe the wrong rectangle. Only
-       the map uses it, to draw the measured area in its own proportions.
-       stagePx keeps the size the ratio was taken from, which the ratio alone cannot recover:
-       full window exists so the operator can measure a defined area, and two acquisitions of different
-       areas on one display share an aspect while measuring different regions at different cell
-       sizes. It also lets a reader check a full-screen run against env.screen.
-       CSS pixels, as getBoundingClientRect reports them - dpr travels alongside so device
-       pixels are recoverable, and browser zoom is folded into both. Null for external acquisitions for
-       the same reason stageAspect is: pdweb does not drive that display.
-       mm only when a pitch was declared, and measured off the element rather than assumed from the
-       nominal 10 cm - max-width can clamp the grid, and full screen replaces the size outright. */
+    /* Recorded, not derived: a full-window run divides the window, not env.screen. stageAspect draws
+       the map; stagePx keeps the measured area's size (CSS px, with dpr; mm only with a declared
+       pitch, measured off the element). Both null for external runs. */
     const box=$("uniGrid").getBoundingClientRect();
     const stageAspect=(!ext && box.height>0) ? box.width/box.height : null;
     const mmPer=mmPerCssPx();
@@ -4269,25 +3866,16 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
          wMm:pixelPitchMm ? +(box.width*mmPer).toFixed(1) : null,
          hMm:pixelPitchMm ? +(box.height*mmPer).toFixed(1) : null} : null;
 
-    /* ---- stage control ----
-       The only thing that genuinely differs between a local and an external run is what happens
-       between positions: show the ring on the next cell and count down on the status line, or
-       count down on the external stage while the operator walks the probe to a position on
-       someone else's screen. Isolating it here keeps the measurement loop below identical for
-       both. */
+    /* ---- stage control ---- local and external differ only between positions: ring and status
+       countdown, or the external stage's countdown. */
     $("uniStage").classList.toggle("ext",ext);
-    /* Clear the previous run's traces before the stage is shown. The readout and the external
-       "last" line are only ever written when a reading lands, so without this they carry a
-       value from an unrelated run into the new one - and a number sitting under a fresh
-       acquisition reads as this run's first measurement. */
+    /* Clear the previous run's readout and "last" line. */
     setUniReadout(null);
     $("uniExtPrev").textContent="";
     if(ext){ $("uniExtNext").textContent="-"; $("uniExtHint").textContent="-";
              $("uniExtCount").textContent="-"; $("uniExtCount").className="count"; }
-    /* Field state between positions. Single cell goes black, so the only thing lit during a run
-       is the cell under test. Full field holds the ladder's first level: dropping a lit field
-       to black between every position would make the display settle from a different place at
-       each one. */
+    /* Between positions: black for single cell; full field holds the first level, so the display
+       always settles from the same place. */
     const restLevel=field==="full"?levels[0]:null;
 
     const posPrep=i=>{
@@ -4300,13 +3888,11 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
       setUniField(i,restLevel,field);
       setUniMark(i,restLevel??0);
     };
-    /* The move window starts when the previous reading finished, so the operator always gets
-       the whole of it however long the meter took. */
+    /* The move window starts when the previous reading finished. */
     const posWait=async i=>{
       if(ext) return sleepTicking(delayMs,alive,left=>setUniExtCount(left));
       const p=UNI_POS[i];
-      /* Placed for the position being moved TO, so the text is already clear of the patch
-         before the reading starts rather than jumping at the moment of measurement. */
+      /* Placed for the target position, so the text is clear before the reading. */
       return sleepTicking(delayMs,alive,left=>setUniStatus(
         `Move to ${p.label} · position ${i+1} of ${UNI_N} · ${(left/1000).toFixed(1)} s`,
         restLevel??0,p.row===2));
@@ -4320,11 +3906,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
         return;
       }
       setUniField(i,ddl,field);
-      /* Bottom row under measurement pushes the status text to the top edge, so it is never on
-         the patch being read. Either way it ends up over the rest state rather than the lit
-         cell, which is what it is colored against: the held level in full field, black in
-         single cell. Passing ddl regardless made single-cell text jump between mid-gray and
-         near-white on an unchanging black background. */
+      /* Colored against the rest state the text sits on, not ddl. */
       setUniStatus(`${p.label} · DDL ${ddl} · position ${i+1} of ${UNI_N} · `+
                    `level ${j+1} of ${levels.length}`,restLevel??0,p.row===2);
     };
@@ -4334,7 +3916,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
       else setUniField(0,null,field);
       $("uniLabel").textContent=UNI_IDLE_LABEL;
     };
-    /* Times only completed reads, to explain how long a run took rather than to flag a fault. */
+    /* Completed reads only, to explain a run's length. */
     const timedRead=async()=>{
       const t=performance.now();
       const m=await dev.measure("adaptive",navg,"lum",alive);
@@ -4342,10 +3924,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
       return m;
     };
 
-    /* Position is the OUTER loop and gray level the inner one: the probe is seated once per
-       position and steps the whole ladder without moving. Nine seatings whatever the level
-       count - the other nesting would be 162 probe moves for an 18-level run, and every one of
-       them a chance to seat the probe slightly differently. */
+    /* Position outer, level inner: nine probe seatings, not 162 for an 18-level run. */
     for(let i=0;i<UNI_N && this.on;i++){
       posPrep(i);
       if(!await posWait(i)) break;
@@ -4353,8 +3932,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
       for(let j=0;j<levels.length && this.on;j++){
         const ddl=levels[j], p=UNI_POS[i];
         lvlPrep(i,ddl,j);
-        /* Settle after the level change, as the ramp does. On a full field this is the whole
-           display's load changing rather than a ninth of it. */
+        /* Settle after the level change, as the ramp does. */
         if(!ext && !await sleepWhile(SETTLE_MS,alive)) break;
         let m;
         try{ m=await timedRead(); }
@@ -4373,9 +3951,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     this.on=false; updateButtons();
     stageReset();
 
-    /* Completeness gate: the metrics run only when every position produced a reading at every
-       level. A missing position moves the median and therefore every LUDM, and the result still
-       looks entirely reasonable. */
+    /* Metrics need every position at every level: a missing one moves the median, plausibly. */
     const expected=UNI_N*levels.length;
     const complete=!stopped && results.length===expected;
 
@@ -4383,16 +3959,11 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
     this.lastRun={
       meta:{ started:started.toISOString(), mode:String(key), field, present,
              navg, scale:sc, Lamb, floor, refUV,
-             /* The operator's repositioning window, and what it covers. Both modes move the
-                probe across the nine positions, so both carry a real delay; moveDelayCovers
-                says whether display settling is inside it, which an interpreter cannot infer
-                from the number alone. */
+             /* moveDelayCovers: whether settling is inside the delay. */
              moveDelayMs:delayMs, moveDelayCovers:ext?"move+settle":"move",
              product:$("dProd").textContent, serial:dev.serial||"",
              complete, stopped, external:ext,
-             /* settleMs is the lead time between a level being presented and its measurement.
-                On an external run that lead time IS the move delay - the operator's move plus
-                settle - so writing SETTLE_MS there would be untrue. */
+             /* Presentation-to-measurement lead time; the move delay on an external run. */
              settleMs:ext?delayMs:SETTLE_MS,
              stageAspect, stagePx, backgrounded:uniBackgrounded, readMsMean, env:envInfo() },
       levels:levels.slice(), positions:UNI_POS.map(p=>p.label),
@@ -4424,9 +3995,7 @@ const uni={ on:false, external:false, present:"screen", lastRun:null,
   }
 };
 
-/* Full window has no browser-provided way out, so Esc has to be wired here: it stops the run,
-   and startUni's finally closes the stage. A fullscreen presentation gets this for free - the
-   browser leaves fullscreen on Esc and the fullscreenchange handler above does the rest. */
+/* Esc for full window (fullscreen gets it from the browser); startUni's finally closes the stage. */
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape" && uni.on && uni.present==="window"){
     uni.stop();
@@ -4434,9 +4003,7 @@ document.addEventListener("keydown",e=>{
   }
 });
 
-/* The stage is opened here rather than inside uni.run() so a fullscreen request still carries
-   the click's user activation. External acquisitions skip all of it: the stage exists to present the
-   pattern, and on an external run the pattern is on another machine. */
+/* Opened here, not in uni.run(), to keep the click's user activation. External runs skip the stage. */
 async function startUni(key,opts={}){
   if(uni.on||seq.on) return;
   const ext=!!opts.external;
@@ -4448,13 +4015,11 @@ async function startUni(key,opts={}){
       showMsg("uniMsg","Could not enter full screen. Choose Full window to run inside the browser window instead.","warn");
       return;
     }
-    /* Show the first position's ring before arming, so the operator seats the probe against the
-       real target rather than against a description of it. */
+    /* Ring on the first position before arming, to seat the probe against. */
     const field=$("uniField").value, levels=uniLevels(key);
     const rest=field==="full"?levels[0]:null;
     setUniField(0,rest,field); setUniMark(0,rest??0);
-    /* Capture starts at UL, so the bottom edge is clear; stated rather than left to the class
-       being absent, since the stage may be reopened after a run that ended on the bottom row. */
+    /* Explicit: a previous run may have left the status at the top. */
     setUniStatus(`${UNI_POS[0].label} · ready`,rest??0,UNI_POS[0].row===2);
     if(!(await armStageStart($("uniGoPrompt"),$("uniGoDetail"),$("btnUniGo"),
         `${UNI_N} positions × ${levels.length} gray level${levels.length>1?"s":""} · `+
@@ -4474,11 +4039,10 @@ $("btnUniExt").onclick=()=>startUni("ext",{external:true});
 $("btnUniStop").onclick=()=>uni.stop();
 
 /* ---- analysis ----
-   The two uniformity metrics of AAPM Report No. 270 and TG18, with L' = L + L_amb:
+   AAPM Report No. 270 / TG18, with L' = L + L_amb:
      LUDM = max over i of  100 |L'i - median(L')| / median(L')     (deviation from the median)
      MLD  = 200 (L'max - L'min) / (L'max + L'min)                  (max luminance deviation)
-   L_amb is added ONLY here.  Every displayed and exported luminance is therefore the raw measurement L, and
-   the Luni header clarifies this to the end user. */
+   L_amb is added ONLY here; displayed and exported luminance is raw L, as the Luni header says. */
 function uniMedian(asc){
   const n=asc.length;
   return n%2 ? asc[(n-1)/2] : (asc[n/2-1]+asc[n/2])/2;
@@ -4487,7 +4051,7 @@ function uniAnalyze(run,Lamb,floor,refUV){
   const gls=[...new Set(run.points.map(p=>p.ddl))].sort((a,b)=>a-b);
   const byLevel=[], warnings=[], undef=[];
   for(const gl of gls){
-    /* Indexed by capture position, so index 0 is UL whatever order the readings arrived in. */
+    /* Indexed by capture position. */
     const L=new Array(UNI_N).fill(null), U=new Array(UNI_N).fill(null), V=new Array(UNI_N).fill(null);
     for(const p of run.points)
       if(p.ddl===gl && p.pos>=0 && p.pos<UNI_N){ L[p.pos]=p.Y; U[p.pos]=p.up; V[p.pos]=p.vp; }
@@ -4495,8 +4059,7 @@ function uniAnalyze(run,Lamb,floor,refUV){
 
     const Lp=L.map(v=>v+Lamb);
     const med=uniMedian([...Lp].sort((a,b)=>a-b));
-    /* A median of zero is reachable - black on an emissive display with L_amb left at 0 - and
-       both metrics are ratios. Report n/a and say why rather than dividing by it. */
+    /* A zero median (black, L_amb 0) gives n/a rather than a division by zero. */
     let ludm=null, ludmAt=null;
     if(med>0){
       ludm=-1;
@@ -4511,10 +4074,7 @@ function uniAnalyze(run,Lamb,floor,refUV){
     /* Deviation of each position from the median, in percent - what the map draws. */
     const dev=med>0 ? Lp.map(v=>100*(v-med)/med) : Lp.map(()=>0);
 
-    /* Chromaticity uniformity, which the luminance metrics say nothing about. Positions dimmer
-       than the floor are dropped: u'v' there is mostly meter noise, and one near-black corner
-       would otherwise set the whole level's spread. Same gate the ramp applies to its
-       reference Δu'v'. */
+    /* Chromaticity spread about the mean, above the color floor only (u'v' is noise near black). */
     const idx=[]; for(let k=0;k<UNI_N;k++) if(L[k]>=floor) idx.push(k);
     let duv=null, duvAt=null;
     if(idx.length>=2){
@@ -4522,12 +4082,8 @@ function uniAnalyze(run,Lamb,floor,refUV){
       duv=-1;
       for(const k of idx){ const d=Math.hypot(U[k]-ub,V[k]-vb); if(d>duv){ duv=d; duvAt=k; } }
     }
-    /* Distance from the chosen white point, which answers a different question from the spread
-       above: a display can be perfectly uniform and uniformly wrong. Reported alongside rather
-       than instead of, because uniformity is defined about the display's own mean and swapping
-       the basis would silently redefine every previously recorded Max Δu'v'.
-       One position is enough here - unlike the spread, which needs two to have a mean worth
-       taking - so the gate is only the color floor. */
+    /* Distance from the chosen white point - a uniform display can be uniformly wrong. Alongside the
+       spread, not instead, so recorded Max Δu'v' keeps its meaning. One position is enough. */
     let duvRef=null, duvRefAt=null;
     if(refUV && idx.length>=1){
       duvRef=-1;
@@ -4538,8 +4094,7 @@ function uniAnalyze(run,Lamb,floor,refUV){
                   duv,duvAt,duvRef,duvRefAt,nUsed:idx.length});
   }
   if(!byLevel.length) return null;
-  /* One message however many levels are affected: a display measured with the room dark and
-     L_amb left at 0 would otherwise raise this eighteen times. */
+  /* One message for all affected levels. */
   if(undef.length) warnings.push(
     `LUDM and MLD are undefined at DDL ${undef.join(", ")}: the readings there average zero `+
     `luminance, so there is nothing to take a percentage of. Enter the ambient contribution as `+
@@ -4555,8 +4110,7 @@ function uniAnalyze(run,Lamb,floor,refUV){
     maxMLD:  mM && {v:mM.v, gl:mM.gl, at:`${UNI_POS[mM.r.maxAt].label}/${UNI_POS[mM.r.minAt].label}`},
     maxDuv:  mD && {v:mD.v, gl:mD.gl, at:UNI_POS[mD.r.duvAt].label, nUsed:mD.r.nUsed},
     maxDuvRef: mR && {v:mR.v, gl:mR.gl, at:UNI_POS[mR.r.duvRefAt].label, nUsed:mR.r.nUsed},
-    /* Copied out of meta so the renderers read one object rather than reaching back into the
-       run - and so an imported run describes itself the same way a captured one does. */
+    /* From meta, so renderers read one object, captured or imported. */
     mode:m.mode, field:m.field, present:m.present, external:!!m.external,
     aspect: m.stageAspect || UNI_FALLBACK_ASPECT,
     warnings
@@ -4568,9 +4122,7 @@ const upct=(x,d=2)=>(x==null?"n/a":x.toFixed(d)+"%");
 const uniFieldText=a=>a.external?"external display"
   :(a.field==="full"?"full field":"single cell")+
    (a.present==="window"?", full window":", full screen");
-/* Eighteen DDLs written out push the value onto three lines and squeeze the key into two. A
-   uniformly stepped ladder describes itself in one phrase; anything else falls back to its
-   endpoints. The Luni file still writes the list in full - that is its format. */
+/* Long ladders as a phrase ("0 to 255, every 15"); the Luni file still lists them in full. */
 function uniLevelText(ls){
   if(ls.length<=6) return `${ls.length}  (DDL ${ls.join(", ")})`;
   const steps=[...new Set(ls.slice(1).map((v,i)=>v-ls[i]))];
@@ -4588,8 +4140,7 @@ function renderUniConformance(a){
     updateButtons(); return;
   }
   lastUniConf=a;
-  /* Values are reported without pass/fail styling, as everywhere else in this page: acceptance
-     limits differ by display class and by which guidance a site follows. */
+  /* No pass/fail styling, as elsewhere. */
   const rows=[
     ["Gray levels", uniLevelText(a.levels)],
     ["Positions", `${a.n}  (UL UC UR / CL CC CR / LL LC LR)`],
@@ -4604,13 +4155,12 @@ function renderUniConformance(a){
     ["Chromaticity reference (u', v')", a.refUV?`(${a.refUV[0]}, ${a.refUV[1]})`:"n/a"],
     ["Positions used for Δu'v' (≥"+a.floor+" cd/m²)", `${a.maxDuv?a.maxDuv.nUsed:0} of ${a.n}`],
   ];
-  /* The one field-derived value, `Pattern`, is built from validated enums (see validateUniRun). */
+  /* Pattern comes from validated enums (validateUniRun). */
   setConfRows("uniConfGrid",rows);
   $("uniConfHead").textContent = a.maxLUDM
     ? `Uniformity - max LUDM ${upct(a.maxLUDM.v)} at DDL ${a.maxLUDM.gl}`
     : "Uniformity";
-  /* innerHTML for the L_amb subscript, matching the grid row above. The string is an app
-     literal with nothing interpolated into it. */
+  /* innerHTML for the subscript; an app literal, nothing interpolated. */
   $("uniConfNote").innerHTML =
     `LUDM is the largest deviation of any position from the median of the nine; MLD is the `+
     `spread between the brightest and darkest. Both use L' = L + L<sub>amb</sub> and are computed `+
@@ -4622,8 +4172,7 @@ function renderUniConformance(a){
   updateButtons();
 }
 
-/* One 3x3 matrix per gray level, in READING order (UNI_READ) - laid out the way the positions
-   sit on the display, which is also the layout the Luni file carries. */
+/* One 3x3 matrix per level in reading order, as on the display and in the Luni file. */
 function renderUniMatrices(a){
   const host=$("uniMatHost"); host.replaceChildren();
   $("uniMatrices").hidden=!a;
@@ -4631,8 +4180,7 @@ function renderUniMatrices(a){
   for(const r of a.byLevel){
     const t=document.createElement("table"); t.className="unimat";
     const cap=document.createElement("caption");
-    /* No unit on the median: the note above the matrices carries it once, and repeating it here
-       wraps most captions onto a second line at two columns. */
+    /* No unit: the note carries it, and it would wrap the caption. */
     cap.textContent=`DDL ${r.gl}   ·   LUDM ${upct(r.ludm,3)}   ·   MLD ${upct(r.mld,3)}`+
                     `   ·   median ${r.med.toFixed(3)}`;
     t.appendChild(cap);
@@ -4651,38 +4199,27 @@ function renderUniMatrices(a){
   }
 }
 
-/* ---- deviation map ----
-   Nine numbers say how much a display varies but not what shape the variation has: a
-   left-to-right backlight gradient and one dim corner can produce the same LUDM. The map
-   interpolates between the nine positions so the shape is visible directly. */
+/* ---- deviation map ---- interpolated between the nine positions to show the shape of the
+   variation, which LUDM alone cannot (a gradient and a dim corner can match). */
 const UNI_COOL=[76,124,196], UNI_ZERO=[56,60,66], UNI_WARM=[209,84,79];
 const rgbOf=([r,g,b])=>`rgb(${r},${g},${b})`;
-/* t in [-1,1]: cool below the median, warm above, a near-neutral display gray at zero so a
-   uniform display reads as flat rather than as a color. The warm end is the red the charts
-   already use for target lines. */
+/* t in [-1,1]: cool below the median, warm above, neutral gray at zero. */
 function uniColor(t){
   const k=Math.min(1,Math.abs(t)), c=t<0?UNI_COOL:UNI_WARM;
   return UNI_ZERO.map((z,i)=>Math.round(z+(c[i]-z)*k));
 }
-/* Labels sit on the map's own fill, which is identical in both page themes and in the export,
-   so readable ink is chosen from the patch under them rather than from the theme. */
+/* Label ink from the fill under it (the same in both themes and the export). */
 const uniInk=([r,g,b])=>(0.2126*r+0.7152*g+0.0722*b)>140?"#101215":"#f2f4f6";
 
-/* The field between the nine positions is bilinear-interpolated onto a small offscreen canvas
-   and embedded as a data URI. Drawn as SVG rects instead, any cell small enough to look smooth
-   runs to thousands of elements and pushes the exported data URI into the hundreds of
-   kilobytes. The canvas is deliberately small - a three by three measurement carries no detail
-   beyond this, and the browser's own smoothing does the upscaling, which for a bilinear field
-   reproduces the same function. A data: URI is not a network fetch, so it neither breaks the
-   single-file constraint nor taints the canvas the PNG export rasterizes through. */
+/* Bilinear field on a small canvas, embedded as a data URI (SVG rects would run to thousands and bloat
+   the export). Browser smoothing upscales a bilinear field faithfully; a data: URI does not taint
+   the export canvas. */
 const UNI_FIELD_PX=200;
 function uniFieldURL(grid,scale,aspect){
   const W=UNI_FIELD_PX, H=Math.max(32,Math.round(UNI_FIELD_PX/aspect));
   const c=document.createElement("canvas"); c.width=W; c.height=H;
   const ctx=c.getContext("2d"), img=ctx.createImageData(W,H), d=img.data;
-  /* Control points sit at the CELL CENTERS - normalized 1/6, 1/2, 5/6 - so the interpolation
-     runs between them and holds flat out to the edges rather than extrapolating past the
-     outermost measurement, which there is no evidence for. */
+  /* Control points at cell centers (1/6, 1/2, 5/6), held flat to the edges - no extrapolation. */
   const axis=v=>{ const t=Math.min(2,Math.max(0,(v-1/6)*3)), i=Math.min(1,Math.floor(t));
                   return [i,t-i]; };
   for(let py=0;py<H;py++){
@@ -4703,8 +4240,7 @@ function renderUniMap(a){
   const host=$("uniMapHost"); host.replaceChildren();
   if(!a || !a.byLevel.length) return;
 
-  /* `uni` marks the chart as belonging to the uniformity card, which has its own Display ID and
-     timestamp. */
+  /* uni: this card's Display ID and timestamp. */
   const {wrap,h3}=chartShell({title:"Deviation from median",slug:"uniformity-map",legend:null,note:"",uni:true});
 
   const bar=document.createElement("div"); bar.className="unimapbar";
@@ -4713,8 +4249,7 @@ function renderUniMap(a){
   const glSel=document.createElement("select");
   a.byLevel.forEach((r,i)=>{ const o=document.createElement("option");
     o.value=String(i); o.textContent=`DDL ${r.gl}`; glSel.appendChild(o); });
-  /* Opens on the level with the worst LUDM: that is the one worth looking at, and on a
-     one-level run it is the only one. */
+  /* Opens on the worst-LUDM level. */
   const start=a.maxLUDM?a.byLevel.findIndex(r=>r.gl===a.maxLUDM.gl):0;
   glSel.value=String(Math.max(0,start));
   const scSel=document.createElement("select");
@@ -4733,11 +4268,8 @@ function renderUniMap(a){
   const draw=()=>{
     const r=a.byLevel[+glSel.value]||a.byLevel[0];
     const maxAbs=Math.max(...r.dev.map(v=>Math.abs(v)));
-    /* Auto fits the range to this level's own largest deviation, which is what makes a small
-       gradient visible at all - and equally what makes a good display fill the palette as
-       dramatically as a bad one. The note says so, because a map like this is otherwise read as
-       severity when it only shows shape. The floor keeps a uniform display from being scaled up into
-       pure meter noise. */
+    /* Auto fits this level's largest deviation: shape, not severity, as the note says. The floor
+       keeps a uniform display from being scaled up into noise. */
     const scale=scSel.value==="auto" ? Math.max(maxAbs,0.05) : +scSel.value;
 
     const aspect=Math.min(3,Math.max(0.6,a.aspect||UNI_FALLBACK_ASPECT));
@@ -4747,8 +4279,7 @@ function renderUniMap(a){
     box.replaceChildren();
     const svg=sEl("svg",{viewBox:`0 0 ${W} ${H}`,preserveAspectRatio:"xMidYMid meet"},box);
 
-    /* Geometry comes straight from UNI_POS, so the map cannot be transposed independently of
-       the pattern that was painted. */
+    /* Geometry from UNI_POS, so the map cannot be transposed from the pattern. */
     const g3=[[0,0,0],[0,0,0],[0,0,0]];
     for(let k=0;k<UNI_N;k++) g3[UNI_POS[k].row][UNI_POS[k].col]=r.dev[k];
     sEl("image",{x:PAD,y:PAD,width:MW,height:MH,preserveAspectRatio:"none",
@@ -4775,9 +4306,7 @@ function renderUniMap(a){
         .textContent=r.L[k].toFixed(3)+" cd/m²";
     }
 
-    /* The scale is continuous, so the bar is drawn inside the SVG rather than handed to
-       legendRow, which only knows line and dot swatches - and it has to survive into the
-       exported image, where the page's HTML controls do not. */
+    /* Scale bar in the SVG, so it reaches the export (legendRow has no gradient swatch). */
     const bx=(W-BAR_W)/2;
     const lg=sEl("linearGradient",{id:"uniGrad",x1:"0",x2:"1",y1:"0",y2:"0"},sEl("defs",{},svg));
     for(let i=0;i<=20;i++)
@@ -4789,14 +4318,10 @@ function renderUniMap(a){
                   "font-family":MONO},svg).textContent=t;
 
     metrics.textContent=`LUDM ${upct(r.ludm)}   ·   MLD ${upct(r.mld)}`;
-    /* Title and note carry the level and the scale because the two selects above them are page
-       HTML and do not reach the exported image. */
+    /* Title and note carry level and scale: the selects do not reach the export. */
     wrap.chartMeta.title=`Deviation from median · DDL ${r.gl}`;
     h3.textContent=wrap.chartMeta.title;
-    /* Built once as plain text for chartMeta - the exported image draws its note with canvas
-       fillText and has no way to render markup - then re-emitted with the L_amb subscript for
-       the page. Every interpolated value is toFixed() output or a DDL, so the innerHTML form
-       carries nothing device- or file-supplied. */
+    /* Plain text for the export; the page adds the subscript. Only numbers are interpolated. */
     const note=
       `Deviation of each position from the median of the nine at DDL ${r.gl}, interpolated `+
       `between them. Median ${r.med.toFixed(3)} cd/m² (L' = L + L_amb (${a.Lamb} cd/m²)). `+
@@ -4816,13 +4341,11 @@ function renderUniMap(a){
 const UNI_MODE_TEXT={"1":"1 step(s)","3":"3 step(s)","18":"18 step(s)",ext:"External step(s)"};
 const uniGl3=g=>String(g).padStart(3,"0");        // gray levels are written three digits wide
 const f3=v=>v==null?"n/a":v.toFixed(3);
-/* One gray level as the Luni file and the analysis copy both write it: a metrics line, then the
-   3x3 matrix in reading order. */
+/* One level for the Luni file and the analysis copy: metrics, then the matrix in reading order. */
 const uniLevelBlock=r=>[`GL ${uniGl3(r.gl)} (LUDM ${f3(r.ludm)}) (MLD ${f3(r.mld)})`,
   ...[0,1,2].map(row=>[0,1,2].map(col=>r.L[UNI_READ[row*3+col]].toFixed(3)).join("\t")), ""];
 
-/* Shared by the TSV comment and the Luni header so the two cannot disagree. Both units, not mm
-   alone: the pitch is a claim, so a reader who doubts it needs what it was derived from. */
+/* For the TSV and Luni headers. Pixels as well as mm: the pitch is only a claim. */
 function uniAreaText(s){
   const cell=(v)=>Math.round(v/3);
   let t=`${s.w} x ${s.h} CSS px (device pixel ratio ${s.dpr}, `+
@@ -4832,11 +4355,9 @@ function uniAreaText(s){
   return t;
 }
 
-/* ---- Luni writer: the pacsDisplay-compatible plain-text uniformity format ----
-   A commented header - tab after every leading "#" - then one block per gray level carrying
-   its metrics and a 3x3 matrix in reading order. Luminances are RAW measured values, not L':
-   the header says so, and L_amb is applied only inside LUDM and MLD.
-   Header line 1 keeps the cLR writer's three-token title discipline (see CLR_TITLE). */
+/* ---- Luni writer: pacsDisplay-compatible uniformity text ----
+   "#\t" header, then per level its metrics and matrix. Raw L, not L' (the header says so). Line 1 keeps
+   the cLR's three-token title (see CLR_TITLE). */
 const LUNI_TITLE="pdweb uniformity 1.0";
 function buildLuni(run,a){
   const m=run.meta, out=[];
@@ -4847,19 +4368,13 @@ function buildLuni(run,a){
   out.push(`#\tMeter = ${m.product||"i1d3"} SN=${m.serial||""}`);
   out.push(`#\tMode = ${UNI_MODE_TEXT[m.mode]||m.mode}`);
   out.push(`#\tGray Level(s): ${a.levels.map(uniGl3).join(" ")}`);
-  /* An addition to the format, not part of it: without this line a single-cell and a full-field
-     run of the same display are indistinguishable in the file, and they are not the same
-     measurement. A reader that does not know the field is a comment like every other. */
+  /* Additions to the format (comments to other readers): Pattern, Measured area (local runs only),
+     and both Δu'v' figures - the file cannot otherwise tell spread from offset. */
   out.push(`#\tPattern: ${uniFieldText(a)}`);
-  /* Also an addition to the format. The measured area is the defining parameter of a full
-     window run and cannot be recovered from the matrices, so it travels with them. Omitted
-     entirely on an external run, where pdweb never saw the area. */
   if(m.stagePx) out.push(`#\tMeasured area: ${uniAreaText(m.stagePx)}`);
   out.push("#");
   out.push(`#\tMax. LUDM:\t${a.maxLUDM?f3(a.maxLUDM.v):"n/a"}\t(GL ${a.maxLUDM?uniGl3(a.maxLUDM.gl):"---"})`);
   out.push(`#\tMax. MLD:\t${a.maxMLD?f3(a.maxMLD.v):"n/a"}\t(GL ${a.maxMLD?uniGl3(a.maxMLD.gl):"---"})`);
-  /* Additions to the format, like Pattern above. Both Δu'v' figures travel because the file
-     otherwise cannot say whether a chromaticity number is spread or offset from target. */
   out.push(`#\tMax. du'v' (about display mean):\t${a.maxDuv?a.maxDuv.v.toFixed(4):"n/a"}`+
     `\t(GL ${a.maxDuv?uniGl3(a.maxDuv.gl):"---"})`);
   out.push(`#\tMax. du'v' (from reference):\t${a.maxDuvRef?a.maxDuvRef.v.toFixed(4):"n/a"}`+
@@ -4876,9 +4391,7 @@ function buildLuni(run,a){
   return joinEOL(out);
 }
 
-/* Tab-separated table for pasting into a spreadsheet: one row per position per gray level, in
-   reading order within each level. Raw measured Y plus L', so the ambient assumption travels
-   with the numbers. */
+/* Spreadsheet table: a row per position per level, reading order, raw Y plus L'. */
 function buildUniTSV(run){
   const m=run.meta;
   const head=[
@@ -4893,15 +4406,10 @@ function buildUniTSV(run){
         `(${m.moveDelayCovers||"move+settle"})`
       : `local pattern, ${((m.settleMs??SETTLE_MS)/1000).toFixed(2)} s settle, `+
         `${((m.moveDelayMs??0)/1000).toFixed(1)} s move delay (${m.moveDelayCovers||"move"})`),
-    /* See buildTSV: a throttled countdown stretches the interval without changing anything in
-       the table, so the flag travels with the numbers rather than only with the JSON. */
     `# tab backgrounded during run: ${m.backgrounded?"yes":"no"}`,
     `# positions are listed in analysis order: UL UC UR / CL CC CR / LL LC LR`,
   ];
-  /* The measured area, when pdweb drove the display. Absent on external acquisitions rather than
-     written as a zero or a guess - see stagePx at capture. It belongs directly under the
-     pattern line, which it qualifies; located by that line rather than by a fixed index, so
-     inserting a header above it cannot silently move it somewhere else. */
+  /* Under the pattern line it qualifies, found by content; absent on external runs. */
   if(m.stagePx) head.splice(head.findIndex(l=>l.startsWith("# pattern:"))+1,0,
     `# measured area: ${uniAreaText(m.stagePx)}`);
   const gls=[...new Set(run.points.map(p=>p.ddl))].sort((a,b)=>a-b);
@@ -4917,23 +4425,18 @@ function buildUniTSV(run){
 
 $("btnUniExpLuni").onclick=()=>{
   const run=uni.lastRun;
-  /* Gated on a complete run and on an analysis: a matrix with a hole in it would be written as
-     if it were whole, and the header carries metrics that only exist once it is scored. */
+  /* Needs a complete, analyzed run: the header carries the metrics. */
   if(!run||!run.meta.complete||!run.analysis) return;
   download(`Luni_${dispFile("uniDispId")}.txt`, buildLuni(run,run.analysis), "text/plain;charset=utf-8");
   log(`Luni written for ${dispName("uniDispId")} (${run.analysis.levels.length} level(s), `+
       `${run.points.length} readings)`,"ok");
 };
 $("btnUniCopyData").onclick=()=>{ if(uni.lastRun) copyText(buildUniTSV(uni.lastRun),"uniformity table"); };
-/* Field whitelist, not a rename: `pos` is the capture index and `label` rides along so a file
-   read by anything other than this page does not have to know the serpentine order. */
+/* pos is the capture index; label rides along so other readers need not know the serpentine order. */
 const uniExpPoint=p=>({pos:p.pos, label:p.label, ddl:p.ddl, Y:p.Y, up:p.up, vp:p.vp});
 $("btnUniExpJson").onclick=()=>{
   if(!uni.lastRun) return;
-  /* byLevel repeats every measured luminance and would double the file, so only the summary
-     metrics are kept - Re-analyze rebuilds the rest. env is deliberately not written at this
-     level: it belongs to meta, stamped once when the run was captured (see the lumResponse
-     export for the full reasoning). */
+  /* Summary metrics only; Re-analyze rebuilds byLevel. env stays in meta (see the lumResponse export). */
   const {analysis, display:_prior, points, ...rest}=uni.lastRun;
   const payload={ format:"pdweb-uniformity/1", exported:new Date().toISOString(), ...rest,
                   points:points.map(uniExpPoint), display:dispName("uniDispId"),
@@ -4961,32 +4464,27 @@ $("btnUniCopyConf").onclick=()=>{
     "",
     "Luminance (L, not L') in cd/m2, in reading order: UL UC UR / CL CC CR / LL LC LR",
     ...a.byLevel.flatMap(uniLevelBlock),
-    /* Warnings travel with the numbers, as they do for the ramp. */
+    /* Warnings travel with the numbers. */
     ...(a.warnings.length ? ["WARNINGS",...a.warnings.map(w=>`- ${w}`)] : []),
   ].join("\n");
   copyText(lines,"uniformity analysis");
 };
 
-/* ---- import / re-analysis ----
-   Same discipline as validateRun: everything in the file is untrusted, so fields are coerced,
-   range-checked and length-capped before reaching the metrics or the DOM. */
+/* ---- import / re-analysis ---- untrusted, as validateRun. */
 function validateUniRun(o){
   const {m,meta,display}=importBase(o,"pdweb-uniformity/","readings");
-  /* Capped at one reading per position per level of the largest set, so a padded file cannot
-     make the matrices or the Luni file run on indefinitely. */
+  /* At most one reading per position per level of the largest set. */
   const CAP=UNI_N*UNI_LEVELS[18].length;
   if(o.points.length>CAP) throw new Error(`too many readings (${o.points.length}, max ${CAP})`);
   const points=objs(o.points,"reading",(p,t)=>{
     const pos=num(p.pos,`${t} position`,{min:0,max:UNI_N-1});
     if(!Number.isInteger(pos)) throw new Error(`${t} position is not a whole number`);
-    /* label is derived from pos, never taken from the file: the two could disagree, and every
-       reader here trusts pos. */
+    /* label from pos, never the file: every reader here trusts pos. */
     return {pos, label:UNI_POS[pos].label, ddl:num(p.ddl,`${t} DDL`,{min:0,max:255}), ...readYuv(p,t)};
   });
   if(!points.length) throw new Error("no readings");
   const levels=[...new Set(points.map(p=>p.ddl))].sort((a,b)=>a-b);
-  /* Completeness is recomputed from the readings rather than trusted: it gates the Luni export,
-     and a file claiming to be complete with a hole in it would be written as if it were. */
+  /* Completeness recomputed, not trusted: it gates the Luni export. */
   const seen=new Set(points.map(p=>`${p.pos}|${p.ddl}`));
   const pick=(v,list,dflt)=>list.includes(v)?v:dflt;
   const s=m.stagePx;
@@ -4995,16 +4493,12 @@ function validateUniRun(o){
     field:pick(m.field,["cell","full","none"],"cell"),
     present:pick(m.present,["screen","window","none"],"screen"),
     complete:levels.every(g=>UNI_POS.every((_,k)=>seen.has(`${k}|${g}`))),
-    /* Both uniformity modes move the probe, so unlike the luminance card a missing delay means
-       the field was absent rather than inapplicable - fall back to the default. */
+    /* Both modes move the probe, so a missing delay means absent: use the default. */
     moveDelayMs:meta.moveDelayMs??MOVE_DELAY_UNI_DEF*1000,
     moveDelayCovers:meta.moveDelayCovers??(meta.external?"move+settle":"move"),
-    /* Clamped to a shape a display could plausibly have. It only sets the map's proportions,
-       but an absurd value would collapse the map to a line. */
+    /* Clamped to a plausible shape; it only sets the map's proportions. */
     stageAspect: +m.stageAspect>0 ? Math.min(3,Math.max(0.6,+m.stageAspect)) : null,
-    /* Provenance only - taken or dropped whole rather than clamped. The mm fields are re-derived
-       from the file's own pitch rather than trusted, so a file cannot claim an area that
-       disagrees with the pitch beside it; an out-of-range pitch drops all three. */
+    /* Provenance: kept or dropped whole. mm is re-derived from the file's own pitch, not trusted. */
     stagePx: (s && +s.w>0 && +s.h>0 && Number.isFinite(+s.w) && Number.isFinite(+s.h)) ? (()=>{
       const w=Math.round(+s.w), h=Math.round(+s.h), dpr=+s.dpr>0 ? +s.dpr : 1;
       const p=validPitch(s.pitchMm)||null, mm=p ? p*dpr : null;
@@ -5014,8 +4508,7 @@ function validateUniRun(o){
   return { meta, levels, positions:UNI_POS.map(p=>p.label), points, analysis:null, display };
 }
 
-/* Re-runs the metrics on the loaded run against the current L_amb, color floor and white point,
-   so an imported capture can be examined under a different ambient or target assumption. */
+/* Re-analyzes the loaded run with the current L_amb, color floor and white point. */
 function analyzeLoadedUniRun(){
   const run=uni.lastRun;
   if(!run||!run.points.length){ showMsg("uniMsg","No run loaded to analyze.","warn"); return; }
@@ -5030,8 +4523,7 @@ function analyzeLoadedUniRun(){
   const a=uniAnalyze(run,Lamb,floor,refUV);
   if(!a){ showMsg("uniMsg","Could not analyze the loaded run.","warn"); return; }
   run.analysis=a;
-  /* Re-analyzing must reproduce the capture-time caveat, or an imported external run would
-     silently lose the reason to doubt it. */
+  /* Keep the capture-time caveat. */
   if(run.meta.backgrounded) a.warnings.unshift(bgWarning("positions",run.meta.moveDelayMs));
   renderUniAnalysis(a);
   if(a.warnings.length) showMsg("uniMsg",a.warnings,"warn"); else clearMsg("uniMsg");
@@ -5056,24 +4548,20 @@ wireImport("btnUniImport","uniFileImport",(o,name)=>{
    TG270-pQC and TG270-sQC follow AAPM Report No. 270 and TG18-OIQ follows AAPM TG18 (Online Report
    No. 3); each is redrawn from the published description. No AAPM pattern files are included.
 
-   Every pattern draws into one canvas whose backing store is sized in DEVICE pixels, and none of it
-   goes through the interface scale (--uiscale / --cm10). Bar and line-pair periods are defined in
-   display pixels, so a 2-pixel pair has to land on two physical pixels whatever the OS scaling; a
-   CSS-pixel canvas at 125% scaling would resample it into something else entirely.
+   One canvas, sized in DEVICE pixels and outside the interface scale, so a 2-pixel pair lands on two
+   physical pixels at any OS scaling.
    ========================================================================== */
 const pat={key:null, st:null, v:null, W:0, H:0, drag:null, raf:0, opener:null, exact:true, warned:false};
 const patCv=$("patCanvas"), pctx=patCv.getContext("2d");
 const fillG=(g,x,y,w,h)=>{ pctx.fillStyle=grayCss(g); pctx.fillRect(x,y,w,h); };
 const clampInt=(v,lo,hi,d)=>{ const n=parseInt(v,10); return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):d; };
-/* Toolbar ink. Most patterns keep the fixed #666; the uniform fields hold 100 gray levels off
-   their background so the controls stay findable at any level. */
+/* Toolbar ink: #666, or 100 levels off a uniform field's background. */
 const patInk=g=>$("patStage").style.setProperty("--patink",g==null?"":grayCss(g));
 const inkOff=g=>g<120?g+100:g-100;
 
 function patDraw(){ if(pat.key&&pat.W) PAT[pat.key].draw(pctx,pat.W,pat.H,pat.v,pat.st); }
 const patQueue=()=>{ if(!pat.raf) pat.raf=requestAnimationFrame(()=>{ pat.raf=0; patDraw(); }); };
-/* Zoomable patterns keep a view: s is pattern units to device pixels, (ox,oy) the pattern origin
-   on the canvas, s0 the fitted scale. Zoom and pan only ever touch the view. */
+/* Zoomable view: s is pattern units to device pixels, (ox,oy) the origin, s0 the fitted scale. */
 function patResetView(){ const v=PAT[pat.key].fit(pat.W,pat.H); pat.v={...v,s0:v.s,zoom:1}; }
 const patXY=e=>{ const r=patCv.getBoundingClientRect();
   return [(e.clientX-r.left)*pat.W/r.width,(e.clientY-r.top)*pat.H/r.height]; };
@@ -5106,16 +4594,11 @@ function numBox(val,title,commit){
   return el;
 }
 
-/* The canvas tracks its own size in device pixels - devicePixelContentBoxSize where the browser
-   reports it, else the CSS size times dpr. The last report is kept even with no pattern open: closing
-   one pattern and opening another in the same task never changes the size, so no report arrives and
-   openPattern applies the kept one. Every resize resets the view, as the original pages did. */
-/* pat.exact says whether that size is known to the pixel. Without it the canvas is resampled by up to
-   a pixel, which a bar pattern shows, so the patterns marked bars warn once per session. */
+/* Canvas size in device pixels, kept between patterns (reopening in one task brings no new report).
+   pat.exact: known to the pixel; otherwise the bars patterns warn once per session. Resizes reset the view. */
 function patDevSize(d,w,h){
   const r=window.devicePixelRatio||1, cw=w*r, ch=h*r, whole=x=>Math.abs(x-Math.round(x))<0.02;
-  /* The reported size is used only when it agrees with CSS size x dpr to a pixel: DevTools' device
-     emulation reports CSS pixels there even at an emulated dpr of 2, and is not 1:1 either way. */
+  /* The report counts only if it agrees with CSS size x dpr: DevTools emulation reports CSS pixels. */
   if(d){ const ok=Math.abs(d.inlineSize-cw)<=1 && Math.abs(d.blockSize-ch)<=1;
          return ok ? [d.inlineSize,d.blockSize,true] : [Math.round(cw),Math.round(ch),false]; }
   return [Math.round(cw),Math.round(ch),whole(cw)&&whole(ch)];   // unreported: exact only if whole
@@ -5125,9 +4608,7 @@ const patRO=new ResizeObserver(([e])=>{
   patSize();
 });
 try{ patRO.observe(patCv,{box:"device-pixel-content-box"}); }catch(e){ patRO.observe(patCv); }
-/* A dpr change with no CSS resize (a move to a differently scaled monitor) need not reach the
-   observer, so the dpr watcher re-derives the size here. Where the observer does fire, it runs
-   after this and its exact size wins. */
+/* A dpr change alone may not reach the observer; where it does, the observer runs later and wins. */
 function patDprChanged(){
   const b=patCv.getBoundingClientRect();
   [pat.cw,pat.ch,pat.exact]=patDevSize(null,b.width,b.height);
@@ -5143,8 +4624,7 @@ function patSize(){
   if(P.zoom) patResetView();
   P.resize?.(pat.st);
   patDraw();
-  /* The size can arrive after the pattern's own opening dialog (the ambient test's), so the note
-     then joins that dialog instead of replacing it. */
+  /* Joins a dialog already open (the ambient test's) rather than replacing it. */
   if(P.bars && !pat.exact && !pat.warned){
     pat.warned=true; log(`pattern canvas size inexact at dpr ${window.devicePixelRatio}`);
     if($("patDlg").hidden) patDialog("Display scaling",PAT_INEXACT,[{label:"OK"}]);
@@ -5185,9 +4665,8 @@ $("patFs").onclick=async()=>{
   patCv.focus();
 };
 
-/* Input routing. Zoomable patterns get Ctrl+wheel zoom about the cursor and drag to pan; everything
-   else goes to the pattern's own handlers. Keys typed into a pattern control stay there, and Esc
-   closes the dialog first, then the pattern. */
+/* Input: zoomable patterns get Ctrl+wheel zoom and drag pan, the rest go to the pattern. Esc closes the
+   dialog, then the pattern. */
 patCv.addEventListener("wheel",e=>{
   const P=PAT[pat.key]; if(!P) return;
   if(P.zoom){
@@ -5226,12 +4705,9 @@ document.addEventListener("keydown",patKey);
 document.addEventListener("keyup",patKey);
 
 /* ---- TG270-pQC ----
-   A 1024-unit square fitted to the window height: 18 gray bars (0-255 by 15) between side ramps,
-   with 62-unit bars above and below. Every region edge is snapped to a whole device pixel through
-   ex()/ey(), so neighbors share an edge exactly at any zoom - a fractional edge is antialiased, and
-   where a ramp row is drawn over a bar, the bar showed through as a sliver past the ramp.
-   Modulation, line pairs and the ramp strips use fixed DISPLAY-pixel periods, so they keep their
-   frequency at any zoom; stripes are clipped to their own cell. */
+   A 1024-unit square fitted to the window height: 18 gray bars (0-255 by 15) between side ramps, with
+   62-unit bars above and below. Edges snap to whole pixels through ex()/ey(), so neighbors meet exactly
+   at any zoom. Bar, line-pair and ramp-strip periods are display pixels; stripes clip to their cell. */
 function drawPQC(c,W,H,v){
   const s=v.s, ex=u=>Math.round(v.ox+u*s), ey=u=>Math.round(v.oy+u*s), SW=87, BH=50, TH=62;
   const L=ex(0), Rt=ex(1024), T=ey(0), B=ey(1024), barY=i=>ey(TH+i*BH), colX=i=>ex(SW+i*BH);
@@ -5589,30 +5065,15 @@ const PAT={
 };
 
 /* ==========================================================================
-   Session configuration
-
-   Every box an operator sets before measuring, saved and reloaded as one file, so a site's
-   preferred setup does not have to be rebuilt from memory at the start of each session.
-
-   One table drives both directions. Export walking a list that import does not read is exactly
-   how a setting comes to be written to the file and then silently not restored, so there is a
-   single description of what a config file contains and both ends read it.
-
-   Keys in the file are written out, not DOM ids: the file is meant to be legible and hand
-   editable, and an id like seqExtInt says nothing to the person editing it. The mapping lives
-   here, which also means the markup can be renamed without invalidating saved files.
-
-   What is deliberately NOT here: Display ID on either card. It identifies the display tested,
-   not the operator's preferences, and a config file that quietly relabels the display it is
-   loaded next to would be a trap. Same reasoning that keeps acquisition settings out of the run
-   importer - see the note above the uniformity import.
+   Session configuration - every pre-measurement setting, saved and reloaded as one file.
+   One table drives export and import, so nothing can be written and then not restored. File keys
+   are readable names, not DOM ids, so the file is hand-editable and the markup can be renamed.
+   Display ID is deliberately left out: it names the display, not a preference.
    ========================================================================== */
 const CFG_VERS="pdweb-config/1";
-/* [DOM id, key in the file, kind]. `num` covers every free-text numeric box; `select` is
-   validated against the control's own options, so the whitelist cannot drift from the markup. */
+/* [DOM id, file key, kind]. select values are checked against the control's own options. */
 const CFG_FIELDS={
-  /* No `interface` group, though the file has one: the pitch box is an edit buffer, so reading it
-     off the DOM here would export an uncommitted entry. See buildConfig / applyConfig. */
+  /* No interface group here: the pitch box is an edit buffer (see buildConfig / applyConfig). */
   meter:[
     ["quant","quantity","select"], ["mode","measurementMode","select"],
     ["navg","averages","num"],     ["scale","scaleFactor","num"],
@@ -5637,9 +5098,7 @@ function buildConfig(){
     const g={};
     for(const [id,key,kind] of fields){
       const el=$(id);
-      /* A blank box is a real setting, not a missing one: several fields fall back to a
-         constant when empty, so null round-trips that state rather than freezing today's
-         default into the file. */
+      /* Blank is a setting (the field's constant applies), so null round-trips it. */
       g[key]= kind==="bool"   ? !!el.checked
             : kind==="select" ? el.value
             : (Number.isFinite(parseFloat(el.value)) ? parseFloat(el.value) : null);
@@ -5648,19 +5107,14 @@ function buildConfig(){
   }
   /* From the committed value, not the box - see CFG_FIELDS. null means undeclared. */
   out.interface={pixelPitchMm};
-  /* The white point travels as the pair rather than as the selector: applyRef derives the
-     selector from the numbers, so a file cannot restore "D65" alongside custom coordinates.
-     The two cards keep separate references and therefore separate entries. */
+  /* The white point travels as numbers; applyRef derives the selector. One entry per card. */
   out.lumresponse.referenceUV=refOf("seq");
   out.uniformity.referenceUV=refOf("uni");
   return out;
 }
 
-/* Same discipline as the run importers: everything in the file is untrusted. Unknown keys and
-   whole missing groups are ignored rather than fatal - a config written by an older build
-   should still restore what it does carry - but a value that fails its check is reported rather
-   than coerced, because silently substituting a number the operator did not choose is worse
-   than leaving the box alone. */
+/* Untrusted, as the run importers. Unknown or missing keys are ignored (older files still restore);
+   a value that fails its check is reported and its box left alone, never coerced. */
 function applyConfig(o){
   if(!o||typeof o!=="object"||Array.isArray(o)) throw new Error("not a pdweb config file");
   if(typeof o.format==="string" && !o.format.startsWith("pdweb-config/"))
@@ -5683,17 +5137,14 @@ function applyConfig(o){
       else skip(where,v);
     }
   }
-  /* Through setPitch - the only writer, and it applies a scale the loop's inert boxes never need.
-     close:false leaves the card as the operator had it. */
+  /* Through setPitch, the only writer; close:false leaves the card as it was. */
   if(o.interface && typeof o.interface==="object" && !Array.isArray(o.interface)
      && "pixelPitchMm" in o.interface){
     const p=o.interface.pixelPitchMm, where="interface.pixelPitchMm";
     if(setPitch(p,{quiet:true,close:false})) applied.push(where);
     else skip(where,p);
   }
-  /* Routed through applyRef rather than written to the boxes, so the selector, the values and
-     their disabled state end up consistent however the file spells the reference. One entry per
-     card - they are independent settings. */
+  /* Through applyRef, so selector, values and disabled state agree. */
   for(const [group,p] of [["lumresponse","seq"],["uniformity","uni"]]){
     const ref=o[group]?.referenceUV;
     if(ref===undefined) continue;
@@ -5709,8 +5160,7 @@ function applyConfig(o){
    See the physical scale note in the stylesheet for what each variable reaches.
    ========================================================================== */
 
-/* 1in = 96px is fixed by the CSS spec, so this is the length the stylesheet was written against,
-   not a guess about any display. */
+/* 1in = 96px by the CSS spec: the length the stylesheet was written against. */
 const CSS_REF_MM=25.4/96;
 /* Generous either side of anything real - the check only stops a typo like 0.0165. */
 const PITCH_MIN=0.05, PITCH_MAX=1;
@@ -5718,18 +5168,14 @@ const PITCH_MIN=0.05, PITCH_MAX=1;
 /* The pitch in force, null = not declared. The controls set it; this is where it lives. */
 let pixelPitchMm=null;
 
-/* mm per CSS pixel. dpr already folds in OS scaling and browser zoom, so a mid-session zoom
-   corrects rather than doubles up.
-   A null pitch is NOT "assume 0.2646 mm, then correct for dpr" - that reads a 2x Retina pixel as
-   0.53 mm and halves the interface. Nothing known means the CSS reference stands.
-   Takes p as an argument so labelPitchOptions can price an option not yet chosen. */
+/* mm per CSS pixel; dpr folds in OS scaling and zoom. A null pitch keeps the CSS reference - scaling
+   0.2646 mm by dpr would halve the interface on a 2x display. p is a parameter for labelPitchOptions. */
 function mmForPitch(p){ return p ? p*(window.devicePixelRatio||1) : CSS_REF_MM; }
 function scaleForPitch(p){ return CSS_REF_MM/mmForPitch(p); }
 function mmPerCssPx(){ return mmForPitch(pixelPitchMm); }
 function uiScaleFactor(){ return scaleForPitch(pixelPitchMm); }
 
-/* On documentElement rather than in the sheet, so setPitch stays the single writer. --cm10 is
-   100 mm expressed in CSS px. */
+/* On documentElement, so setPitch is the single writer. --cm10 is 100 mm in CSS px. */
 function applyPitch(){
   const r=document.documentElement.style;
   r.setProperty("--uiscale",uiScaleFactor().toFixed(4));
@@ -5761,8 +5207,7 @@ function validPitch(v){
 function renderPitch(err=false){
   labelPitchOptions();
   $("uiPitchMm").classList.toggle("bad",err);
-  /* Exact match only, so a typed 0.1704 leaves every preset dark. No preset is 0, so the ||null
-     for "Not set" cannot collide with a real one. */
+  /* Exact match only; no preset is 0, so ||null for "Not set" cannot collide. */
   for(const b of $("pitchGrid").children)
     b.classList.toggle("on", !err && (+b.dataset.pitch||null)===pixelPitchMm);
   $("pitchNow").className=err?"pitchnow bad":"pitchnow";
@@ -5777,9 +5222,7 @@ function renderPitch(err=false){
   $("pitchCard").hidden=!pitchCardOpen;
 }
 
-/* The only writer of pixelPitchMm. A rejected value changes nothing: the box keeps the text, the
-   card stays open, the last good scale holds. Refused rather than clamped - a clamp applies a
-   pitch nobody entered and looks identical to acceptance. */
+/* The only writer of pixelPitchMm. A bad value is refused, not clamped, and changes nothing. */
 function setPitch(v,{quiet=false,close=true}={}){
   const n=validPitch(v);
   if(n===undefined){
@@ -5800,8 +5243,7 @@ function setPitch(v,{quiet=false,close=true}={}){
   return true;
 }
 
-/* Delegated, so adding a display class is one <button>. Every preset is a complete answer, "Not
-   set" included, so it commits and closes. */
+/* Delegated: a display class is one <button>. A preset commits and closes. */
 $("pitchGrid").onclick=e=>{
   const b=e.target.closest(".tile");
   if(b) setPitch(b.dataset.pitch);
@@ -5817,16 +5259,14 @@ $("btnPitch").onclick=()=>{
   if(pitchCardOpen){ $("pitchCard").scrollIntoView({block:"nearest"}); $("uiPitchMm").focus(); }
 };
 
-/* Browser zoom and a move to a differently-scaled display change dpr, and so what the pitch
-   implies. The media query is the only event for it, and matches one exact ratio, so re-arm. Not a
-   commit - the pitch did not change. */
+/* dpr changes (zoom, another monitor) change what the pitch implies. The media query matches one
+   ratio, so it re-arms. */
 (function watchDpr(){
   matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`)
     .addEventListener("change",()=>{ applyPitch(); renderPitch(); patDprChanged(); watchDpr(); },{once:true});
 })();
 
-/* A browser can restore the box across a reload without firing change, so commit rather than
-   trust it. The card stays shut either way. */
+/* A reload can restore the box without a change event, so commit it. */
 setPitch($("uiPitchMm").value,{quiet:true,close:false});
 
 $("btnCfgExport").onclick=()=>{
@@ -5843,10 +5283,7 @@ wireImport("btnCfgImport","cfgFileImport",(o,name)=>{
 $("btnClearLog").onclick=()=>$("log").replaceChildren();
 $("btnCopyLog").onclick=()=>copyText($("log").innerText,"log");
 
-/* Fields whose default lives in a constant are seeded here rather than carrying a value= in the
-   markup, so the constant is the only place the number appears. Anything read with numInput
-   falls back to the same constant if the field is blank or garbage, so the seed and the fallback
-   cannot drift apart. Fields with no constant behind them keep their markup value. */
+/* Seeded from their constants (numInput's fallback too), so each number appears once. */
 $("seqExtInt").value=MOVE_DELAY_SEQ_DEF;
 $("uniDelay").value =MOVE_DELAY_UNI_DEF;
 $("uniOneGl").value =UNI_ONE_GL_DEF;
@@ -5855,9 +5292,8 @@ setPatch(0);
 uniBuildGrid();                     // nine cells, once; the run only ever recolors them
 updateButtons();                    // derive initial button state from app.ready / HAS_HID
 if(!HAS_HID) showMsg("meterMsg","This browser does not expose WebHID, so the photometer cannot be reached. Use a Chromium-based browser over https:// or file://. The test patterns work in any browser.","err");
-/* ?pattern=<name>&... opens a pattern directly, taking that pattern's own parameters (the old
-   standalone pages' links carry over with the page name as the pattern); ?mode= picks a page.
-   Without WebHID the measurement pages can do nothing, so the patterns page is the better start. */
+/* ?pattern=<name>&... opens a pattern with its own parameters (the standalone pages' names); ?mode=
+   picks a page. Without WebHID, start on patterns. */
 {
   const q=new URLSearchParams(location.search), p=q.get("pattern"), m=q.get("mode");
   setMode(PAT[p] ? "patterns" : VIEWS[m] ? m : HAS_HID ? "meter" : "patterns");
