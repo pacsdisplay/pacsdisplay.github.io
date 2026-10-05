@@ -135,8 +135,8 @@ Implementation licensed under the GNU General Public License v2 or later
 <body>
     <canvas id="canvas"></canvas>
 
-    <div class="help-icon" id="helpBtn" title="Help">?</div>
-    <div class="reset-icon" id="resetBtn" title="Reset View">⟲</div>
+    <div class="help-icon" id="helpBtn" title="Help (H)">?</div>
+    <div class="reset-icon" id="resetBtn" title="Reset View (R)">⟲</div>
 
     <!-- Scaling notice: shown once if the canvas size in device pixels is not exact -->
     <div id="dpiModal" class="modal" onclick="closeModal('dpiModal')">
@@ -177,8 +177,9 @@ GRADIENT BAR (bottom):
 
 CONTROLS:
  - Click and drag: Pan the pattern in any direction
- - Ctrl + Mouse wheel: Zoom in/out (1x to 10x)
- - ⟲ button (top-left): Reset zoom and panning to default
+ - Mouse wheel: Zoom in/out (1x to 10x)
+ - ⟲ button (top-left) or R: Reset zoom and panning to default
+ - ? button or H: Show/hide this help
  - Window resize: Automatically resets view to fit new window size
 
 NOTES:
@@ -191,7 +192,7 @@ NOTES:
    after the browser draws, which no web page can detect or undo.
 
 USAGE:
- - On a DICOM-conformant display, all 18 modulation patterns should be about equally visible
+ - On a DICOM-conformant display, all 18 5-level modulation patterns should be about equally visible
  - The corner patterns (upper-left of first square, lower-right of last square) have lower contrast (3 gray levels) and may only be visible on the highest-performance displays
  - The high-contrast line pairs in the lower-right corner should appear crisp, and the ramp should be smooth with no jumps or artifacts</div>
             <div class="modal-buttons">
@@ -255,9 +256,8 @@ USAGE:
             }, { once: true });
         })();
 
-        /* Ctrl + wheel zooms (1x to 10x) about the cursor; drag pans. */
+        /* The wheel zooms (1x to 10x) about the cursor; drag pans. */
         canvas.addEventListener('wheel', e => {
-            if (!e.ctrlKey) return;
             e.preventDefault();
             const v = st.v, z = Math.max(1, Math.min(10, v.zoom * (e.deltaY > 0 ? 0.9 : 1.1))), k = z / v.zoom;
             if (k === 1) return;
@@ -278,6 +278,13 @@ USAGE:
             canvas.addEventListener(t, () => { st.drag = null; canvas.classList.remove('panning'); });
         document.getElementById('helpBtn').addEventListener('click', e => { e.stopPropagation(); showModal('helpModal'); });
         document.getElementById('resetBtn').addEventListener('click', e => { e.stopPropagation(); resetView(); draw(); });
+        /* H toggles the help, R resets the view. */
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            const k = e.key.toLowerCase(), help = document.getElementById('helpModal');
+            if (k === 'h') help.style.display = help.style.display === 'block' ? 'none' : 'block';
+            else if (k === 'r') { resetView(); draw(); }
+        });
 
         /* Drawing - the same code as this pattern in pdweb.html. */
         /* ---- TG270-sQC ----

@@ -51,6 +51,22 @@ Licensed under the GNU General Public License v2 or later
             opacity: 0.7;
         }
 
+        .scan-reset-icon {
+            position: absolute;
+            top: 10px;
+            left: 35px;
+            color: #666;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .scan-reset-icon:hover {
+            opacity: 0.7;
+        }
+
         .scan-controls {
             position: absolute;
             top: 10px;
@@ -164,7 +180,8 @@ Licensed under the GNU General Public License v2 or later
 <body class="scan-body">
     <canvas id="canvas" class="scan-canvas"></canvas>
 
-    <div class="scan-help-icon" id="helpBtn" title="Help">?</div>
+    <div class="scan-help-icon" id="helpBtn" title="Help (H)">?</div>
+    <div class="scan-reset-icon" id="resetBtn" title="Reset (R)">⟲</div>
 
     <div class="scan-controls">
         <input type="text" id="boxSizeInput" class="scan-box-size-input" value="300" maxlength="4" title="Box size in display pixels" />
@@ -187,6 +204,9 @@ Licensed under the GNU General Public License v2 or later
  - Left-click / Up Arrow: Increase gray level to next value
  - Right-click / Down Arrow: Decrease gray level to previous value
  - Box Size Input: Set box dimensions (display pixels, square)
+ - = / -: Increase / decrease the box size by 50 (restarts the scan)
+ - ⟲ or R: Reset to the starting size and gray level, box at the start
+ - ? or H: Show/hide this help
  - Gray Dropdown: Select box gray level (15, 120, or 240)
 
 USAGE:
@@ -232,18 +252,34 @@ PURPOSE:
             }, { once: true });
         })();
 
-        const q = new URLSearchParams(location.search), GRAYS = [15, 120, 240], STEP = 100;    // step in display pixels
+        const q = new URLSearchParams(location.search), GRAYS = [15, 120, 240], STEP = 100, SIZE_STEP = 50;   // display pixels
         const graySelect = document.getElementById('graySelect'), boxSizeInput = document.getElementById('boxSizeInput');
-        const size0 = parseInt(q.get('size'), 10);
-        const st = { W: 0, H: 0, size: size0 > 0 && size0 <= 2000 ? size0 : 300, g: GRAYS.includes(+q.get('gray')) ? +q.get('gray') : 120,
-                     x: 0, y: 0, anim: false, auto: false, dir: 'forward', held: null };
+        const helpBtn = document.getElementById('helpBtn'), resetBtn = document.getElementById('resetBtn');
+        const size0 = parseInt(q.get('size'), 10), gray0 = GRAYS.includes(+q.get('gray')) ? +q.get('gray') : 120;
+        const st = { W: 0, H: 0, size: size0 > 0 && size0 <= 2000 ? size0 : 300, g: gray0,
+                     x: 0, y: 0, anim: false, auto: false, dir: 'forward', held: null, gen: 0 };
+        const size1 = st.size;
         graySelect.value = st.g; boxSizeInput.value = st.size;
 
+        /* Each icon holds 100 gray levels off whatever is under it, the box or the black field, as in grays.html. */
+        const inkOff = g => g < 120 ? g + 100 : g - 100;
         function draw() {
             ctx.fillStyle = '#000'; ctx.fillRect(0, 0, st.W, st.H);
             ctx.fillStyle = `rgb(${st.g},${st.g},${st.g})`; ctx.fillRect(st.x, st.y, st.size, st.size);
+            const k = st.W / canvas.getBoundingClientRect().width;     // canvas is at the window origin
+            for (const el of [helpBtn, resetBtn]) {     // each by the gray under its center
+                const r = el.getBoundingClientRect(), x = (r.left + r.width / 2) * k, y = (r.top + r.height / 2) * k;
+                const v = inkOff(x >= st.x && x < st.x + st.size && y >= st.y && y < st.y + st.size ? st.g : 0);
+                el.style.color = `rgb(${v},${v},${v})`;
+            }
         }
         function setGray(d) { st.g = GRAYS[(GRAYS.indexOf(st.g) + d + 3) % 3]; graySelect.value = st.g; draw(); }
+        /* A new size returns the box to the start; gen ends any glide in flight. */
+        function setBox(n) {
+            st.size = n; st.x = st.y = 0; st.anim = st.auto = false; st.held = null; st.gen++;
+            boxSizeInput.value = n; draw();
+        }
+        function reset() { st.g = graySelect.value = gray0; setBox(size1); }
 
         /* Next box position along the path, or null at either end. Rows alternate direction; between
            rows the box steps down, and a last partial row is taken flush with the bottom edge. */
@@ -273,8 +309,9 @@ PURPOSE:
             const to = next(dir);
             if (!to) { st.anim = st.auto = false; st.held = null; return; }
             st.anim = true;
-            const x0 = st.x, y0 = st.y, t0 = performance.now();
+            const x0 = st.x, y0 = st.y, t0 = performance.now(), gen = st.gen;
             const step = t => {
+                if (st.gen !== gen) return;         // box resized mid-glide
                 const k = Math.min(1, (t - t0) / 200);
                 st.x = x0 + (to.x - x0) * k; st.y = y0 + (to.y - y0) * k; draw();
                 if (k < 1) return requestAnimationFrame(step);
@@ -292,6 +329,13 @@ PURPOSE:
             else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); st.auto = false;
                 if (!st.held) { st.held = e.key === 'ArrowRight' ? 'forward' : 'backward'; if (!st.anim) cont(); } }
             else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); setGray(e.key === 'ArrowUp' ? 1 : -1); }
+            else if (e.ctrlKey || e.altKey || e.metaKey) return;     // Ctrl+= / Ctrl+- stay browser zoom
+            else if (e.key === '=' || e.key === '+' || e.key === '-') { e.preventDefault();
+                const n = e.key === '-' ? Math.ceil(st.size / SIZE_STEP) * SIZE_STEP - SIZE_STEP : Math.floor(st.size / SIZE_STEP) * SIZE_STEP + SIZE_STEP;
+                if (n >= SIZE_STEP && n <= 2000) setBox(n); }
+            else if (e.key.toLowerCase() === 'h') { const m = document.getElementById('helpModal');
+                m.style.display = m.style.display === 'block' ? 'none' : 'block'; }
+            else if (e.key.toLowerCase() === 'r') reset();
         });
         window.addEventListener('keyup', e => { if ({ ArrowRight: 'forward', ArrowLeft: 'backward' }[e.key] === st.held) st.held = null; });
         canvas.addEventListener('wheel', e => {
@@ -304,13 +348,14 @@ PURPOSE:
         boxSizeInput.addEventListener('click', () => boxSizeInput.select());
         boxSizeInput.addEventListener('blur', () => {
             const n = parseInt(boxSizeInput.value, 10);
-            if (n > 0 && n <= 2000) { st.size = n; st.x = st.y = 0; draw(); } else boxSizeInput.value = st.size;
+            if (n > 0 && n <= 2000) setBox(n); else boxSizeInput.value = st.size;
         });
         boxSizeInput.addEventListener('keydown', e => {
             if (e.key === 'Escape') boxSizeInput.value = st.size;
             if (e.key === 'Enter' || e.key === 'Escape') boxSizeInput.blur();
         });
-        document.getElementById('helpBtn').addEventListener('click', () => { document.getElementById('helpModal').style.display = 'block'; });
+        helpBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'block'; });
+        resetBtn.addEventListener('click', reset);
         const closeModal = id => { document.getElementById(id).style.display = 'none'; };
     </script>
 </body>

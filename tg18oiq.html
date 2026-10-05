@@ -40,8 +40,8 @@ Implementation licensed under the GNU General Public License v2 or later
     <canvas id="canvas"></canvas>
 
     <!-- Floating UI buttons -->
-    <div class="btn" id="helpBtn" style="left:10px" title="Help">?</div>
-    <div class="btn" id="resetBtn" style="left:35px" title="Reset View">⟲</div>
+    <div class="btn" id="helpBtn" style="left:10px" title="Help (H)">?</div>
+    <div class="btn" id="resetBtn" style="left:35px" title="Reset View (R)">⟲</div>
 
     <!-- Scaling notice: shown once if the canvas size in device pixels is not exact -->
     <div id="dpiModal" class="modal" onclick="document.getElementById('dpiModal').style.display='none'">
@@ -100,8 +100,9 @@ USAGE:
 
 CONTROLS:
  - Click and drag: Pan
- - Ctrl + Mouse wheel: Zoom (1x–10x)
- - ⟲: Reset view
+ - Mouse wheel: Zoom (1x–10x)
+ - ⟲ or R: Reset view
+ - ? or H: Show/hide this help
  - Window resize: Auto-reset
 
 NOTES:
@@ -169,9 +170,8 @@ NOTES:
             }, { once: true });
         })();
 
-        /* Ctrl + wheel zooms (1x to 10x) about the cursor; drag pans. */
+        /* The wheel zooms (1x to 10x) about the cursor; drag pans. */
         canvas.addEventListener('wheel', e => {
-            if (!e.ctrlKey) return;
             e.preventDefault();
             const v = st.v, z = Math.max(1, Math.min(10, v.zoom * (e.deltaY > 0 ? 0.9 : 1.1))), k = z / v.zoom;
             if (k === 1) return;
@@ -192,6 +192,13 @@ NOTES:
             canvas.addEventListener(t, () => { st.drag = null; canvas.classList.remove('panning'); });
         document.getElementById('helpBtn').addEventListener('click', e => { e.stopPropagation(); showModal('helpModal'); });
         document.getElementById('resetBtn').addEventListener('click', e => { e.stopPropagation(); resetView(); draw(); });
+        /* H toggles the help, R resets the view. */
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            const k = e.key.toLowerCase(), help = document.getElementById('helpModal');
+            if (k === 'h') help.style.display = help.style.display === 'block' ? 'none' : 'block';
+            else if (k === 'r') { resetView(); draw(); }
+        });
 
         /* Drawing - the same code as this pattern in pdweb.html. */
         /* ---- TG18-OIQ ----

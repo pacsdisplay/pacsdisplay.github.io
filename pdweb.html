@@ -101,7 +101,8 @@
     font-weight:700;cursor:pointer;font-size:0.875rem;margin:0 6px 0 0}
   button:disabled{opacity:.4;cursor:not-allowed}
   #btnCont{min-width:7rem}   /* label toggles Continuous/Stop - pin it so the row can't reflow */
-  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:0.75rem;font-weight:700}
+  /* Line box matched to a card heading's, so a pill in a .cardtop does not make the title row taller. */
+  .pill{display:inline-block;padding:0 9px;line-height:1.5;border-radius:999px;font-size:0.75rem;font-weight:700}
   .pill.ok{background:rgba(var(--ok-rgb),.15);color:var(--ok)}
   .pill.warn{background:rgba(var(--warn-rgb),.15);color:var(--warn)}
   .pill.err{background:rgba(var(--err-rgb),.18);color:var(--err)}
@@ -139,6 +140,7 @@
   .cardtop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
   .cardtop h2{margin:0}
   .status-right{display:flex;gap:8px;align-items:center}
+  .status-right>span{display:flex}   /* no line box of its own around the pill */
   .instr-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
   .instr-btns{display:flex;gap:6px}
   .instr-row .kv{margin:0}
@@ -435,6 +437,12 @@
           conditions should match the typical environment.</li>
           <li>Near black, the chromaticity is not meaningful for the human visual system. Measurements of u',
           v' below 5 cd/m² aren't useful for determining display compliance.</li>
+        </ul>
+
+        <h3>Links</h3>
+        <ul>
+          <li>A link can open a tool directly: <code>pdweb.html?meter</code>, <code>?lumresponse</code>,
+          <code>?uniformity</code> or <code>?patterns</code>.</li>
         </ul>
       </div>
 
@@ -735,9 +743,10 @@
         <ul>
           <li>Pick a pattern. It opens over the whole window, and in full screen if <b>Open full screen</b>
           is checked.</li>
-          <li>The controls sit in the top corners: <b>?</b> explains the open pattern, <b>⟲</b> resets zoom
-          and pan, <b>⛶</b> toggles full screen, and <b>✕</b> or <code>Esc</code> closes it. In full screen
-          the first <code>Esc</code> leaves full screen and the second closes the pattern.</li>
+          <li>The controls sit in the top corners: <b>?</b> or <code>H</code> explains the open pattern,
+          <b>⟲</b> or <code>R</code> resets it (zoom and pan, or the settings it opened with), <b>⛶</b>
+          toggles full screen, and <b>✕</b> or <code>Esc</code> closes it. In full screen the first
+          <code>Esc</code> leaves full screen and the second closes the pattern.</li>
           <li>A pattern can be opened directly from a link: <code>pdweb.html?pattern=grays&amp;gray=128</code>.
           Each pattern's help lists the parameters it accepts.</li>
         </ul>
@@ -785,7 +794,7 @@
         uniform at all levels. The high-contrast line pairs at the top and bottom should appear crisp.</p>
         <h3>Controls</h3>
         <ul>
-          <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
+          <li>Drag to pan; wheel to zoom (1x to 10x); ⟲ or <code>R</code> resets. Resizing the window
           also resets. Modulation and line-pair periods are fixed in display pixels and do not change with zoom.</li>
         </ul>
       </div>
@@ -804,12 +813,12 @@
           verify pixel mapping. Useful for spotting bit-depth limits and contouring.</li>
         </ul>
         <h3>Use</h3>
-        <p>On a DICOM-conformant display, all 18 modulation patterns should be about equally visible. The 3-level corner
+        <p>On a DICOM-conformant display, all 18 5-level modulation patterns should be about equally visible. The 3-level corner
         patterns may only be visible on the highest-performance displays. The high-contrast line pairs in the lower-right
         corner should appear crisp, and the ramp should be smooth with no jumps or artifacts.</p>
         <h3>Controls</h3>
         <ul>
-          <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
+          <li>Drag to pan; wheel to zoom (1x to 10x); ⟲ or <code>R</code> resets. Resizing the window
           also resets. Modulation and line-pair periods are fixed in display pixels and do not change with zoom.</li>
         </ul>
       </div>
@@ -837,7 +846,7 @@
         visible. The 0/5% and 95/100% patches are not a reliable indicator of display performance.</p>
         <h3>Controls</h3>
         <ul>
-          <li>Drag to pan; <code>Ctrl</code> + wheel to zoom (1x to 10x); ⟲ resets. Resizing the window
+          <li>Drag to pan; wheel to zoom (1x to 10x); ⟲ or <code>R</code> resets. Resizing the window
           also resets.</li>
         </ul>
       </div>
@@ -873,7 +882,8 @@
           <code>Space</code> plays backward.</li>
           <li>Left click or <code>↑</code>: next gray level (15, 120, 240). Right click or <code>↓</code>:
           previous.</li>
-          <li>The box size is in display pixels (square); changing it returns the box to the start.</li>
+          <li>The box size is in display pixels (square); <code>=</code> / <code>-</code> step it by 50.
+          Changing it returns the box to the start.</li>
         </ul>
         <h3>Link parameters</h3>
         <ul>
@@ -1723,8 +1733,8 @@ Public License instead of this License.</pre>
 <div id="patStage" hidden>
   <canvas id="patCanvas" tabindex="-1"></canvas>
   <div class="patbar">
-    <button id="patHelp" title="Help">?</button>
-    <button id="patReset" title="Reset zoom and pan">⟲</button>
+    <button id="patHelp" title="Help (H)">?</button>
+    <button id="patReset" title="Reset (R)">⟲</button>
     <button id="patFs" title="Full screen on/off">⛶</button>
     <button id="patClose" title="Close (Esc)">✕</button>
   </div>
@@ -2478,7 +2488,9 @@ function closeHelp(){
   helpOpener=null;
 }
 /* Capture phase, so Esc closes the modal without also reaching anything underneath. */
-function onHelpKey(e){ if(e.key==="Escape"){ e.stopPropagation(); e.preventDefault(); closeHelp(); } }
+function onHelpKey(e){
+  if(e.key==="Escape"||(pat.key&&e.key.toLowerCase()==="h"&&!e.ctrlKey&&!e.altKey&&!e.metaKey)){
+    e.stopPropagation(); e.preventDefault(); closeHelp(); } }
 $("btnHelp").onclick=()=>openHelp();
 $("btnLicense").onclick=()=>openHelp("license",$("btnLicense"));
 $("btnHelpClose").onclick=closeHelp;
@@ -4551,12 +4563,13 @@ wireImport("btnUniImport","uniFileImport",(o,name)=>{
    One canvas, sized in DEVICE pixels and outside the interface scale, so a 2-pixel pair lands on two
    physical pixels at any OS scaling.
    ========================================================================== */
-const pat={key:null, st:null, v:null, W:0, H:0, drag:null, raf:0, opener:null, exact:true, warned:false};
+const pat={key:null, st:null, q:null, v:null, W:0, H:0, drag:null, raf:0, opener:null, exact:true, warned:false};
 const patCv=$("patCanvas"), pctx=patCv.getContext("2d");
 const fillG=(g,x,y,w,h)=>{ pctx.fillStyle=grayCss(g); pctx.fillRect(x,y,w,h); };
 const clampInt=(v,lo,hi,d)=>{ const n=parseInt(v,10); return Number.isFinite(n)?Math.min(hi,Math.max(lo,n)):d; };
 /* Toolbar ink: #666, or 100 levels off a uniform field's background. */
-const patInk=g=>$("patStage").style.setProperty("--patink",g==null?"":grayCss(g));
+const patInk=g=>{ $("patStage").style.setProperty("--patink",g==null?"":grayCss(g));
+  for(const b of document.querySelectorAll(".patbar button")) b.style.color=""; };
 const inkOff=g=>g<120?g+100:g-100;
 
 function patDraw(){ if(pat.key&&pat.W) PAT[pat.key].draw(pctx,pat.W,pat.H,pat.v,pat.st); }
@@ -4565,6 +4578,23 @@ const patQueue=()=>{ if(!pat.raf) pat.raf=requestAnimationFrame(()=>{ pat.raf=0;
 function patResetView(){ const v=PAT[pat.key].fit(pat.W,pat.H); pat.v={...v,s0:v.s,zoom:1}; }
 const patXY=e=>{ const r=patCv.getBoundingClientRect();
   return [(e.clientX-r.left)*pat.W/r.width,(e.clientY-r.top)*pat.H/r.height]; };
+/* Per-button toolbar ink, for a field that is not uniform: grayAt(x,y) is the gray under each button's
+   center, in device pixels, and the button holds 100 levels off it. patInk clears it. */
+function patBarInk(grayAt){
+  const c=patCv.getBoundingClientRect(), k=pat.W/c.width;
+  for(const b of document.querySelectorAll(".patbar button")){
+    if(b.hidden) continue;
+    const r=b.getBoundingClientRect();
+    b.style.color=grayCss(inkOff(grayAt((r.left+r.width/2-c.left)*k,(r.top+r.height/2-c.top)*k)));
+  }
+}
+/* R: zoom and pan for the zoomable patterns, the opening settings for the rest. */
+function patReset(){
+  const P=PAT[pat.key];
+  if(P.zoom) patResetView();
+  P.reset?.(pat.st);
+  patDraw(); patCv.focus();
+}
 
 /* In-stage dialog, for pattern results and prompts. Built with textContent throughout. */
 function patDialog(title,msg,btns=[]){
@@ -4636,9 +4666,8 @@ async function openPattern(key,q=new URLSearchParams(),gesture=false){
   const P=PAT[key]; if(!P) return;
   closePattern();
   pat.opener=document.activeElement;
-  pat.key=key; pat.st=P.init?.(q)||{}; pat.W=pat.H=0;
+  pat.key=key; pat.q=q; pat.st=P.init?.(q)||{}; pat.W=pat.H=0;
   patInk(null); $("patDlg").hidden=true;
-  $("patReset").hidden=!P.zoom;
   patCv.classList.toggle("pan",!!P.zoom);
   $("patCtl").replaceChildren(...(P.controls?.(pat.st)||[]));
   $("patStage").hidden=false;
@@ -4650,7 +4679,7 @@ async function openPattern(key,q=new URLSearchParams(),gesture=false){
 }
 function closePattern(){
   if(!pat.key) return;
-  pat.key=pat.st=pat.drag=null;
+  pat.key=pat.st=pat.q=pat.drag=null;
   $("patStage").hidden=$("patDlg").hidden=true;
   $("patCtl").replaceChildren();
   if(document.fullscreenElement===document.documentElement) exitStageFullscreen();
@@ -4659,18 +4688,17 @@ function closePattern(){
 $("patTiles").onclick=e=>{ const b=e.target.closest(".tile"); if(b) openPattern(b.dataset.pat,undefined,true); };
 $("patClose").onclick=closePattern;
 $("patHelp").onclick=()=>openHelp(pat.key,patCv);
-$("patReset").onclick=()=>{ patResetView(); patDraw(); patCv.focus(); };
+$("patReset").onclick=patReset;
 $("patFs").onclick=async()=>{
   await (document.fullscreenElement ? exitStageFullscreen() : enterStageFullscreen(document.documentElement));
   patCv.focus();
 };
 
-/* Input: zoomable patterns get Ctrl+wheel zoom and drag pan, the rest go to the pattern. Esc closes the
-   dialog, then the pattern. */
+/* Input: zoomable patterns get wheel zoom and drag pan, the rest go to the pattern. Esc closes the
+   dialog, then the pattern; H and R are help and reset everywhere. */
 patCv.addEventListener("wheel",e=>{
   const P=PAT[pat.key]; if(!P) return;
   if(P.zoom){
-    if(!e.ctrlKey) return;
     e.preventDefault();
     const v=pat.v, z=Math.max(1,Math.min(10,v.zoom*(e.deltaY>0?0.9:1.1))), k=z/v.zoom;
     if(k===1) return;
@@ -4699,6 +4727,11 @@ function patKey(e){
   if(!pat.key || !$("helpModal").hidden || e.target.closest?.(".patctl")) return;
   if(!$("patDlg").hidden){ if(e.type==="keydown" && e.key==="Escape") patDialog(null); return; }
   if(e.type==="keydown" && e.key==="Escape"){ closePattern(); return; }
+  if(e.type==="keydown" && !e.ctrlKey && !e.altKey && !e.metaKey){
+    const k=e.key.toLowerCase();
+    if(k==="h"){ e.preventDefault(); openHelp(pat.key,patCv); return; }
+    if(k==="r"){ e.preventDefault(); patReset(); return; }
+  }
   PAT[pat.key][e.type]?.(e,pat.st);
 }
 document.addEventListener("keydown",patKey);
@@ -4899,13 +4932,14 @@ const GRAYS={title:"Gray levels",
              patInk(inkOff(st.g)); patDraw(); },
   controls(st){
     st.box=numBox("",`Gray level (0-255)`,el=>{ const n=parseInt(el.value,10); GRAYS.set(st,Number.isFinite(n)?n:st.g); });
-    const step=ctl("select",{title:"Step size"},{change:e=>{ st.step=+e.target.value; }});
+    const step=st.stepSel=ctl("select",{title:"Step size"},{change:e=>{ st.step=+e.target.value; }});
     step.append(...[1,5,15].map(n=>ctl("option",{value:n,textContent:n})));
     step.value=st.step;
     return [st.box,step,ctl("button",{className:"pb",textContent:"⌗",title:"3 x 3 grid"},
       {click:()=>{ st.grid=!st.grid; patDraw(); patCv.focus(); }})];
   },
   opened(st){ GRAYS.set(st,st.g); },
+  reset(st){ const d=GRAYS.init(pat.q); st.step=st.stepSel.value=d.step; st.grid=d.grid; GRAYS.set(st,d.g); },
   draw(c,W,H,v,st){
     fillG(st.g,0,0,W,H);
     if(!st.grid) return;
@@ -4919,20 +4953,31 @@ const GRAYS={title:"Gray levels",
 };
 
 /* ---- Uniformity scan: a box stepped across the display in a serpentine path ---- */
-const SCAN_GRAYS=[15,120,240], SCAN_STEP=100;       // step in display pixels
+const SCAN_GRAYS=[15,120,240], SCAN_STEP=100, SCAN_SIZE_STEP=50;    // display pixels
 const SCAN={title:"Uniformity scan",
   init:q=>({size:clampInt(q.get("size"),1,2000,300), g:SCAN_GRAYS.includes(+q.get("gray"))?+q.get("gray"):120,
-            x:0, y:0, anim:false, auto:false, dir:"forward", held:null}),
+            x:0, y:0, anim:false, auto:false, dir:"forward", held:null, gen:0}),
   controls(st){
     st.sel=ctl("select",{title:"Box gray level"},{change:e=>{ st.g=+e.target.value; patDraw(); }});
     st.sel.append(...SCAN_GRAYS.map(g=>ctl("option",{value:g,textContent:`Gray ${g}`})));
     st.sel.value=st.g;
-    return [numBox(st.size,"Box size in display pixels",el=>{
+    st.box=numBox(st.size,"Box size in display pixels (= / - to step)",el=>{
       const n=parseInt(el.value,10);
-      if(n>0&&n<=2000){ st.size=n; st.x=st.y=0; el.dataset.v=n; patDraw(); } else el.value=st.size;
-    }),st.sel];
+      if(n>0&&n<=2000) SCAN.setSize(st,n); else el.value=st.size;
+    });
+    return [st.box,st.sel];
   },
-  draw(c,W,H,v,st){ fillG(0,0,0,W,H); fillG(st.g,st.x,st.y,st.size,st.size); },
+  /* Each toolbar button follows what is under it: the box or the black field. */
+  draw(c,W,H,v,st){
+    fillG(0,0,0,W,H); fillG(st.g,st.x,st.y,st.size,st.size);
+    patBarInk((x,y)=>x>=st.x&&x<st.x+st.size&&y>=st.y&&y<st.y+st.size ? st.g : 0);
+  },
+  /* A new size returns the box to the start; gen ends any glide in flight. */
+  setSize(st,n){
+    st.size=n; st.x=st.y=0; st.anim=st.auto=false; st.held=null; st.gen++;
+    st.box.value=st.box.dataset.v=n; patDraw();
+  },
+  reset(st){ const d=SCAN.init(pat.q); st.g=st.sel.value=d.g; SCAN.setSize(st,d.size); },
   resize(st){ st.x=Math.min(st.x,Math.max(0,pat.W-st.size)); st.y=Math.min(st.y,Math.max(0,pat.H-st.size)); },
   gray(st,d){ st.g=SCAN_GRAYS[(SCAN_GRAYS.indexOf(st.g)+d+3)%3]; st.sel.value=st.g; patDraw(); },
   /* Next box position along the path, or null at either end. Rows alternate direction; between
@@ -4963,9 +5008,9 @@ const SCAN={title:"Uniformity scan",
     const to=SCAN.next(st,dir);
     if(!to){ st.anim=st.auto=false; st.held=null; return; }
     st.anim=true;
-    const x0=st.x, y0=st.y, t0=performance.now();
+    const x0=st.x, y0=st.y, t0=performance.now(), gen=st.gen;
     const step=t=>{
-      if(pat.st!==st) return;                        // pattern closed mid-glide
+      if(pat.st!==st||st.gen!==gen) return;          // pattern closed or box resized mid-glide
       const k=Math.min(1,(t-t0)/200);
       st.x=x0+(to.x-x0)*k; st.y=y0+(to.y-y0)*k; patDraw();
       if(k<1) return requestAnimationFrame(step);
@@ -4981,6 +5026,10 @@ const SCAN={title:"Uniformity scan",
     else if(e.key==="ArrowRight"||e.key==="ArrowLeft"){ e.preventDefault(); st.auto=false;
       if(!st.held){ st.held=e.key==="ArrowRight"?"forward":"backward"; if(!st.anim) SCAN.cont(st); } }
     else if(e.key==="ArrowUp"||e.key==="ArrowDown"){ e.preventDefault(); SCAN.gray(st,e.key==="ArrowUp"?1:-1); }
+    /* = (or +) and - step the size through multiples of 50. Not with Ctrl: that is browser zoom. */
+    else if((e.key==="="||e.key==="+"||e.key==="-") && !e.ctrlKey && !e.metaKey){ e.preventDefault();
+      const d=SCAN_SIZE_STEP, n=e.key==="-" ? Math.ceil(st.size/d)*d-d : Math.floor(st.size/d)*d+d;
+      if(n>=d && n<=2000) SCAN.setSize(st,n); }
   },
   keyup(e,st){ if({ArrowRight:"forward",ArrowLeft:"backward"}[e.key]===st.held) st.held=null; },
   wheel(e,st){ st.auto=false; st.held=null; if(!st.anim) SCAN.move(st,e.deltaY>0?"forward":"backward"); },
@@ -5005,6 +5054,7 @@ const AMB={title:"Ambient test", bars:true,
     patDialog("Ambient luminance test","Please ensure the following:\n\n"+AMB_PREP+
       (pat.exact?"":"\n\nDisplay scaling: "+PAT_INEXACT),[{label:"OK"}]); AMB.show(st); },
   resize(st){ if(st.x==null) AMB.place(st); },
+  reset(st){ st.con=AMB.init(pat.q).con; st.base=0; AMB.show(st); AMB.place(st); },
   /* Anywhere in the central 80% of the canvas. */
   place(st){ const r=Math.random;
     st.x=Math.round(pat.W*0.1+r()*(pat.W*0.8-AMB_SIZE)); st.y=Math.round(pat.H*0.1+r()*(pat.H*0.8-AMB_SIZE)); patDraw(); },
@@ -5292,11 +5342,13 @@ setPatch(0);
 uniBuildGrid();                     // nine cells, once; the run only ever recolors them
 updateButtons();                    // derive initial button state from app.ready / HAS_HID
 if(!HAS_HID) showMsg("meterMsg","This browser does not expose WebHID, so the photometer cannot be reached. Use a Chromium-based browser over https:// or file://. The test patterns work in any browser.","err");
-/* ?pattern=<name>&... opens a pattern with its own parameters (the standalone pages' names); ?mode=
-   picks a page. Without WebHID, start on patterns. */
+/* ?pattern=<name>&... opens a pattern with its own parameters (the standalone pages' names). ?mode=<page>
+   or a bare ?meter, ?lumresponse, ?uniformity or ?patterns picks a page. Without WebHID, start on patterns. */
 {
-  const q=new URLSearchParams(location.search), p=q.get("pattern"), m=q.get("mode");
-  setMode(PAT[p] ? "patterns" : VIEWS[m] ? m : HAS_HID ? "meter" : "patterns");
+  const q=new URLSearchParams(location.search), p=q.get("pattern");
+  const page=k=>{ k=k?.toLowerCase(); k=k==="lumresponse"?"sequence":k; return VIEWS[k]?k:null; };
+  const m=page(q.get("mode"))||[...q.keys()].map(page).find(Boolean);
+  setMode(PAT[p] ? "patterns" : m || (HAS_HID ? "meter" : "patterns"));
   if(PAT[p]) openPattern(p,q);
 }
 log(HAS_HID ? "Ready. Connect, then choose a mode. Auto detects the cover position."

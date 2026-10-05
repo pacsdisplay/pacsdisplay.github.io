@@ -50,6 +50,23 @@ Licensed under the GNU General Public License v2 or later
             opacity: 0.7;
         }
 
+        .reset-icon {
+            transition: color 0.05s ease;
+            position: absolute;
+            top: 10px;
+            left: 35px;
+            color: #666;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .reset-icon:hover {
+            opacity: 0.7;
+        }
+
         .grid-toggle {
             font-family: 'Courier New', monospace;
             font-size: 24px;
@@ -178,7 +195,8 @@ Licensed under the GNU General Public License v2 or later
 <body>
     <canvas id="canvas"></canvas>
 
-    <div class="help-icon" id="helpBtn" title="Help">?</div>
+    <div class="help-icon" id="helpBtn" title="Help (H)">?</div>
+    <div class="reset-icon" id="resetBtn" title="Reset (R)">⟲</div>
 
     <div class="controls">
         <input type="text" id="grayInput" value="120" maxlength="3" />
@@ -200,6 +218,8 @@ Licensed under the GNU General Public License v2 or later
  - Click the gray level number: Type in a value (0-255)
  - Dropdown menu: Select step size (1, 5, or 15)
  - Grid toggle (⌗): Show/hide 3x3 grid overlay
+ - ⟲ or R: Reset to the starting gray level, step and grid
+ - ? or H: Show/hide this help
 
 USAGE:
  - Gray levels range from 0 (black) to 255 (white)
@@ -239,10 +259,10 @@ URL PARAMETERS:
 
         const q = new URLSearchParams(location.search), STEPS = [1, 5, 15];
         const grayInput = document.getElementById('grayInput'), stepSelect = document.getElementById('stepSelect');
-        const helpBtn = document.getElementById('helpBtn'), gridToggle = document.getElementById('gridToggle');
-        const st = { g: Math.max(0, Math.min(255, parseInt(q.get('gray'), 10))), step: STEPS.includes(+q.get('step')) ? +q.get('step') : 15,
-                     grid: q.get('grid') === 'true' };
-        if (Number.isNaN(st.g)) st.g = 120;
+        const helpBtn = document.getElementById('helpBtn'), resetBtn = document.getElementById('resetBtn'), gridToggle = document.getElementById('gridToggle');
+        const init = () => { const g = Math.max(0, Math.min(255, parseInt(q.get('gray'), 10)));
+            return { g: Number.isNaN(g) ? 120 : g, step: STEPS.includes(+q.get('step')) ? +q.get('step') : 15, grid: q.get('grid') === 'true' }; };
+        const st = init();
         stepSelect.value = st.step;
         // Controls and grid hold 100 gray levels off the field, so they stay findable at any level.
         const inkOff = g => g < 120 ? g + 100 : g - 100;
@@ -256,7 +276,7 @@ URL PARAMETERS:
         function setGray(g) {
             st.g = Math.max(0, Math.min(255, g));
             grayInput.value = String(st.g).padStart(3, '0');
-            helpBtn.style.color = gridToggle.style.color = grayCss(inkOff(st.g));
+            helpBtn.style.color = resetBtn.style.color = gridToggle.style.color = grayCss(inkOff(st.g));
             draw();
         }
 
@@ -264,9 +284,14 @@ URL PARAMETERS:
         canvas.addEventListener('mousedown', e => { if (e.button === 2) setGray(st.g - st.step); });
         canvas.addEventListener('wheel', e => { e.preventDefault(); setGray(st.g + (e.deltaY > 0 ? -1 : 1) * st.step); }, { passive: false });
         document.addEventListener('contextmenu', e => e.preventDefault());
+        function reset() { const d = init(); st.step = stepSelect.value = d.step; st.grid = d.grid; setGray(d.g); }
         document.addEventListener('keydown', e => {
-            const d = { ArrowUp: 1, ArrowDown: -1 }[e.key];
-            if (d && e.target !== grayInput) { e.preventDefault(); setGray(st.g + d * st.step); }
+            if (e.target === grayInput) return;
+            const d = { ArrowUp: 1, ArrowDown: -1 }[e.key], k = e.key.toLowerCase(), help = document.getElementById('helpModal');
+            if (d) { e.preventDefault(); setGray(st.g + d * st.step); }
+            else if (e.ctrlKey || e.altKey || e.metaKey) return;
+            else if (k === 'h') help.style.display = help.style.display === 'block' ? 'none' : 'block';
+            else if (k === 'r') reset();
         });
         // The gray box commits on Enter or blur and reverts on Esc.
         grayInput.addEventListener('click', () => grayInput.select());
@@ -277,6 +302,7 @@ URL PARAMETERS:
         });
         stepSelect.addEventListener('change', e => { st.step = +e.target.value; stepSelect.blur(); });
         gridToggle.addEventListener('click', () => { st.grid = !st.grid; draw(); });
+        resetBtn.addEventListener('click', reset);
         helpBtn.addEventListener('click', () => { document.getElementById('helpModal').style.display = 'block'; });
         const closeModal = id => { document.getElementById(id).style.display = 'none'; };
         document.getElementById('helpModal').addEventListener('click', e => { if (e.target.id === 'helpModal') closeModal('helpModal'); });

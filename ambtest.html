@@ -150,7 +150,8 @@ Licensed under the GNU General Public License v2 or later
     <canvas id="canvas"></canvas>
 
     <div class="toolbar">
-        <div class="toolbar-item help-icon" id="helpBtn" title="Help">?</div>
+        <div class="toolbar-item help-icon" id="helpBtn" title="Help (H)">?</div>
+        <div class="toolbar-item" id="resetBtn" title="Reset (R): starting contrast and base, new position">⟲</div>
         <div class="toolbar-item" id="moveBtn" title="Move object to new random position">Move</div>
         <div class="toolbar-item contrast-display" id="contrastDisplay" title="Shift+click to change contrast | Alt+click to shift base level">Contrast: 3 GLs</div>
     </div>
@@ -204,6 +205,8 @@ HOW TO USE:
 
 CONTROLS:
  - Click "Move" to reposition the object
+ - ⟲ or R: Reset contrast and base level, and move the object
+ - ? or H: Show/hide this help
  - Up Arrow: increase contrast
  - Down Arrow: decrease contrast
  - Left/Right Arrow: shift base level (background + object together)
@@ -296,8 +299,8 @@ Display scaling: this browser cannot report the window's size in exact display p
             return [(e.clientX - r.left) * st.W / r.width, (e.clientY - r.top) * st.H / r.height]; };
 
         const SIZE = 102, PERIOD = 6;       // display pixels
-        const q = new URLSearchParams(location.search), con0 = parseInt(q.get('contrast'), 10);
-        const st = { W: 0, H: 0, con: con0 >= 1 && con0 <= 255 ? con0 : 3, base: 0, x: null, y: null, debug: false,
+        const q = new URLSearchParams(location.search), con0 = parseInt(q.get('contrast'), 10), con1 = con0 >= 1 && con0 <= 255 ? con0 : 3;
+        const st = { W: 0, H: 0, con: con1, base: 0, x: null, y: null, debug: false,
                      lock: q.has('lockcontrast') || q.has('lock'), email: q.get('email') };
         const toolbar = document.querySelector('.toolbar'), contrastDisplay = document.getElementById('contrastDisplay');
 
@@ -348,12 +351,18 @@ Select "Cancel" to close this message`;
         });
         canvas.addEventListener('contextmenu', e => e.preventDefault());
         document.addEventListener('contextmenu', e => { if (e.shiftKey || e.altKey) e.preventDefault(); });
+        function reset() { st.con = con1; st.base = 0; show(); place(); }
         document.addEventListener('keydown', e => {
             if (e.key === 'D' && e.shiftKey) { st.debug = !st.debug; draw(); return; }
             const a = { ArrowUp: ['con', 1], ArrowDown: ['con', -1], ArrowRight: ['base', 1], ArrowLeft: ['base', -1] }[e.key];
-            if (a) { e.preventDefault(); adj(...a); }
+            if (a) { e.preventDefault(); adj(...a); return; }
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+            const k = e.key.toLowerCase(), help = document.getElementById('helpModal');
+            if (k === 'h') help.style.display = help.style.display === 'block' ? 'none' : 'block';
+            else if (k === 'r') reset();
         });
         document.getElementById('moveBtn').addEventListener('click', place);
+        document.getElementById('resetBtn').addEventListener('click', reset);
         contrastDisplay.addEventListener('click', () => adj('con', 1));
         contrastDisplay.addEventListener('contextmenu', e => { e.preventDefault(); adj('con', -1); });
         document.getElementById('helpBtn').addEventListener('click', () => { document.getElementById('helpModal').style.display = 'block'; });
