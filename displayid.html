@@ -130,6 +130,12 @@ one-liner. The EDID decoder is the one in edid.html. To be removed once the card
   .walk p{margin:0}
   @media (max-width:600px){ .walk{grid-template-columns:1fr} .walk p{margin-bottom:6px} }
   .proto{border-style:dashed}
+  details.dispdet{margin-top:12px}
+  details.dispdet[open]>summary{margin-bottom:8px}
+  .detgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin-bottom:6px}
+  .detgrid input{font-family:var(--mono)}
+  @media (max-width:520px){ .detgrid{grid-template-columns:1fr} }
+  .dispdet p.hint{margin:0}
   .kv{display:grid;grid-template-columns:7rem 1fr;gap:3px 10px}
   .kv .k{color:var(--muted)}.kv .v{font-family:var(--mono)}
   /* pdweb's collapsible card heading (the log), here inside the modal. */
@@ -230,6 +236,18 @@ one-liner. The EDID decoder is the one in edid.html. To be removed once the card
       <input id="uiDispId" placeholder="not set" spellcheck="false">
       <button id="btnDispSet">Set</button>
     </div>
+    <details class="dispdet" id="dispDet">
+      <summary class="cardhead">Details <span class="hint">make, model, serial, manufacture date</span></summary>
+      <div class="detgrid">
+        <div><label for="uiMake">Make</label><input id="uiMake" placeholder="e.g. Barco" spellcheck="false"></div>
+        <div><label for="uiModel">Model</label><input id="uiModel" placeholder="e.g. MDCC-6530" spellcheck="false"></div>
+        <div><label for="uiSerial">Serial number</label><input id="uiSerial" spellcheck="false"></div>
+        <div><label for="uiDom">Manufactured</label><input id="uiDom" placeholder="YYYY-MM-DD" spellcheck="false"></div>
+      </div>
+      <p class="hint">Recorded in the reports as separate fields. Read EDID fills them in, or type them from
+        the label on the display. The EDID gives the week of manufacture; the date is the Monday of that week.
+        With the Display ID left empty, Set makes it from the model and serial.</p>
+    </details>
     <div class="detectrow">
       <button id="btnDetect" title="Name of the display this window is on (Chrome and Edge)">Detect from browser</button>
       <button id="btnEdid" title="Model, serial and size from the display itself (Windows)">Read EDID (Windows)…</button>
@@ -506,8 +524,18 @@ function groupDisplays(list){
 /* ---------- settings: display ID and pitch ---------- */
 
 const PITCH_MIN = 0.05, PITCH_MAX = 1;
-let displayId = "", pixelPitchMm = null;
+let pixelPitchMm = null;
 let openCard = null;                       // "disp" | "pitch" | null - one settings card at a time
+
+/* The display under test. id labels the exports; the rest are recorded beside it as separate fields.
+   source says where the details came from: EDID, browser, entered, or either of the first two edited. */
+const NO_DISPLAY = {id: "", make: "", model: "", serial: "", manufactured: "", source: ""};
+let display = {...NO_DISPLAY};
+const DISP_INPUTS = {id: "uiDispId", make: "uiMake", model: "uiModel", serial: "uiSerial", manufactured: "uiDom"};
+const readDispInputs = () => Object.fromEntries(Object.entries(DISP_INPUTS).map(([k, id]) => [k, $(id).value.trim()]));
+const writeDispInputs = v => { for(const [k, id] of Object.entries(DISP_INPUTS)) $(id).value = v[k] || ""; };
+const detailKey = v => [v.make, v.model, v.serial, v.manufactured].join("\n");
+let filled = null;   // details filled in by Detect and not yet Set: {vals, source}
 
 function renderCards(){
   $("dispCard").hidden = openCard !== "disp";
@@ -516,28 +544,39 @@ function renderCards(){
 function toggleCard(which){
   openCard = openCard === which ? null : which;
   /* Opening discards an abandoned edit. */
-  if(openCard === "disp") $("uiDispId").value = displayId;
+  if(openCard === "disp"){ writeDispInputs(display); filled = null; msg("dispMsg", ""); }
   if(openCard === "pitch") $("uiPitchMm").value = pixelPitchMm === null ? "" : String(+pixelPitchMm.toFixed(4));
   renderCards();
   if(openCard){ $(openCard === "disp" ? "dispCard" : "pitchCard").scrollIntoView({block: "nearest"});
     $(openCard === "disp" ? "uiDispId" : "uiPitchMm").focus(); }
 }
 
-/* The only writer of displayId and displayInfo. Empty is a legitimate "not set" and clears the details.
-   info replaces the details when given; an edited ID keeps them (a renamed display is the same display). */
-let displayInfo = null;   // {make, model, serial, manufactured, source}
-function setDisplayId(v, {close = true, info} = {}){
-  displayId = String(v ?? "").trim();
-  if(!displayId) displayInfo = null;
-  else if(info !== undefined) displayInfo = info;
-  $("uiDispId").value = displayId;
+/* The only writer of display. */
+function setDisplay(v, {close = true} = {}){
+  display = {...NO_DISPLAY, ...v};
+  writeDispInputs(display);
   const b = $("btnDisp");
-  b.classList.toggle("unset", !displayId);
-  b.textContent = displayId || "Display not set";
-  b.title = (displayId ? `Display under test: ${displayId}` : "Display under test not set") + " - click to change";
+  b.classList.toggle("unset", !display.id);
+  b.textContent = display.id || "Display not set";
+  b.title = (display.id ? `Display under test: ${display.id}` : "Display under test not set") + " - click to change";
   if(close && openCard === "disp") openCard = null;
   renderCards();
   renderProto();
+}
+
+/* Set: the card's fields as they stand. An empty ID is made from model and serial. */
+function commitDisplay(){
+  const v = readDispInputs();
+  if(!v.id) v.id = [v.model, v.serial].filter(Boolean).join(" ");
+  const edited = s => s.endsWith(", edited") || s === "entered" ? s : `${s}, edited`;
+  const k = detailKey(v);
+  v.source = !k.trim() ? ""
+    : filled ? (k === detailKey(filled.vals) ? filled.source : edited(filled.source))
+    : k === detailKey(display) ? display.source
+    : display.source ? edited(display.source) : "entered";
+  filled = null;
+  msg("dispMsg", "");
+  setDisplay(v);
 }
 
 function validPitch(v){
@@ -566,9 +605,9 @@ function setPitch(v, {close = true} = {}){
 
 /* What a report would record: the ID, and the details as separate fields. */
 function renderProto(){
-  const i = displayInfo || {};
+  const i = display;
   $("protoState").innerHTML = `<div class="kv">${[
-    ["Display ID", displayId || "(not set)"], ["Make", i.make], ["Model", i.model], ["Serial", i.serial],
+    ["Display ID", i.id || "(not set)"], ["Make", i.make], ["Model", i.model], ["Serial", i.serial],
     ["Manufactured", i.manufactured], ["Details from", i.source],
     ["Pixel pitch", pixelPitchMm === null ? "(not set)" : `${+pixelPitchMm.toFixed(4)} mm`],
   ].map(([k, v]) => `<span class="k">${esc(k)}</span><span class="v">${esc(v || "-")}</span>`).join("")}</div>`;
@@ -605,10 +644,14 @@ async function detectFromBrowser(){
   try {
     const d = await screenDetails(), s = d.currentScreen, n = d.screens.indexOf(s) + 1;
     if(!s.label){ msg("dispMsg", "This display does not report a name. Use Read EDID, or type an ID.", "warn"); return; }
-    $("uiDispId").value = s.label;
-    detected = {id: s.label, info: {model: s.label, source: "browser (model only)"}};
+    /* Same model as the fields hold: keep what was typed. Another model: its details no longer apply. */
+    const cur = readDispInputs();
+    const vals = cur.model.toLowerCase() === s.label.toLowerCase() ? {...cur, id: cur.id || s.label}
+      : {id: s.label, make: "", model: s.label, serial: "", manufactured: ""};
+    writeDispInputs(vals);
+    filled = {vals, source: "browser (model only)"};
     msg("dispMsg", `This window is on display ${n} of ${d.screens.length}: ${s.label}. The browser gives the model ` +
-      "but not the serial number, so add one if you have several of this model. Click Set to use it.", "ok");
+      "only; add the serial number under Details if you have several of this model. Click Set to use it.", "ok");
     $("uiDispId").focus();
   } catch(e){
     msg("dispMsg", e.name === "NotAllowedError"
@@ -635,8 +678,14 @@ const PNP_MAKERS = {BDS: "Barco", EIZ: "EIZO", ENC: "EIZO", NEC: "NEC", DEL: "De
   VSC: "ViewSonic", APP: "Apple", SNY: "Sony", AUO: "AU Optronics", BOE: "BOE", CMN: "Innolux",
   SDC: "Samsung Display"};
 const makerOf = code => PNP_MAKERS[code] ? `${PNP_MAKERS[code]} (${code})` : code;
-/* ISO-style week date: sorts as text. Week 0 means the maker gave the year only. */
-const domOf = r => r.modelYear ? `${r.modelYear} (model year)` : r.week ? `${r.year}-W${String(r.week).padStart(2, "0")}` : String(r.year);
+/* EDID gives the week of manufacture; the date is the Monday of that ISO week (week 1 holds January 4).
+   Week 0 means the maker gave the year only; 0xFF means a model year rather than a date. */
+function weekMonday(year, week){
+  const jan4 = Date.UTC(year, 0, 4), back = (new Date(jan4).getUTCDay() + 6) % 7;
+  return new Date(jan4 + ((week - 1) * 7 - back) * 864e5).toISOString().slice(0, 10);
+}
+const domOf = r => r.modelYear ? {date: `${r.modelYear} (model year)`, note: ""}
+  : r.week ? {date: weekMonday(r.year, r.week), note: ` (week ${r.week})`} : {date: String(r.year), note: " (year only)"};
 
 /* One entry per physical display: a group of EDIDs (Barco large format, tiles) counts once. */
 function buildCands(list){
@@ -680,7 +729,7 @@ function renderCands(){
       `pitch ${c.pitch.toFixed(4)} mm` : "size not in EDID";
     return `<button class="tile cand${i === chosen ? " on" : ""}" data-i="${i}">
       <span class="nm">${esc(c.name)}${c.serial ? `  <span class="hint">SN ${esc(c.serial)}</span>` : ""}</span>
-      <span class="tags">${tags}</span><span class="geo">${esc(`${c.make}, manufactured ${c.dom}`)}</span>
+      <span class="tags">${tags}</span><span class="geo">${esc(`${c.make}, manufactured ${c.dom.date}${c.dom.note}`)}</span>
       <span class="geo">${esc(geo)}</span></button>`;
   }).join("");
   $("useRow").hidden = !cands.length;
@@ -711,9 +760,9 @@ function decodePaste(){
 function useChosen(){
   const c = cands[chosen];
   if(!c) return;
-  setDisplayId([c.name, c.serial].filter(Boolean).join(" "),
-    {info: {make: c.make, model: c.model, serial: c.serial, manufactured: c.dom,
-      source: `EDID${c.parts > 1 ? `, ${c.parts} parts, one display` : ""}`}});
+  filled = null;
+  setDisplay({id: [c.name, c.serial].filter(Boolean).join(" "), make: c.make, model: c.model, serial: c.serial,
+    manufactured: c.dom.date, source: `EDID${c.parts > 1 ? `, ${c.parts} parts, one display` : ""}`});
   if(!$("chkPitch").disabled && $("chkPitch").checked) setPitch(+c.pitch.toFixed(4));
   closeModal();
 }
@@ -730,14 +779,9 @@ async function copy(text, btn){
 $("psCmd").textContent = PS_CMD;
 $("btnDisp").onclick = () => toggleCard("disp");
 $("btnPitch").onclick = () => toggleCard("pitch");
-/* Set after Detect takes the detected details, even with the ID retyped: Detect says which display it is. */
-let detected = null;
-function commitId(){
-  setDisplayId($("uiDispId").value, detected ? {info: detected.info} : {});
-  detected = null;
-}
-$("btnDispSet").onclick = commitId;
-$("uiDispId").onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); commitId(); } };
+$("btnDispSet").onclick = commitDisplay;
+for(const id of Object.values(DISP_INPUTS))
+  $(id).onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); commitDisplay(); } };
 $("pitchGrid").onclick = e => { const b = e.target.closest(".tile"); if(b) setPitch(b.dataset.pitch); };
 $("btnPitchSet").onclick = () => setPitch($("uiPitchMm").value);
 $("uiPitchMm").onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); setPitch(e.target.value); } };
@@ -754,7 +798,7 @@ $("edidModal").addEventListener("click", e => { if(e.target.closest("[data-close
 document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("edidModal").hidden) closeModal(); });
 document.querySelectorAll(".modebtn").forEach(b => b.onclick = () =>
   document.querySelectorAll(".modebtn").forEach(x => x.classList.toggle("active", x === b)));
-setDisplayId(""); setPitch(null);
+setDisplay(NO_DISPLAY); setPitch(null);
 </script>
 </body>
 </html>
