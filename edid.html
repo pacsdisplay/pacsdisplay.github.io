@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<!--
+pdweb Display Information
+Copyright (c) 2026 Nicholas Bevins
+Part of the pdweb project (https://pacsdisplay.org)
+Licensed under the GNU General Public License v2 or later
+
+Reads what the browser can report about the attached displays, and decodes EDID pasted from a
+PowerShell one-liner. The EDID decoder is written from the public VESA E-EDID 1.4, CTA-861 and
+DisplayID specifications.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>pdweb Display Information</title>
+<link rel="icon" href="images/pdbw.ico" type="image/x-icon">
+<style>
+  :root{
+    --bg:#16181b;--panel:#1e2024;--panel2:#191b1e;--edge:#2f333a;--field:#101215;
+    --text:#e3e5e8;--muted:#8b9199;--faint:#6d737b;
+    --btn:#343a42;--btn-active:#454c56;--edge-hi:#565e69;
+    --ok-rgb:76,175,125;--warn-rgb:217,164,65;--err-rgb:209,84,79;
+    --ok:rgb(var(--ok-rgb));--warn:rgb(var(--warn-rgb));--err:rgb(var(--err-rgb));
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.45;font-size:13px}
+  header{padding:10px 20px;border-bottom:1px solid var(--edge);background:var(--panel2)}
+  .brand{font-size:18px;font-weight:700;letter-spacing:.2px}
+  main{max-width:760px;margin:0 auto;padding:18px 16px}
+  .card{background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:14px;margin-bottom:14px}
+  .card h2{margin:0 0 10px;font-size:12.5px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .card h3{margin:14px 0 6px;font-size:14px}
+  .card h3:first-child{margin-top:0}
+  p{margin:0 0 8px}
+  .note{color:var(--muted);font-size:12px}
+  button{background:var(--btn);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:8px 14px;
+    font-weight:700;cursor:pointer;font-size:14px;margin:0 6px 6px 0}
+  button:hover{background:var(--btn-active);border-color:var(--edge-hi)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  code,pre,textarea{font-family:var(--mono);font-size:12px}
+  code{background:var(--field);padding:1px 5px;border-radius:4px}
+  pre{background:var(--field);border:1px solid var(--edge);border-radius:6px;padding:10px;margin:0 0 8px;
+    white-space:pre-wrap;word-break:break-all}
+  textarea{width:100%;min-height:90px;background:var(--field);border:1px solid var(--edge);color:var(--text);
+    border-radius:6px;padding:8px 10px;resize:vertical}
+  ol{margin:0 0 10px;padding-left:20px}ol li{margin:3px 0}
+  .msg{margin:8px 0;padding:8px 11px;border-radius:6px}
+  .msg.warn{background:rgba(var(--warn-rgb),.12);border:1px solid rgba(var(--warn-rgb),.35);color:#e8c477}
+  .msg.err {background:rgba(var(--err-rgb),.12);border:1px solid rgba(var(--err-rgb),.35);color:#e58b87}
+  .msg.ok  {background:rgba(var(--ok-rgb),.12);border:1px solid rgba(var(--ok-rgb),.35);color:#7fd3a6}
+  .kv{display:grid;grid-template-columns:minmax(9rem,max-content) 1fr;gap:3px 14px;margin:0 0 6px}
+  .kv .k{color:var(--muted)}.kv .v{font-family:var(--mono);word-break:break-word}
+  .sub{border-top:1px solid var(--edge);padding-top:12px;margin-top:12px}
+  .sub:first-child{border-top:0;padding-top:0;margin-top:0}
+  .pill{display:inline-block;padding:0 9px;border-radius:999px;font-size:12px;font-weight:700;margin-left:6px;vertical-align:1px}
+  .pill.ok{background:rgba(var(--ok-rgb),.15);color:var(--ok)}
+  .pill.warn{background:rgba(var(--warn-rgb),.15);color:var(--warn)}
+  .pill.info{background:rgba(139,145,153,.18);color:#c6cbd1}
+  details summary{cursor:pointer;color:var(--muted);font-size:12px;user-select:none;margin:6px 0}
+  table{border-collapse:collapse;font-family:var(--mono);font-size:12px;width:100%}
+  th,td{text-align:left;padding:3px 8px;border-bottom:1px solid var(--edge);white-space:nowrap}
+  th{color:var(--muted);font-weight:600}
+  .scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<header><div class="brand">pdweb Display Information</div></header>
+<main>
+
+<section class="card">
+  <h2>1. What the browser reports</h2>
+  <div id="basic" class="kv"></div>
+  <p class="note">Chrome and Edge can list every attached display and its name with the Window Management API.
+    The browser asks for permission first. It never reports the serial number or physical size.</p>
+  <button id="btnScreens">List displays</button>
+  <div id="screensMsg"></div>
+  <div id="screens"></div>
+</section>
+
+<section class="card">
+  <h2>2. Read the EDID with PowerShell (Windows)</h2>
+  <p>The EDID is the identification block each monitor sends to the computer. It contains the manufacturer,
+    model, serial number, manufacture date, and the physical size the pixel pitch is calculated from.</p>
+  <ol>
+    <li>Open <b>Windows PowerShell</b> from the Start menu. You do not need to run it as administrator.</li>
+    <li>Copy the command below, paste it into PowerShell, and press Enter. It only reads the EDID of the
+      displays connected now and copies it to the clipboard as hexadecimal text, one line per display.
+      It changes nothing on the computer.</li>
+    <li>Paste the result into the box below.</li>
+  </ol>
+  <pre id="psCmd"></pre>
+  <button id="btnCopyPs">Copy command</button>
+  <p class="note">The EDID of any monitor in hexadecimal also works here, for example from another EDID tool
+    or from <code>/sys/class/drm/*/edid</code> on Linux. Base64 works too, one display per line.</p>
+  <textarea id="edidIn" placeholder="Paste the EDID here" spellcheck="false"></textarea>
+  <div style="margin-top:8px">
+    <button id="btnParse">Decode</button>
+    <button id="btnClear">Clear</button>
+    <button id="btnCopyOut" disabled>Copy results as text</button>
+  </div>
+  <div id="edidMsg"></div>
+</section>
+
+<section class="card" id="edidCard" hidden>
+  <h2>EDID</h2>
+  <div id="edidOut"></div>
+</section>
+
+</main>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* Reads the EDID of the displays connected now: WmiMonitorID lists only those, and its InstanceName
+   (minus the trailing _0) is the registry key holding that display's EDID. Hex rather than
+   [Convert]::ToBase64String, because Constrained Language Mode can block the .NET call. */
+const PS_CMD = "Get-CimInstance -Namespace root\\wmi WmiMonitorID | % { -join ((Get-ItemProperty ('HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\' + ($_.InstanceName -replace '_\\d+$') + '\\Device Parameters')).EDID | % { $_.ToString('X2') }) } | Set-Clipboard";
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const kv = rows => `<div class="kv">${rows.filter(r => r && r[1] !== undefined && r[1] !== "")
+  .map(([k, v]) => `<span class="k">${esc(k)}</span><span class="v">${esc(v)}</span>`).join("")}</div>`;
+const msg = (el, text, cls) => { $(el).innerHTML = text ? `<div class="msg ${cls}">${esc(text)}</div>` : ""; };
+const dpr = () => window.devicePixelRatio || 1;
+
+/* ---------- 1. browser ---------- */
+
+let screenList = [];   // [{label, w, h, current}] in device pixels, for matching EDIDs to screens
+
+function showBasic(){
+  const r = dpr(), mq = q => matchMedia(q).matches;
+  const gamut = mq("(color-gamut: rec2020)") ? "rec2020" : mq("(color-gamut: p3)") ? "p3" : mq("(color-gamut: srgb)") ? "srgb" : "unknown";
+  $("basic").innerHTML = kv([
+    ["Screen (CSS px)", `${screen.width} x ${screen.height}`],
+    ["Device pixel ratio", r],
+    ["Screen (device px)", `${Math.round(screen.width * r)} x ${Math.round(screen.height * r)}`],
+    ["Color depth", `${screen.colorDepth} bit`],
+    ["Color gamut", gamut],
+    ["Dynamic range", mq("(dynamic-range: high)") ? "high (HDR)" : "standard"],
+    ["Window Management API", "getScreenDetails" in window ? "available" : "not available in this browser"],
+  ]);
+  $("btnScreens").disabled = !("getScreenDetails" in window);
+}
+
+let details = null;
+async function listScreens(){
+  msg("screensMsg", "");
+  try {
+    if(!details){
+      details = await window.getScreenDetails();
+      details.addEventListener("screenschange", renderScreens);
+      details.addEventListener("currentscreenchange", renderScreens);
+    }
+    renderScreens();
+  } catch(e){
+    msg("screensMsg", e.name === "NotAllowedError"
+      ? "Permission was denied. Allow window management for this site in the browser's site settings, then try again."
+      : `Could not list displays: ${e.message}`, "warn");
+  }
+}
+
+function renderScreens(){
+  const cur = details.currentScreen;
+  screenList = details.screens.map(s => ({label: s.label || "", w: Math.round(s.width * s.devicePixelRatio),
+    h: Math.round(s.height * s.devicePixelRatio), current: s === cur}));
+  const rows = details.screens.map((s, i) => {
+    const flags = [s === cur && "this window", s.isPrimary && "primary", s.isInternal && "internal"].filter(Boolean).join(", ");
+    return `<tr><td>${i + 1}</td><td>${esc(s.label || "(no label)")}</td><td>${esc(flags)}</td>
+      <td>${screenList[i].w} x ${screenList[i].h}</td><td>${s.devicePixelRatio}</td><td>${s.colorDepth}</td>
+      <td>${s.left}, ${s.top}</td></tr>`;
+  }).join("");
+  $("screens").innerHTML = `<div class="scroll"><table><tr><th>#</th><th>Label</th><th></th><th>Device px</th>
+    <th>DPR</th><th>Depth</th><th>Position</th></tr>${rows}</table></div>`;
+  if(lastParsed.length) renderEdids(lastParsed);
+}
+
+/* ---------- 2. EDID input ---------- */
+
+/* Hex text (any spacing, optional 0x, commas) is taken as one stream and split at EDID headers, so one
+   or several displays work with or without line breaks. Anything else is base64, one display per line. */
+function decodeInput(text){
+  const t = text.trim();
+  if(!t) return [];
+  const hexish = t.replace(/0x/gi, "").replace(/[\s,:]/g, "");
+  let streams;
+  if(/^[0-9a-f]+$/i.test(hexish)){
+    if(hexish.length % 2) throw new Error("The hexadecimal text has an odd number of digits.");
+    streams = [Uint8Array.from(hexish.match(/../g), h => parseInt(h, 16))];
+  } else {
+    streams = t.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+      try { return Uint8Array.from(atob(l.replace(/^.*[\s:]/, "")), c => c.charCodeAt(0)); }
+      catch { throw new Error("The text is neither hexadecimal nor base64."); }
+    });
+  }
+  const out = [];
+  const HDR = [0, 255, 255, 255, 255, 255, 255, 0];
+  for(const b of streams){
+    for(let i = 0; i + 128 <= b.length; ){
+      if(HDR.every((v, k) => b[i + k] === v)){
+        const len = 128 * (1 + b[i + 126]);
+        out.push(b.subarray(i, Math.min(i + len, b.length)));
+        i += len;
+      } else i++;   // registry EDIDs can carry zero padding past the declared extensions
+    }
+  }
+  if(!out.length) throw new Error("No EDID found. An EDID starts with 00 FF FF FF FF FF FF 00.");
+  return out;
+}
+
+/* ---------- EDID decoding (VESA E-EDID 1.4) ---------- */
+
+const pnp = (b0, b1) => { const v = b0 << 8 | b1; return [10, 5, 0].map(s => String.fromCharCode(64 + (v >> s & 31))).join(""); };
+const text13 = d => String.fromCharCode(...d.subarray(5, 18)).split("\n")[0].trim();
+const blockOk = blk => blk.length === 128 && blk.reduce((a, v) => a + v, 0) % 256 === 0;
+
+/* 18-byte detailed timing descriptor, used by the base block and CTA-861 extensions. */
+function dtd(d){
+  const clk = (d[0] | d[1] << 8) * 10e3;
+  if(!clk) return null;
+  const hA = d[2] | (d[4] >> 4) << 8, hB = d[3] | (d[4] & 15) << 8;
+  const vA = d[5] | (d[7] >> 4) << 8, vB = d[6] | (d[7] & 15) << 8;
+  const interlaced = !!(d[17] & 0x80);
+  return {hA, vA: interlaced ? vA * 2 : vA, clk, hz: clk / ((hA + hB) * (vA + vB)) * (interlaced ? 2 : 1),
+    mmW: d[12] | (d[14] >> 4) << 8, mmH: d[13] | (d[14] & 15) << 8, interlaced};
+}
+
+/* DisplayID 1.x type I (10 kHz) and 2.x type VII (1 kHz) timings share a 20-byte layout, counts minus one. */
+function didTiming(d, unit){
+  const u16 = o => d[o] | d[o + 1] << 8;
+  const clk = ((d[0] | d[1] << 8 | d[2] << 16) + 1) * unit;
+  const hA = u16(4) + 1, hB = u16(6) + 1, vA = u16(12) + 1, vB = u16(14) + 1;
+  return {hA, vA, clk, hz: clk / ((hA + hB) * (vA + vB)), preferred: !!(d[3] & 0x80)};
+}
+
+function parseDisplayId(blk, res){
+  const ver = blk[1], end = Math.min(5 + blk[2], 127);
+  res.displayIdVersion = `${ver >> 4}.${ver & 15}`;
+  for(let i = 5; i + 3 <= end; ){
+    const tag = blk[i], rev = blk[i + 1], len = blk[i + 2], p = blk.subarray(i + 3, i + 3 + len);
+    if(tag === 0 && len === 0) break;   // padding
+    if(tag === 0x03 || tag === 0x22){
+      for(let k = 0; k + 20 <= p.length; k += 20)
+        res.timings.push({...didTiming(p.subarray(k, k + 20), tag === 0x03 ? 10e3 : 1e3), src: "DisplayID"});
+    } else if((tag === 0x0F || tag === 0x21) && p.length >= 8){
+      /* Display parameters: image size in 0.1 mm (1 mm when bit 7 of a 2.x block's revision is set) and the
+         native pixel count. Finer than the 1 mm sizes in timing descriptors. */
+      const u16 = o => p[o] | p[o + 1] << 8, mm = tag === 0x21 && rev & 0x80 ? 1 : 0.1;
+      if(u16(0) && u16(4)) res.displayParams = {mmW: u16(0) * mm, mmH: u16(2) * mm, w: u16(4), h: u16(6)};
+    }
+    i += 3 + len;
+  }
+}
+
+function parseEdid(b){
+  const res = {raw: b, warnings: [], timings: [], extensions: []};
+  const base = b.subarray(0, 128);
+  if(!blockOk(base)) res.warnings.push("Base block checksum is wrong. The EDID may be damaged or was copied incompletely.");
+  res.vendor = pnp(b[8], b[9]);
+  res.product = (b[10] | b[11] << 8).toString(16).toUpperCase().padStart(4, "0");
+  res.serialNum = (b[12] | b[13] << 8 | b[14] << 16 | b[15] << 24) >>> 0;
+  res.version = `${b[18]}.${b[19]}`;
+  if(b[16] === 0xFF) res.modelYear = b[17] + 1990;
+  else { res.year = b[17] + 1990; res.week = b[16]; }
+
+  const inp = b[20];
+  if(inp & 0x80){
+    res.input = "digital";
+    if(b[18] === 1 && b[19] >= 4){
+      res.bitDepth = [null, 6, 8, 10, 12, 14, 16][inp >> 4 & 7];
+      res.iface = [null, "DVI", "HDMI-a", "HDMI-b", "MDDI", "DisplayPort"][inp & 15];
+    }
+  } else res.input = "analog";
+  if(b[21] && b[22]) res.sizeCm = [b[21], b[22]];
+  if(b[23] !== 0xFF) res.gamma = (b[23] + 100) / 100;
+
+  const lo1 = b[25], lo2 = b[26], c = (hi, lo) => +(((hi << 2) | lo) / 1024).toFixed(4);
+  res.chroma = {r: [c(b[27], lo1 >> 6 & 3), c(b[28], lo1 >> 4 & 3)], g: [c(b[29], lo1 >> 2 & 3), c(b[30], lo1 & 3)],
+    b: [c(b[31], lo2 >> 6 & 3), c(b[32], lo2 >> 4 & 3)], w: [c(b[33], lo2 >> 2 & 3), c(b[34], lo2 & 3)]};
+
+  for(let o = 54; o < 126; o += 18){
+    const d = b.subarray(o, o + 18);
+    const t = dtd(d);
+    if(t){ res.timings.push({...t, src: "base", preferred: o === 54}); continue; }
+    if(d[3] === 0xFF) res.serialStr = text13(d);
+    else if(d[3] === 0xFC) res.name = text13(d);
+    else if(d[3] === 0xFE) (res.text ||= []).push(text13(d));
+  }
+
+  const nExt = b[126];
+  for(let e = 1; e <= nExt; e++){
+    const blk = b.subarray(128 * e, 128 * e + 128);
+    if(blk.length < 128){ res.warnings.push(`EDID declares ${nExt} extension block(s) but only ${e - 1} were supplied.`); break; }
+    if(!blockOk(blk)) res.warnings.push(`Extension block ${e} checksum is wrong.`);
+    const tag = blk[0];
+    if(tag === 0x02){
+      res.extensions.push("CTA-861");
+      for(let o = blk[2]; o >= 4 && o + 18 <= 127; o += 18){
+        const t = dtd(blk.subarray(o, o + 18));
+        if(!t) break;
+        res.timings.push({...t, src: "CTA-861"});
+      }
+    } else if(tag === 0x70){
+      res.extensions.push("DisplayID");
+      parseDisplayId(blk, res);
+    } else res.extensions.push(`tag 0x${tag.toString(16).padStart(2, "0")}`);
+  }
+
+  /* Native resolution and pixel pitch: DisplayID display parameters when present, else the preferred
+     timing (first base-block descriptor, or a DisplayID timing flagged preferred). */
+  const pref = res.timings.find(t => t.preferred) || res.timings[0];
+  res.preferredTiming = pref;
+  const dp = res.displayParams;
+  if(dp) res.pitch = {w: dp.w, h: dp.h, mmW: dp.mmW, mmH: dp.mmH, src: "DisplayID display parameters (0.1 mm)"};
+  else if(pref){
+    /* Timing descriptors in DisplayID carry no size; fall back to a base or CTA descriptor of the same resolution. */
+    const sized = [pref, ...res.timings].find(t => t.mmW && t.mmH && t.hA === pref.hA && t.vA === pref.vA);
+    if(sized) res.pitch = {w: pref.hA, h: pref.vA, mmW: sized.mmW, mmH: sized.mmH, src: "detailed timing (1 mm)"};
+  }
+  if(res.pitch){
+    const p = res.pitch;
+    p.pw = p.mmW / p.w; p.ph = p.mmH / p.h;
+    p.diagIn = Math.hypot(p.mmW, p.mmH) / 25.4;
+    if(Math.abs(p.pw - p.ph) / p.pw > 0.03) res.warnings.push("Horizontal and vertical pitch differ by more than 3%. Check the physical size.");
+  } else if(res.sizeCm) res.warnings.push("No size in millimeters. The centimeter size below is too coarse for pixel pitch.");
+  return res;
+}
+
+/* ---------- output ---------- */
+
+let lastParsed = [];
+
+function matchScreens(r){
+  if(!screenList.length || !r.preferredTiming) return "";
+  const {hA, vA} = r.preferredTiming;
+  const hits = screenList.map((s, i) => ({...s, n: i + 1})).filter(s =>
+    (r.name && s.label && s.label.toLowerCase().includes(r.name.toLowerCase())) || (s.w === hA && s.h === vA));
+  if(!hits.length) return "no listed display matches";
+  return hits.map(s => `#${s.n} ${s.label || ""}${s.current ? " (this window)" : ""}`.replace(/\s+/g, " ")).join("; ");
+}
+
+const fmtT = t => `${t.hA} x ${t.vA}${t.interlaced ? "i" : ""} @ ${t.hz.toFixed(2)} Hz (${(t.clk / 1e6).toFixed(2)} MHz)`;
+const hex = b => Array.from(b, v => v.toString(16).padStart(2, "0").toUpperCase()).join(" ").replace(/((?:\S\S ){16})/g, "$1\n");
+
+function summaryRows(r){
+  const p = r.pitch;
+  return [
+    ["Name", r.name],
+    ["Manufacturer", r.vendor],
+    ["Product code", r.product],
+    ["Serial (text)", r.serialStr],
+    ["Serial (number)", r.serialNum ? String(r.serialNum) : ""],
+    ["Manufactured", r.modelYear ? `model year ${r.modelYear}` : r.week ? `week ${r.week}, ${r.year}` : r.year],
+    ["Other text", (r.text || []).join(" | ")],
+    ["Native resolution", p ? `${p.w} x ${p.h}` : ""],
+    ["Image size", p ? `${p.mmW.toFixed(1)} x ${p.mmH.toFixed(1)} mm (${p.diagIn.toFixed(1)}" diagonal)` : ""],
+    ["Pixel pitch", p ? `${p.pw.toFixed(4)} x ${p.ph.toFixed(4)} mm` : ""],
+    ["Pitch from", p?.src],
+    ["Preferred timing", r.preferredTiming ? fmtT(r.preferredTiming) : ""],
+    ["Size (cm)", r.sizeCm ? `${r.sizeCm[0]} x ${r.sizeCm[1]}` : ""],
+    ["Input", [r.input, r.iface, r.bitDepth && `${r.bitDepth} bit`].filter(Boolean).join(", ")],
+    ["Gamma", r.gamma],
+    ["Chromaticity", `R ${r.chroma.r}  G ${r.chroma.g}  B ${r.chroma.b}  W ${r.chroma.w}`],
+    ["EDID version", r.version + (r.displayIdVersion ? `, DisplayID ${r.displayIdVersion}` : "")],
+    ["Extensions", r.extensions.join(", ") || "none"],
+  ];
+}
+
+function renderEdids(list){
+  lastParsed = list;
+  $("edidCard").hidden = !list.length;
+  $("btnCopyOut").disabled = !list.length;
+  $("edidOut").innerHTML = list.map((r, i) => {
+    const m = matchScreens(r);
+    const pill = r.warnings.length ? `<span class="pill warn">check</span>` : `<span class="pill ok">checksum ok</span>`;
+    const title = esc(r.name || `${r.vendor} ${r.product}`);
+    const warn = r.warnings.map(w => `<div class="msg warn">${esc(w)}</div>`).join("");
+    const timings = r.timings.length ? `<details><summary>All detailed timings (${r.timings.length})</summary>
+      <pre>${esc(r.timings.map(t => `${fmtT(t)}  ${t.src}${t.preferred ? ", preferred" : ""}${t.mmW ? `, ${t.mmW} x ${t.mmH} mm` : ""}`).join("\n"))}</pre></details>` : "";
+    return `<div class="sub"><h3>Display ${i + 1}: ${title}${pill}</h3>${warn}
+      ${kv([...summaryRows(r), m && ["Browser display", m]])}
+      ${timings}
+      <details><summary>Raw EDID (${r.raw.length} bytes)</summary><pre>${hex(r.raw)}</pre></details></div>`;
+  }).join("");
+}
+
+function asText(){
+  return lastParsed.map((r, i) => {
+    const rows = summaryRows(r).filter(([, v]) => v !== undefined && v !== "");
+    const w = Math.max(...rows.map(([k]) => k.length));
+    return [`Display ${i + 1}`, ...rows.map(([k, v]) => `  ${k.padEnd(w)}  ${v}`), ...r.warnings.map(x => `  ! ${x}`)].join("\n");
+  }).join("\n\n");
+}
+
+function decode(){
+  msg("edidMsg", "");
+  try {
+    const list = decodeInput($("edidIn").value).map(parseEdid);
+    renderEdids(list);
+    if(list.length) msg("edidMsg", `Decoded ${list.length} display${list.length > 1 ? "s" : ""}.`, "ok");
+  } catch(e){
+    renderEdids([]);
+    msg("edidMsg", e.message, "err");
+  }
+}
+
+async function copy(text, btn){
+  const old = btn.textContent;
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+  catch { btn.textContent = "Copy failed - select and copy by hand"; }
+  setTimeout(() => btn.textContent = old, 1500);
+}
+
+$("psCmd").textContent = PS_CMD;
+$("btnCopyPs").onclick = e => copy(PS_CMD, e.currentTarget);
+$("btnScreens").onclick = listScreens;
+$("btnParse").onclick = decode;
+$("btnClear").onclick = () => { $("edidIn").value = ""; renderEdids([]); msg("edidMsg", ""); };
+$("btnCopyOut").onclick = e => copy(asText(), e.currentTarget);
+$("edidIn").addEventListener("paste", () => setTimeout(decode, 0));
+showBasic();
+matchMedia(`(resolution: ${dpr()}dppx)`).addEventListener("change", showBasic);
+</script>
+</body>
+</html>
