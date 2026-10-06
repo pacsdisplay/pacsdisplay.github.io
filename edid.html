@@ -230,7 +230,7 @@ const pnp = (b0, b1) => { const v = b0 << 8 | b1; return [10, 5, 0].map(s => Str
 const text13 = d => String.fromCharCode(...d.subarray(5, 18)).split("\n")[0].trim();
 const blockOk = blk => blk.length === 128 && blk.reduce((a, v) => a + v, 0) % 256 === 0;
 
-/* 18-byte detailed timing descriptor, used by the base block and CTA-861 extensions. */
+/* 18-byte detailed timing descriptor, used by the base block and the CTA-861 and VTB extensions. */
 function dtd(d){
   const clk = (d[0] | d[1] << 8) * 10e3;
   if(!clk) return null;
@@ -263,6 +263,16 @@ function parseDisplayId(blk, res){
          native pixel count. Finer than the 1 mm sizes in timing descriptors. */
       const u16 = o => p[o] | p[o + 1] << 8, mm = tag === 0x21 && rev & 0x80 ? 1 : 0.1;
       if(u16(0) && u16(4)) res.displayParams = {mmW: u16(0) * mm, mmH: u16(2) * mm, w: u16(4), h: u16(6)};
+    } else if((tag === 0x12 || tag === 0x28) && p.length >= 22){
+      /* Tiled display topology: this EDID is one tile of a larger display. Counts and tile size are stored
+         minus one; the 9-byte topology ID (vendor, product, serial) is shared by every tile of the display. */
+      const t = p.subarray(1, 4);
+      res.tile = {
+        nH: ((t[0] >> 4) | (t[2] >> 2 & 0x30)) + 1, nV: ((t[0] & 15) | (t[2] & 0x30)) + 1,
+        col: (t[1] >> 4) | (t[2] >> 2 & 3) << 4, row: (t[1] & 15) | (t[2] & 3) << 4,
+        w: (p[4] | p[5] << 8) + 1, h: (p[6] | p[7] << 8) + 1,
+        group: Array.from(p.subarray(13, 22), v => v.toString(16).padStart(2, "0")).join(""),
+      };
     }
     i += 3 + len;
   }
@@ -316,6 +326,13 @@ function parseEdid(b){
         if(!t) break;
         res.timings.push({...t, src: "CTA-861"});
       }
+    } else if(tag === 0x10){
+      /* VESA Video Timing Block: byte 2 counts the detailed timings, which start at byte 5. */
+      res.extensions.push("VTB-EXT");
+      for(let k = 0, o = 5; k < blk[2] && o + 18 <= 127; k++, o += 18){
+        const t = dtd(blk.subarray(o, o + 18));
+        if(t) res.timings.push({...t, src: "VTB-EXT"});
+      }
     } else if(tag === 0x70){
       res.extensions.push("DisplayID");
       parseDisplayId(blk, res);
@@ -344,16 +361,64 @@ function parseEdid(b){
 
 /* ---------- output ---------- */
 
-let lastParsed = [];
+let lastParsed = [], lastGroups = [];
 
-function matchScreens(r){
-  if(!screenList.length || !r.preferredTiming) return "";
-  const {hA, vA} = r.preferredTiming;
+/* Browser screens that could be this display: same name, or same resolution either way round (rotated). */
+function matchScreens(name, w, h){
+  if(!screenList.length || !w) return "";
   const hits = screenList.map((s, i) => ({...s, n: i + 1})).filter(s =>
-    (r.name && s.label && s.label.toLowerCase().includes(r.name.toLowerCase())) || (s.w === hA && s.h === vA));
+    (name && s.label && s.label.toLowerCase().includes(name.toLowerCase())) ||
+    (s.w === w && s.h === h) || (s.w === h && s.h === w));
   if(!hits.length) return "no listed display matches";
-  return hits.map(s => `#${s.n} ${s.label || ""}${s.current ? " (this window)" : ""}`.replace(/\s+/g, " ")).join("; ");
+  return hits.map(s => (`#${s.n} ${s.label || ""}${s.w === h && s.h === w && w !== h ? " (rotated)" : ""}` +
+    `${s.current ? " (this window)" : ""}`).replace(/\s+/g, " ")).join("; ");
 }
+const matchEdid = r => matchScreens(r.name, r.pitch?.w ?? r.preferredTiming?.hA, r.pitch?.h ?? r.preferredTiming?.vA);
+
+/* Physical displays made of several EDIDs. A tiled-display block names its group outright. Otherwise
+   EDIDs with the same manufacturer, product and serial are one display driven in parts (Barco large
+   format); the parts are taken as side by side, which a whole-display timing in the EDID confirms. */
+function groupDisplays(list){
+  const key = r => r.tile ? `tile ${r.tile.group}`
+    : (r.serialStr || r.serialNum) ? `${r.vendor} ${r.product} ${r.serialStr || ""} ${r.serialNum}` : null;
+  const byKey = new Map();
+  list.forEach((r, i) => { const k = key(r); if(k) byKey.set(k, [...(byKey.get(k) || []), i]); });
+  return [...byKey.values()].filter(ix => ix.length > 1).map(ix => {
+    const parts = ix.map(i => list[i]), r0 = parts[0], p0 = r0.pitch, g = {ix, name: r0.name || `${r0.vendor} ${r0.product}`, warnings: []};
+    if(r0.tile){
+      const t = r0.tile;
+      Object.assign(g, {w: t.w * t.nH, h: t.h * t.nV, layout: `${t.nH} x ${t.nV} tiles`, how: "DisplayID tiled display block"});
+      if(p0){ g.mmW = p0.pw * g.w; g.mmH = p0.ph * g.h; }
+      if(parts.length !== t.nH * t.nV) g.warnings.push(`Only ${parts.length} of ${t.nH * t.nV} tiles were pasted.`);
+    } else if(p0 && parts.every(r => r.pitch?.h === p0.h)){
+      Object.assign(g, {w: parts.reduce((a, r) => a + r.pitch.w, 0), h: p0.h,
+        mmW: parts.reduce((a, r) => a + r.pitch.mmW, 0), mmH: p0.mmH,
+        layout: `${parts.length} parts side by side`, how: "same serial number on each part"});
+      const whole = parts.flatMap(r => r.timings).find(t => t.hA === g.w && t.vA === g.h && t.mmW && t.mmH);
+      if(whole){ g.mmW = whole.mmW; g.mmH = whole.mmH; g.how += "; whole-display timing in the EDID confirms the layout"; }
+      else g.how += "; side-by-side layout assumed";
+    } else {
+      g.how = "same serial number on each part";
+      g.warnings.push("The parts differ in height, so the whole-display size was not worked out.");
+    }
+    if(g.mmW){ g.pw = g.mmW / g.w; g.ph = g.mmH / g.h; g.diagIn = Math.hypot(g.mmW, g.mmH) / 25.4; }
+    return g;
+  });
+}
+
+function groupRows(g){
+  return [
+    ["Parts", `${g.ix.map(i => `Display ${i + 1}`).join(", ")} (${g.layout || `${g.ix.length} parts`})`],
+    ["Whole resolution", g.w ? `${g.w} x ${g.h}` : ""],
+    ["Whole image size", g.mmW ? `${g.mmW.toFixed(1)} x ${g.mmH.toFixed(1)} mm (${g.diagIn.toFixed(1)}" diagonal)` : ""],
+    ["Pixel pitch", g.pw ? `${g.pw.toFixed(4)} x ${g.ph.toFixed(4)} mm` : ""],
+    ["Grouped by", g.how],
+    // matched by size only: a part's screen already matches by name, so the whole matches when shown as one screen
+    ["Browser display", g.w ? matchScreens("", g.w, g.h).replace("no listed display matches", "none shows it as one screen") : ""],
+  ];
+}
+const groupTitle = g => `Displays ${g.ix.map(i => i + 1).join(" + ")}: ${g.name}`;
+const partOf = i => lastGroups.find(g => g.ix.includes(i));
 
 const fmtT = t => `${t.hA} x ${t.vA}${t.interlaced ? "i" : ""} @ ${t.hz.toFixed(2)} Hz (${(t.clk / 1e6).toFixed(2)} MHz)`;
 const hex = b => Array.from(b, v => v.toString(16).padStart(2, "0").toUpperCase()).join(" ").replace(/((?:\S\S ){15}\S\S) /g, "$1\n");
@@ -368,6 +433,7 @@ function summaryRows(r){
     ["Serial (number)", r.serialNum ? String(r.serialNum) : ""],
     ["Manufactured", r.modelYear ? `model year ${r.modelYear}` : r.week ? `week ${r.week}, ${r.year}` : r.year],
     ["Other text", (r.text || []).join(" | ")],
+    ["Tile", r.tile ? `column ${r.tile.col + 1}, row ${r.tile.row + 1} of ${r.tile.nH} x ${r.tile.nV}` : ""],
     ["Native resolution", p ? `${p.w} x ${p.h}` : ""],
     ["Image size", p ? `${p.mmW.toFixed(1)} x ${p.mmH.toFixed(1)} mm (${p.diagIn.toFixed(1)}" diagonal)` : ""],
     ["Pixel pitch", p ? `${p.pw.toFixed(4)} x ${p.ph.toFixed(4)} mm` : ""],
@@ -384,16 +450,19 @@ function summaryRows(r){
 
 function renderEdids(list){
   lastParsed = list;
+  lastGroups = groupDisplays(list);
   $("edidCard").hidden = !list.length;
-  $("edidOut").innerHTML = list.map((r, i) => {
-    const m = matchScreens(r);
+  const groups = lastGroups.map(g => `<div class="sub"><h3>${esc(groupTitle(g))}<span class="pill info">one physical display</span></h3>
+    ${g.warnings.map(w => `<div class="msg warn">${esc(w)}</div>`).join("")}${kv(groupRows(g))}</div>`).join("");
+  $("edidOut").innerHTML = groups + list.map((r, i) => {
+    const m = matchEdid(r), g = partOf(i);
     const pill = r.warnings.length ? `<span class="pill warn">check</span>` : `<span class="pill ok">checksum ok</span>`;
     const title = esc(r.name || `${r.vendor} ${r.product}`);
     const warn = r.warnings.map(w => `<div class="msg warn">${esc(w)}</div>`).join("");
     const timings = r.timings.length ? `<details><summary>All detailed timings (${r.timings.length})</summary>
       <pre>${esc(r.timings.map(t => `${fmtT(t)}  ${t.src}${t.preferred ? ", preferred" : ""}${t.mmW ? `, ${t.mmW} x ${t.mmH} mm` : ""}`).join("\n"))}</pre></details>` : "";
     return `<div class="sub"><h3>Display ${i + 1}: ${title}${pill}</h3>${warn}
-      ${kv([...summaryRows(r), m && ["Browser display", m]])}
+      ${kv([g && ["Part of", groupTitle(g)], ...summaryRows(r), m && ["Browser display", m]])}
       ${timings}
       <details><summary>Raw EDID (${r.raw.length} bytes)</summary><pre>${hex(r.raw)}</pre></details></div>`;
   }).join("");
@@ -427,15 +496,20 @@ function buildReport(){
       ["Size (device px)", `${screenList[i].w} x ${screenList[i].h}`],
       ["Color depth", `${s.colorDepth} bit`],
       ["Position", `${s.left}, ${s.top}`],
-      ["Orientation", s.orientation?.type],
     ])));
   } else out.push(screensErr ? `  failed - ${screensErr}` : "  not run");
 
   out.push("", "== EDID ==");
   if(lastParsed.length){
+    lastGroups.forEach(g => {
+      out.push(`${groupTitle(g)} - one physical display`, kvText(groupRows(g)));
+      g.warnings.forEach(w => out.push(`  ! ${w}`));
+      out.push("");
+    });
     lastParsed.forEach((r, i) => {
+      const g = partOf(i);
       out.push(`Display ${i + 1}: ${r.name || `${r.vendor} ${r.product}`}`,
-        kvText([...summaryRows(r), ["Browser display", matchScreens(r)]]));
+        kvText([g && ["Part of", groupTitle(g)], ...summaryRows(r), ["Browser display", matchEdid(r)]]));
       r.warnings.forEach(w => out.push(`  ! ${w}`));
       if(r.timings.length) out.push("  Detailed timings:", ...r.timings.map(t =>
         `    ${fmtT(t)}  ${t.src}${t.preferred ? ", preferred" : ""}${t.mmW ? `, ${t.mmW} x ${t.mmH} mm` : ""}`));
