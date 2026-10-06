@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<!--
+pdweb Display ID prototype
+Copyright (c) 2026 Nicholas Bevins
+Part of the pdweb project (https://pacsdisplay.org)
+Licensed under the GNU General Public License v2 or later
+
+Development mock-up of the Display card for pdweb: a Settings-dock button beside the pixel pitch that
+opens a card with the display ID, detection from the browser, and an EDID modal fed by a PowerShell
+one-liner. The EDID decoder is the one in edid.html. To be removed once the card is in pdweb.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>pdweb Display ID prototype</title>
+<link rel="icon" href="images/pdbw.ico" type="image/x-icon">
+<style>
+  /* pdweb's tokens and the rules this mock-up uses, unchanged. */
+  :root{
+    --bg:#16181b;--panel:#1e2024;--panel2:#191b1e;--edge:#2f333a;--field:#101215;
+    --text:#e3e5e8;--muted:#8b9199;--faint:#6d737b;
+    --btn:#343a42;--btn-active:#454c56;--edge-hi:#565e69;
+    --ok-rgb:76,175,125;--warn-rgb:217,164,65;--err-rgb:209,84,79;
+    --ok:rgb(var(--ok-rgb));--warn:rgb(var(--warn-rgb));--err:rgb(var(--err-rgb));
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html{font-size:16px}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.45;font-size:.8125rem}
+  header{position:sticky;top:0;z-index:10;padding:10px 20px;border-bottom:1px solid var(--edge);
+    background:var(--panel2);display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+  .brand{font-size:1.125rem;font-weight:700;letter-spacing:.2px}
+  nav{grid-column:2;justify-self:center;display:flex;gap:8px}
+  .modebtn{background:transparent;color:var(--muted);border:1px solid var(--edge);border-radius:6px;
+    padding:6px 16px;font-weight:600;font-size:0.8125rem;cursor:pointer;margin:0}
+  .modebtn.active,.tile.on{background:var(--btn-active);color:var(--text);border-color:var(--edge-hi)}
+  main{max-width:45rem;margin:0 auto;padding:18px 16px 90px}
+  .card{background:var(--panel);border:1px solid var(--edge);border-radius:9px;padding:14px;margin-bottom:14px}
+  .card h2,.modal-head h2{margin:0;font-size:0.78125rem;letter-spacing:.4px;
+    text-transform:uppercase;color:var(--muted);font-weight:700}
+  .card h2{margin-bottom:10px}
+  button{background:var(--btn);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:8px 14px;
+    font-weight:700;cursor:pointer;font-size:0.875rem;margin:0 6px 0 0}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .pill{display:inline-block;padding:0 9px;line-height:1.5;border-radius:999px;font-size:0.75rem;font-weight:700}
+  .pill.ok{background:rgba(var(--ok-rgb),.15);color:var(--ok)}
+  .pill.warn{background:rgba(var(--warn-rgb),.15);color:var(--warn)}
+  .pill.info{background:rgba(139,145,153,.18);color:#c6cbd1}
+  .msg{margin:10px 0 0;padding:8px 11px;border-radius:6px}
+  .msg.warn{background:rgba(var(--warn-rgb),.12);border:1px solid rgba(var(--warn-rgb),.35);color:#e8c477}
+  .msg.err {background:rgba(var(--err-rgb),.12);border:1px solid rgba(var(--err-rgb),.35);color:#e58b87}
+  .msg.ok  {background:rgba(var(--ok-rgb),.12);border:1px solid rgba(var(--ok-rgb),.35);color:#7fd3a6}
+  label{display:block;font-size:0.75rem;color:var(--muted);margin-bottom:4px}
+  input,textarea{background:var(--field);border:1px solid var(--edge);color:var(--text);border-radius:6px;
+    padding:8px 10px;font-size:0.8125rem;width:100%}
+  code,.kbd{font-family:var(--mono);background:var(--field);padding:1px 5px;border-radius:4px;font-size:0.75rem}
+  .placeholder{color:var(--muted);padding:2px 0 4px;margin:0 0 8px}
+  .hint{color:var(--faint);font-weight:400;font-size:0.75rem}
+  .chk{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted);margin:0;
+    cursor:pointer;user-select:none}
+  .chk input{width:auto;margin:0}
+  /* modal */
+  .headright{grid-column:3;justify-self:end}
+  .helpbtn{margin:0;padding:6px 14px;font-size:0.8125rem;font-weight:600}
+  .modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-back{position:absolute;inset:0;background:rgba(8,9,11,.72)}
+  .modal-box{position:relative;background:var(--panel);border:1px solid var(--edge);
+    border-radius:10px;width:min(760px,100%);max-height:86vh;display:flex;flex-direction:column}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:12px 16px;border-bottom:1px solid var(--edge)}
+  .modal-body{overflow:auto;padding:14px 16px 18px}
+  .iconbtn{margin:0;padding:4px 10px;font-size:0.8125rem;line-height:1.2}
+  .helpdoc h3{font-size:0.8125rem;margin:16px 0 5px;color:var(--text)}
+  .helpdoc h3:first-child{margin-top:0}
+  .helpdoc p,.helpdoc ul,.helpdoc ol{margin:0 0 8px;color:#c2c7cd}
+  .helpdoc ul,.helpdoc ol{padding-left:18px}
+  .helpdoc li{margin:3px 0}
+  .helpdoc b{color:var(--text)}
+  .helpdoc code{border:1px solid var(--edge)}
+  .helpdoc .lead{color:var(--muted)}
+  /* dock */
+  .cfgdock{position:fixed;right:14px;bottom:14px;z-index:9;display:flex;gap:6px;align-items:center;
+    background:rgba(30,32,36,.94);border:1px solid var(--edge);border-radius:8px;padding:6px 8px}
+  .cfgdock button{margin:0;padding:6px 10px;font-size:0.75rem}
+  .cfgdock .lbl{color:var(--faint);font-size:0.6875rem;font-weight:700;letter-spacing:.3px;
+    text-transform:uppercase;padding:0 2px}
+  .cfgdock #btnPitch,.cfgdock #btnDisp{font-family:var(--mono);font-weight:400;color:var(--muted);white-space:nowrap}
+  .cfgdock #btnPitch.unset,.cfgdock #btnDisp.unset{color:var(--warn)}
+  /* Long IDs are clipped in the dock; the card shows them whole. */
+  .cfgdock #btnDisp{max-width:16rem;overflow:hidden;text-overflow:ellipsis}
+  @media (max-width:900px){ .cfgdock{right:8px;bottom:8px} }
+  /* tiles and the pitch row */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:8px}
+  .tile{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin:0;
+    padding:9px 11px;text-align:left;font-weight:400;line-height:1.3}
+  .tile b{font-family:var(--mono);font-size:0.9375rem;font-weight:700}
+  .tile i{font-style:normal;font-size:0.6875rem;color:var(--muted)}
+  .pitchrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .pitchrow label{margin:0;white-space:nowrap}
+  .pitchrow input{width:6.5rem;font-family:var(--mono);text-align:right}
+  .pitchunit{color:var(--muted);font-size:0.75rem}
+  .pitchnow{font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-left:auto}
+  .pitchrow input.bad{border-color:var(--err);color:var(--err)}
+  .pitchnow.bad{color:var(--err)}
+
+  /* ---- new for the Display card ---- */
+  .idrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .idrow label{margin:0;white-space:nowrap}
+  .idrow input{flex:1 1 14rem;width:auto;font-family:var(--mono)}
+  .detectrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .detectrow button{margin:0}
+  /* One display per row in the modal: a wide tile, name and serial on top, geometry below. */
+  .cands{display:grid;gap:8px;margin-top:10px}
+  .cand{width:100%;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:start}
+  .cand .nm{font-family:var(--mono);font-size:0.9375rem;font-weight:700}
+  .cand .geo{grid-column:1;font-family:var(--mono);font-size:0.75rem;color:var(--muted)}
+  .cand .tags{grid-row:1/3;grid-column:2;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+  .userow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
+  .userow button{margin:0}
+  pre.cmd{font-family:var(--mono);font-size:0.75rem;background:var(--field);border:1px solid var(--edge);
+    border-radius:6px;padding:10px;margin:0 0 8px;white-space:pre-wrap;word-break:break-all;color:var(--text)}
+  textarea{font-family:var(--mono);font-size:0.75rem;min-height:5.5rem;resize:vertical}
+  /* Command walk-through: the piece of the command, then what it does. */
+  .walk{display:grid;grid-template-columns:minmax(0,15rem) 1fr;gap:8px 14px;margin:0 0 10px}
+  .walk>code{display:block;align-self:start;white-space:pre-wrap;word-break:break-all;padding:4px 6px}
+  .walk p{margin:0}
+  @media (max-width:600px){ .walk{grid-template-columns:1fr} .walk p{margin-bottom:6px} }
+  .proto{border-style:dashed}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">pdweb</div>
+  <nav>
+    <button class="modebtn active" data-mode="meter">meter</button>
+    <button class="modebtn" data-mode="lumResponse">lumResponse</button>
+    <button class="modebtn" data-mode="uniformity">uniformity</button>
+    <button class="modebtn" data-mode="patterns">patterns</button>
+  </nav>
+  <div class="headright"><button class="helpbtn" disabled>?</button></div>
+</header>
+
+<!-- ===== EDID modal ===== -->
+<div class="modal" id="edidModal" role="dialog" aria-modal="true" aria-labelledby="edidTitle" hidden>
+  <div class="modal-back" data-close></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="edidTitle">Read the display's EDID (Windows)</h2>
+      <button class="iconbtn" data-close aria-label="Close">Close</button>
+    </div>
+    <div class="modal-body helpdoc">
+      <p class="lead">Every display sends Windows a short identification record, its EDID, holding the model,
+        serial number and physical size. This command copies the EDID of each connected display so pdweb can
+        read it. How the command works is explained at the bottom.</p>
+      <ol>
+        <li>Open <b>Windows PowerShell</b> from the Start menu. It does not need to run as administrator.</li>
+        <li>Copy the command, paste it into PowerShell and press Enter. Nothing is shown; the result goes to
+          the clipboard.</li>
+        <li>Paste the result into the box below.</li>
+      </ol>
+      <pre class="cmd" id="psCmd"></pre>
+      <button id="btnCopyPs">Copy command</button>
+
+      <h3>Result</h3>
+      <textarea id="edidIn" placeholder="Paste the result here" spellcheck="false"></textarea>
+      <div id="edidMsg"></div>
+      <div class="cands" id="cands"></div>
+      <div class="userow" id="useRow" hidden>
+        <button id="btnUse" disabled>Use this display</button>
+        <label class="chk"><input type="checkbox" id="chkPitch" checked> <span id="chkPitchTxt">Also set pixel pitch</span></label>
+      </div>
+
+      <h3>What this command does</h3>
+      <p>It only reads. It needs no administrator rights, changes no settings or files, does not connect to
+        the internet, and runs no other program or code. The result is decoded in this page; nothing is
+        uploaded. Piece by piece:</p>
+      <div class="walk">
+        <code>Get-CimInstance -Namespace root\wmi WmiMonitorID</code>
+        <p>Asks Windows for the displays connected right now. <code>WmiMonitorID</code> is the name Windows
+          gives this list (Windows calls displays monitors). Each entry carries the display's device name.</p>
+        <code>| % { … }</code>
+        <p>Runs the part in braces once for each display in the list. <code>%</code> is PowerShell's
+          shorthand for <code>ForEach-Object</code>.</p>
+        <code>$_.InstanceName -replace '_\d+$'</code>
+        <p>Takes that display's device name and removes the <code>_0</code> at its end, which leaves the
+          name of the registry key where Windows keeps the display's details.</p>
+        <code>(Get-ItemProperty ('HKLM:\SYSTEM\CurrentControlSet\Enum\' + … + '\Device Parameters')).EDID</code>
+        <p>Reads the <code>EDID</code> value in that key, saved by Windows when the display was connected.
+          Reading it needs no administrator rights.</p>
+        <code>-join ( … | % { $_.ToString('X2') })</code>
+        <p>Writes each byte of the EDID as two hexadecimal characters and joins them into one line of text
+          per display.</p>
+        <code>| Set-Clipboard</code>
+        <p>Puts the text on the clipboard, ready to paste here.</p>
+      </div>
+      <p>Commands used in phishing usually download something (<code>Invoke-WebRequest</code>,
+        <code>iwr</code>, a web address), run text as code (<code>Invoke-Expression</code>, <code>iex</code>),
+        start other programs (<code>Start-Process</code>), or hide what they do (<code>-EncodedCommand</code>).
+        This command has none of these. Your IT department can confirm this before you run it.</p>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- shared: the display under test, opened from the dock -->
+  <section class="card" id="dispCard" hidden>
+    <h2>Display</h2>
+    <p class="placeholder">The display under test. Its ID labels the lumResponse and uniformity exports and
+      their filenames. Type an ID, or read one from the display.</p>
+    <!-- Edit buffer, like the pitch: applies on Set or Enter only. -->
+    <div class="idrow">
+      <label for="uiDispId">Display ID</label>
+      <input id="uiDispId" placeholder="not set" spellcheck="false">
+      <button id="btnDispSet">Set</button>
+    </div>
+    <div class="detectrow">
+      <button id="btnDetect" title="Name of the display this window is on (Chrome and Edge)">Detect from browser</button>
+      <button id="btnEdid" title="Model, serial and size from the display itself (Windows)">Read EDID (Windows)…</button>
+    </div>
+    <div id="dispMsg"></div>
+  </section>
+
+  <section class="card" id="pitchCard" hidden>
+    <h2>Display calibration</h2>
+    <p class="placeholder">Pixel pitch of the display. Sets the interface size and the
+      true size of the measurement patch (should be 10 cm). Check the display specifications or
+      calculate by dividing the active area width in mm by the horizontal resolution.</p>
+    <div class="tiles" id="pitchGrid">
+      <button class="tile" data-pitch="0.270"><b>0.270 mm</b><i>2 MP 21.3" / office</i></button>
+      <button class="tile" data-pitch="0.211"><b>0.211 mm</b><i>3 MP 21.3"</i></button>
+      <button class="tile" data-pitch="0.200"><b>0.200 mm</b><i>6 MP 30"</i></button>
+      <button class="tile" data-pitch="0.185"><b>0.185 mm</b><i>8 MP 4K 31"</i></button>
+      <button class="tile" data-pitch="0.170"><b>0.170 mm</b><i>12 MP 34"</i></button>
+      <button class="tile" data-pitch="0.165"><b>0.165 mm</b><i>5 MP 21.3"</i></button>
+      <button class="tile" data-pitch="0.155"><b>0.155 mm</b><i>12 MP 31"</i></button>
+      <button class="tile" data-pitch="0.103"><b>0.103 mm</b><i>32 MP 33"</i></button>
+      <button class="tile" data-pitch=""><b>Not set</b><i>96 dpi CSS reference</i></button>
+    </div>
+    <div class="pitchrow">
+      <label for="uiPitchMm">Or enter pitch</label>
+      <input type="number" id="uiPitchMm" min="0.05" max="1" step="0.001" placeholder="0.000">
+      <span class="pitchunit">mm</span>
+      <button id="btnPitchSet">Set</button>
+      <span class="pitchnow" id="pitchNow"></span>
+    </div>
+  </section>
+
+  <div class="card proto">
+    <h2>Prototype</h2>
+    <p class="placeholder">A mock-up of the Display setting for pdweb. Use the <b>Display</b> button in the
+      Settings dock at the bottom right. The other pdweb controls here do nothing.</p>
+    <div id="protoState" class="hint"></div>
+  </div>
+</main>
+
+<div class="cfgdock">
+  <span class="lbl">Settings</span>
+  <button id="btnDisp" title="Display under test - click to change"></button>
+  <button id="btnPitch" title="Pixel pitch of the display under test - click to change"></button>
+  <button disabled>Export</button>
+  <button disabled>Import</button>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const msg = (el, text, cls) => { $(el).innerHTML = text ? `<div class="msg ${cls}">${esc(text)}</div>` : ""; };
+
+/* Reads the EDID of the displays connected now. Hex rather than base64: Constrained Language Mode can
+   block the .NET call base64 needs. */
+const PS_CMD = "Get-CimInstance -Namespace root\\wmi WmiMonitorID | % { -join ((Get-ItemProperty ('HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\' + ($_.InstanceName -replace '_\\d+$') + '\\Device Parameters')).EDID | % { $_.ToString('X2') }) } | Set-Clipboard";
+
+/* ---------- EDID decoder: copied from edid.html ---------- */
+
+let screenList = [];
+/* Hex text (any spacing, optional 0x, commas) is taken as one stream and split at EDID headers, so one
+   or several displays work with or without line breaks. Anything else is base64, one display per line. */
+function decodeInput(text){
+  const t = text.trim();
+  if(!t) return [];
+  const hexish = t.replace(/0x/gi, "").replace(/[\s,:]/g, "");
+  let streams;
+  if(/^[0-9a-f]+$/i.test(hexish)){
+    if(hexish.length % 2) throw new Error("The hexadecimal text has an odd number of digits.");
+    streams = [Uint8Array.from(hexish.match(/../g), h => parseInt(h, 16))];
+  } else {
+    streams = t.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+      try { return Uint8Array.from(atob(l.replace(/^.*[\s:]/, "")), c => c.charCodeAt(0)); }
+      catch { throw new Error("The text is neither hexadecimal nor base64."); }
+    });
+  }
+  const out = [];
+  const HDR = [0, 255, 255, 255, 255, 255, 255, 0];
+  for(const b of streams){
+    for(let i = 0; i + 128 <= b.length; ){
+      if(HDR.every((v, k) => b[i + k] === v)){
+        const len = 128 * (1 + b[i + 126]);
+        out.push(b.subarray(i, Math.min(i + len, b.length)));
+        i += len;
+      } else i++;   // registry EDIDs can carry zero padding past the declared extensions
+    }
+  }
+  if(!out.length) throw new Error("No EDID found. An EDID starts with 00 FF FF FF FF FF FF 00.");
+  return out;
+}
+
+/* ---------- EDID decoding (VESA E-EDID 1.4) ---------- */
+
+const pnp = (b0, b1) => { const v = b0 << 8 | b1; return [10, 5, 0].map(s => String.fromCharCode(64 + (v >> s & 31))).join(""); };
+const text13 = d => String.fromCharCode(...d.subarray(5, 18)).split("\n")[0].trim();
+const blockOk = blk => blk.length === 128 && blk.reduce((a, v) => a + v, 0) % 256 === 0;
+
+/* 18-byte detailed timing descriptor, used by the base block and the CTA-861 and VTB extensions. */
+function dtd(d){
+  const clk = (d[0] | d[1] << 8) * 10e3;
+  if(!clk) return null;
+  const hA = d[2] | (d[4] >> 4) << 8, hB = d[3] | (d[4] & 15) << 8;
+  const vA = d[5] | (d[7] >> 4) << 8, vB = d[6] | (d[7] & 15) << 8;
+  const interlaced = !!(d[17] & 0x80);
+  return {hA, vA: interlaced ? vA * 2 : vA, clk, hz: clk / ((hA + hB) * (vA + vB)) * (interlaced ? 2 : 1),
+    mmW: d[12] | (d[14] >> 4) << 8, mmH: d[13] | (d[14] & 15) << 8, interlaced};
+}
+
+/* DisplayID 1.x type I (10 kHz) and 2.x type VII (1 kHz) timings share a 20-byte layout, counts minus one. */
+function didTiming(d, unit){
+  const u16 = o => d[o] | d[o + 1] << 8;
+  const clk = ((d[0] | d[1] << 8 | d[2] << 16) + 1) * unit;
+  const hA = u16(4) + 1, hB = u16(6) + 1, vA = u16(12) + 1, vB = u16(14) + 1;
+  return {hA, vA, clk, hz: clk / ((hA + hB) * (vA + vB)), preferred: !!(d[3] & 0x80)};
+}
+
+function parseDisplayId(blk, res){
+  const ver = blk[1], end = Math.min(5 + blk[2], 127);
+  res.displayIdVersion = `${ver >> 4}.${ver & 15}`;
+  for(let i = 5; i + 3 <= end; ){
+    const tag = blk[i], rev = blk[i + 1], len = blk[i + 2], p = blk.subarray(i + 3, i + 3 + len);
+    if(tag === 0 && len === 0) break;   // padding
+    if(tag === 0x03 || tag === 0x22){
+      for(let k = 0; k + 20 <= p.length; k += 20)
+        res.timings.push({...didTiming(p.subarray(k, k + 20), tag === 0x03 ? 10e3 : 1e3), src: "DisplayID"});
+    } else if((tag === 0x0F || tag === 0x21) && p.length >= 8){
+      /* Display parameters: image size in 0.1 mm (1 mm when bit 7 of a 2.x block's revision is set) and the
+         native pixel count. Finer than the 1 mm sizes in timing descriptors. */
+      const u16 = o => p[o] | p[o + 1] << 8, mm = tag === 0x21 && rev & 0x80 ? 1 : 0.1;
+      if(u16(0) && u16(4)) res.displayParams = {mmW: u16(0) * mm, mmH: u16(2) * mm, w: u16(4), h: u16(6)};
+    } else if((tag === 0x12 || tag === 0x28) && p.length >= 22){
+      /* Tiled display topology: this EDID is one tile of a larger display. Counts and tile size are stored
+         minus one; the 9-byte topology ID (vendor, product, serial) is shared by every tile of the display. */
+      const t = p.subarray(1, 4);
+      res.tile = {
+        nH: ((t[0] >> 4) | (t[2] >> 2 & 0x30)) + 1, nV: ((t[0] & 15) | (t[2] & 0x30)) + 1,
+        col: (t[1] >> 4) | (t[2] >> 2 & 3) << 4, row: (t[1] & 15) | (t[2] & 3) << 4,
+        w: (p[4] | p[5] << 8) + 1, h: (p[6] | p[7] << 8) + 1,
+        group: Array.from(p.subarray(13, 22), v => v.toString(16).padStart(2, "0")).join(""),
+      };
+    }
+    i += 3 + len;
+  }
+}
+
+function parseEdid(b){
+  const res = {raw: b, warnings: [], timings: [], extensions: []};
+  const base = b.subarray(0, 128);
+  if(!blockOk(base)) res.warnings.push("Base block checksum is wrong. The EDID may be damaged or was copied incompletely.");
+  res.vendor = pnp(b[8], b[9]);
+  res.product = (b[10] | b[11] << 8).toString(16).toUpperCase().padStart(4, "0");
+  res.serialNum = (b[12] | b[13] << 8 | b[14] << 16 | b[15] << 24) >>> 0;
+  res.version = `${b[18]}.${b[19]}`;
+  if(b[16] === 0xFF) res.modelYear = b[17] + 1990;
+  else { res.year = b[17] + 1990; res.week = b[16]; }
+
+  const inp = b[20];
+  if(inp & 0x80){
+    res.input = "digital";
+    if(b[18] === 1 && b[19] >= 4){
+      res.bitDepth = [null, 6, 8, 10, 12, 14, 16][inp >> 4 & 7];
+      res.iface = [null, "DVI", "HDMI-a", "HDMI-b", "MDDI", "DisplayPort"][inp & 15];
+    }
+  } else res.input = "analog";
+  if(b[21] && b[22]) res.sizeCm = [b[21], b[22]];
+  if(b[23] !== 0xFF) res.gamma = (b[23] + 100) / 100;
+
+  const lo1 = b[25], lo2 = b[26], c = (hi, lo) => +(((hi << 2) | lo) / 1024).toFixed(4);
+  res.chroma = {r: [c(b[27], lo1 >> 6 & 3), c(b[28], lo1 >> 4 & 3)], g: [c(b[29], lo1 >> 2 & 3), c(b[30], lo1 & 3)],
+    b: [c(b[31], lo2 >> 6 & 3), c(b[32], lo2 >> 4 & 3)], w: [c(b[33], lo2 >> 2 & 3), c(b[34], lo2 & 3)]};
+
+  for(let o = 54; o < 126; o += 18){
+    const d = b.subarray(o, o + 18);
+    const t = dtd(d);
+    if(t){ res.timings.push({...t, src: "base", preferred: o === 54}); continue; }
+    if(d[3] === 0xFF) res.serialStr = text13(d);
+    else if(d[3] === 0xFC) res.name = text13(d);
+    else if(d[3] === 0xFE) (res.text ||= []).push(text13(d));
+  }
+
+  const nExt = b[126];
+  for(let e = 1; e <= nExt; e++){
+    const blk = b.subarray(128 * e, 128 * e + 128);
+    if(blk.length < 128){ res.warnings.push(`EDID declares ${nExt} extension block(s) but only ${e - 1} were supplied.`); break; }
+    if(!blockOk(blk)) res.warnings.push(`Extension block ${e} checksum is wrong.`);
+    const tag = blk[0];
+    if(tag === 0x02){
+      res.extensions.push("CTA-861");
+      for(let o = blk[2]; o >= 4 && o + 18 <= 127; o += 18){
+        const t = dtd(blk.subarray(o, o + 18));
+        if(!t) break;
+        res.timings.push({...t, src: "CTA-861"});
+      }
+    } else if(tag === 0x10){
+      /* VESA Video Timing Block: byte 2 counts the detailed timings, which start at byte 5. */
+      res.extensions.push("VTB-EXT");
+      for(let k = 0, o = 5; k < blk[2] && o + 18 <= 127; k++, o += 18){
+        const t = dtd(blk.subarray(o, o + 18));
+        if(t) res.timings.push({...t, src: "VTB-EXT"});
+      }
+    } else if(tag === 0x70){
+      res.extensions.push("DisplayID");
+      parseDisplayId(blk, res);
+    } else res.extensions.push(`tag 0x${tag.toString(16).padStart(2, "0")}`);
+  }
+
+  /* Native resolution and pixel pitch: DisplayID display parameters when present, else the preferred
+     timing (first base-block descriptor, or a DisplayID timing flagged preferred). */
+  const pref = res.timings.find(t => t.preferred) || res.timings[0];
+  res.preferredTiming = pref;
+  const dp = res.displayParams;
+  if(dp) res.pitch = {w: dp.w, h: dp.h, mmW: dp.mmW, mmH: dp.mmH, src: "DisplayID display parameters (0.1 mm)"};
+  else if(pref){
+    /* Timing descriptors in DisplayID carry no size; fall back to a base or CTA descriptor of the same resolution. */
+    const sized = [pref, ...res.timings].find(t => t.mmW && t.mmH && t.hA === pref.hA && t.vA === pref.vA);
+    if(sized) res.pitch = {w: pref.hA, h: pref.vA, mmW: sized.mmW, mmH: sized.mmH, src: "detailed timing (1 mm)"};
+  }
+  if(res.pitch){
+    const p = res.pitch;
+    p.pw = p.mmW / p.w; p.ph = p.mmH / p.h;
+    p.diagIn = Math.hypot(p.mmW, p.mmH) / 25.4;
+    if(Math.abs(p.pw - p.ph) / p.pw > 0.03) res.warnings.push("Horizontal and vertical pitch differ by more than 3%. Check the physical size.");
+  } else if(res.sizeCm) res.warnings.push("No size in millimeters. The centimeter size below is too coarse for pixel pitch.");
+  return res;
+}
+
+let lastParsed = [], lastGroups = [];
+
+/* Browser screens that could be this display: same name, or same resolution either way round (rotated). */
+function matchScreens(name, w, h){
+  if(!screenList.length || !w) return "";
+  const hits = screenList.map((s, i) => ({...s, n: i + 1})).filter(s =>
+    (name && s.label && s.label.toLowerCase().includes(name.toLowerCase())) ||
+    (s.w === w && s.h === h) || (s.w === h && s.h === w));
+  if(!hits.length) return "no listed display matches";
+  return hits.map(s => (`#${s.n} ${s.label || ""}${s.w === h && s.h === w && w !== h ? " (rotated)" : ""}` +
+    `${s.current ? " (this window)" : ""}`).replace(/\s+/g, " ")).join("; ");
+}
+const matchEdid = r => matchScreens(r.name, r.pitch?.w ?? r.preferredTiming?.hA, r.pitch?.h ?? r.preferredTiming?.vA);
+
+/* Physical displays made of several EDIDs. A tiled-display block names its group outright. Otherwise
+   EDIDs with the same manufacturer, product and serial are one display driven in parts (Barco large
+   format); the parts are taken as side by side, which a whole-display timing in the EDID confirms. */
+function groupDisplays(list){
+  const key = r => r.tile ? `tile ${r.tile.group}`
+    : (r.serialStr || r.serialNum) ? `${r.vendor} ${r.product} ${r.serialStr || ""} ${r.serialNum}` : null;
+  const byKey = new Map();
+  list.forEach((r, i) => { const k = key(r); if(k) byKey.set(k, [...(byKey.get(k) || []), i]); });
+  return [...byKey.values()].filter(ix => ix.length > 1).map(ix => {
+    const parts = ix.map(i => list[i]), r0 = parts[0], p0 = r0.pitch, g = {ix, name: r0.name || `${r0.vendor} ${r0.product}`, warnings: []};
+    if(r0.tile){
+      const t = r0.tile;
+      Object.assign(g, {w: t.w * t.nH, h: t.h * t.nV, layout: `${t.nH} x ${t.nV} tiles`, how: "DisplayID tiled display block"});
+      if(p0){ g.mmW = p0.pw * g.w; g.mmH = p0.ph * g.h; }
+      if(parts.length !== t.nH * t.nV) g.warnings.push(`Only ${parts.length} of ${t.nH * t.nV} tiles were pasted.`);
+    } else if(p0 && parts.every(r => r.pitch?.h === p0.h)){
+      Object.assign(g, {w: parts.reduce((a, r) => a + r.pitch.w, 0), h: p0.h,
+        mmW: parts.reduce((a, r) => a + r.pitch.mmW, 0), mmH: p0.mmH,
+        layout: `${parts.length} parts side by side`, how: "same serial number on each part"});
+      const whole = parts.flatMap(r => r.timings).find(t => t.hA === g.w && t.vA === g.h && t.mmW && t.mmH);
+      if(whole){ g.mmW = whole.mmW; g.mmH = whole.mmH; g.how += "; whole-display timing in the EDID confirms the layout"; }
+      else g.how += "; side-by-side layout assumed";
+    } else {
+      g.how = "same serial number on each part";
+      g.warnings.push("The parts differ in height, so the whole-display size was not worked out.");
+    }
+    if(g.mmW){ g.pw = g.mmW / g.w; g.ph = g.mmH / g.h; g.diagIn = Math.hypot(g.mmW, g.mmH) / 25.4; }
+    return g;
+  });
+}
+
+/* ---------- settings: display ID and pitch ---------- */
+
+const PITCH_MIN = 0.05, PITCH_MAX = 1;
+let displayId = "", pixelPitchMm = null;
+let openCard = null;                       // "disp" | "pitch" | null - one settings card at a time
+
+function renderCards(){
+  $("dispCard").hidden = openCard !== "disp";
+  $("pitchCard").hidden = openCard !== "pitch";
+}
+function toggleCard(which){
+  openCard = openCard === which ? null : which;
+  /* Opening discards an abandoned edit. */
+  if(openCard === "disp") $("uiDispId").value = displayId;
+  if(openCard === "pitch") $("uiPitchMm").value = pixelPitchMm === null ? "" : String(+pixelPitchMm.toFixed(4));
+  renderCards();
+  if(openCard){ $(openCard === "disp" ? "dispCard" : "pitchCard").scrollIntoView({block: "nearest"});
+    $(openCard === "disp" ? "uiDispId" : "uiPitchMm").focus(); }
+}
+
+/* The only writer of displayId. Empty is a legitimate "not set". */
+function setDisplayId(v, {close = true, note = ""} = {}){
+  displayId = String(v ?? "").trim();
+  $("uiDispId").value = displayId;
+  const b = $("btnDisp");
+  b.classList.toggle("unset", !displayId);
+  b.textContent = displayId || "Display not set";
+  b.title = (displayId ? `Display under test: ${displayId}` : "Display under test not set") + " - click to change";
+  if(close && openCard === "disp") openCard = null;
+  renderCards();
+  renderProto(note);
+}
+
+function validPitch(v){
+  if(v === null || v === undefined || String(v).trim() === "") return null;
+  const n = parseFloat(v);
+  return Number.isFinite(n) && n >= PITCH_MIN && n <= PITCH_MAX ? n : undefined;
+}
+function renderPitch(err = false){
+  $("uiPitchMm").classList.toggle("bad", err);
+  for(const b of $("pitchGrid").children) b.classList.toggle("on", !err && (+b.dataset.pitch || null) === pixelPitchMm);
+  $("pitchNow").className = err ? "pitchnow bad" : "pitchnow";
+  $("pitchNow").textContent = err ? `must be ${PITCH_MIN}-${PITCH_MAX} mm` : pixelPitchMm === null ? "no correction applied" : "";
+  const dock = $("btnPitch");
+  dock.classList.toggle("unset", pixelPitchMm === null);
+  dock.textContent = pixelPitchMm === null ? "Pitch not set" : `${+pixelPitchMm.toFixed(4)} mm`;
+}
+function setPitch(v, {close = true} = {}){
+  const n = validPitch(v);
+  if(n === undefined){ renderPitch(true); return false; }
+  pixelPitchMm = n;
+  $("uiPitchMm").value = n === null ? "" : String(+n.toFixed(4));
+  if(close && openCard === "pitch") openCard = null;
+  renderCards(); renderPitch(); renderProto();
+  return true;
+}
+
+function renderProto(note = ""){
+  $("protoState").textContent = `Exports would be labeled "${displayId || "(not set)"}"` +
+    (pixelPitchMm === null ? "; pitch not set." : `; pitch ${+pixelPitchMm.toFixed(4)} mm.`) + (note ? ` ${note}` : "");
+}
+
+/* ---------- detect from the browser ---------- */
+
+let details = null;
+async function screenDetails(){
+  if(!details){
+    details = await window.getScreenDetails();
+    details.addEventListener("screenschange", refreshScreens);
+    details.addEventListener("currentscreenchange", refreshScreens);
+  }
+  refreshScreens();
+  return details;
+}
+function refreshScreens(){
+  const cur = details.currentScreen;
+  screenList = details.screens.map(s => ({label: s.label || "", w: Math.round(s.width * s.devicePixelRatio),
+    h: Math.round(s.height * s.devicePixelRatio), current: s === cur}));
+}
+/* Without a prompt: only when permission was already given, so opening the modal never asks. */
+async function screenDetailsIfAllowed(){
+  if(!("getScreenDetails" in window)) return;
+  try {
+    const p = await navigator.permissions.query({name: "window-management"});
+    if(p.state === "granted") await screenDetails();
+  } catch {}
+}
+
+async function detectFromBrowser(){
+  msg("dispMsg", "");
+  try {
+    const d = await screenDetails(), s = d.currentScreen, n = d.screens.indexOf(s) + 1;
+    if(!s.label){ msg("dispMsg", "This display does not report a name. Use Read EDID, or type an ID.", "warn"); return; }
+    $("uiDispId").value = s.label;
+    msg("dispMsg", `This window is on display ${n} of ${d.screens.length}: ${s.label}. The browser gives the model ` +
+      "but not the serial number, so add one if you have several of this model. Click Set to use it.", "ok");
+    $("uiDispId").focus();
+  } catch(e){
+    msg("dispMsg", e.name === "NotAllowedError"
+      ? "Permission was denied. Allow window management for this site in the browser's site settings."
+      : `Could not read the display: ${e.message}`, "warn");
+  }
+}
+
+/* ---------- EDID modal ---------- */
+
+let cands = [], chosen = -1;
+
+function openModal(){
+  $("edidModal").hidden = false;
+  screenDetailsIfAllowed().then(() => cands.length && renderCands());
+  $("btnCopyPs").focus();
+}
+function closeModal(){ $("edidModal").hidden = true; $("btnEdid").focus(); }
+
+/* One entry per physical display: a group of EDIDs (Barco large format, tiles) counts once. */
+function buildCands(list){
+  const groups = groupDisplays(list), inGroup = new Set(groups.flatMap(g => g.ix));
+  const serialOf = r => r.serialStr || (r.serialNum ? String(r.serialNum) : "");
+  const out = groups.map(g => {
+    const r0 = list[g.ix[0]];
+    return {name: g.name, serial: serialOf(r0), w: g.w, h: g.h, mmW: g.mmW, mmH: g.mmH, pitch: g.pw, diag: g.diagIn,
+      parts: g.ix.length, partRes: list[g.ix[0]].pitch, warnings: g.warnings, first: Math.min(...g.ix)};
+  });
+  list.forEach((r, i) => {
+    if(inGroup.has(i)) return;
+    const p = r.pitch;
+    out.push({name: r.name || `${r.vendor} ${r.product}`, serial: serialOf(r), w: p?.w, h: p?.h, mmW: p?.mmW, mmH: p?.mmH,
+      pitch: p?.pw, diag: p?.diagIn, parts: 1, partRes: p, warnings: r.warnings, first: i});
+  });
+  return out.sort((a, b) => a.first - b.first);   // Windows' order, as pasted
+}
+
+/* Does this display hold the screen this window is on? Name, or one part's resolution either way round. */
+function onThisWindow(c){
+  const cur = screenList.find(s => s.current);
+  if(!cur || !c.partRes) return false;
+  const nameOk = cur.label && c.name && cur.label.toLowerCase() === c.name.toLowerCase();
+  const {w, h} = c.partRes, sizeOk = (cur.w === w && cur.h === h) || (cur.w === h && cur.h === w);
+  return cur.label ? nameOk && sizeOk : sizeOk;
+}
+
+function renderCands(){
+  const here = cands.map(onThisWindow), nHere = here.filter(Boolean).length;
+  /* Preselect only when exactly one display fits; two of the same model are the user's call. */
+  if(chosen < 0 && nHere === 1) chosen = here.indexOf(true);
+  $("cands").innerHTML = cands.map((c, i) => {
+    const tags = [
+      here[i] && `<span class="pill ok">${nHere > 1 ? "this window?" : "this window"}</span>`,
+      c.parts > 1 && `<span class="pill info">${c.parts} parts, one display</span>`,
+      c.warnings.length && `<span class="pill warn" title="${esc(c.warnings.join(" "))}">check</span>`,
+    ].filter(Boolean).join("");
+    const geo = c.w ? `${c.w} x ${c.h}  ${c.mmW.toFixed(0)} x ${c.mmH.toFixed(0)} mm (${c.diag.toFixed(1)}")  ` +
+      `pitch ${c.pitch.toFixed(4)} mm` : "size not in EDID";
+    return `<button class="tile cand${i === chosen ? " on" : ""}" data-i="${i}">
+      <span class="nm">${esc(c.name)}${c.serial ? `  <span class="hint">SN ${esc(c.serial)}</span>` : ""}</span>
+      <span class="tags">${tags}</span><span class="geo">${esc(geo)}</span></button>`;
+  }).join("");
+  $("useRow").hidden = !cands.length;
+  const c = cands[chosen];
+  $("btnUse").disabled = !c;
+  const pOk = c && validPitch(c.pitch) !== undefined && c.pitch;
+  $("chkPitch").disabled = !pOk;
+  $("chkPitchTxt").textContent = pOk ? `Also set pixel pitch to ${(+c.pitch.toFixed(4))} mm` : "Also set pixel pitch";
+}
+
+function decodePaste(){
+  msg("edidMsg", "");
+  chosen = -1;
+  try {
+    cands = buildCands(decodeInput($("edidIn").value).map(parseEdid));
+    const nHere = cands.filter(onThisWindow).length;
+    if(nHere > 1) msg("edidMsg", `${nHere} displays of the same model could be the one this window is on. ` +
+      "Choose by the serial number on the label on the back of the display.", "warn");
+    else if(cands.length > 1 && !nHere) msg("edidMsg",
+      "Choose the display under test. The serial number is on the label on the back of the display.", "ok");
+  } catch(e){
+    cands = [];
+    msg("edidMsg", e.message, "err");
+  }
+  renderCands();
+}
+
+function useChosen(){
+  const c = cands[chosen];
+  if(!c) return;
+  setDisplayId([c.name, c.serial].filter(Boolean).join(" "),
+    {note: `Set from the EDID${c.parts > 1 ? ` (${c.parts} parts, one display)` : ""}.`});
+  if(!$("chkPitch").disabled && $("chkPitch").checked) setPitch(+c.pitch.toFixed(4));
+  closeModal();
+}
+
+/* ---------- wiring ---------- */
+
+async function copy(text, btn){
+  const old = btn.textContent;
+  try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+  catch { btn.textContent = "Copy failed - select and copy by hand"; }
+  setTimeout(() => btn.textContent = old, 1500);
+}
+
+$("psCmd").textContent = PS_CMD;
+$("btnDisp").onclick = () => toggleCard("disp");
+$("btnPitch").onclick = () => toggleCard("pitch");
+$("btnDispSet").onclick = () => setDisplayId($("uiDispId").value);
+$("uiDispId").onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); setDisplayId(e.target.value); } };
+$("pitchGrid").onclick = e => { const b = e.target.closest(".tile"); if(b) setPitch(b.dataset.pitch); };
+$("btnPitchSet").onclick = () => setPitch($("uiPitchMm").value);
+$("uiPitchMm").onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); setPitch(e.target.value); } };
+$("btnDetect").onclick = detectFromBrowser;
+$("btnDetect").disabled = !("getScreenDetails" in window);
+if($("btnDetect").disabled) $("btnDetect").title = "Needs Chrome or Edge";
+$("btnEdid").onclick = openModal;
+$("btnCopyPs").onclick = e => copy(PS_CMD, e.currentTarget);
+$("edidIn").addEventListener("paste", () => setTimeout(decodePaste, 0));
+$("edidIn").addEventListener("input", e => { if(e.inputType !== "insertFromPaste") decodePaste(); });
+$("cands").onclick = e => { const b = e.target.closest(".cand"); if(b){ chosen = +b.dataset.i; renderCands(); } };
+$("btnUse").onclick = useChosen;
+$("edidModal").addEventListener("click", e => { if(e.target.closest("[data-close]")) closeModal(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("edidModal").hidden) closeModal(); });
+document.querySelectorAll(".modebtn").forEach(b => b.onclick = () =>
+  document.querySelectorAll(".modebtn").forEach(x => x.classList.toggle("active", x === b)));
+setDisplayId(""); setPitch(null);
+</script>
+</body>
+</html>
