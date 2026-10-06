@@ -101,7 +101,6 @@ DisplayID specifications.
   <div style="margin-top:8px">
     <button id="btnParse">Decode</button>
     <button id="btnClear">Clear</button>
-    <button id="btnCopyOut" disabled>Copy results as text</button>
   </div>
   <div id="edidMsg"></div>
 </section>
@@ -109,6 +108,14 @@ DisplayID specifications.
 <section class="card" id="edidCard" hidden>
   <h2>EDID</h2>
   <div id="edidOut"></div>
+</section>
+
+<section class="card">
+  <h2>3. Report</h2>
+  <p>Saves everything on this page as a text file: the browser information, the display list, and each EDID
+    decoded and as raw bytes. Click <b>List displays</b> and paste the EDID first so the report includes them.</p>
+  <button id="btnReport">Download report</button>
+  <button id="btnCopyReport">Copy report</button>
 </section>
 
 </main>
@@ -131,10 +138,10 @@ const dpr = () => window.devicePixelRatio || 1;
 
 let screenList = [];   // [{label, w, h, current}] in device pixels, for matching EDIDs to screens
 
-function showBasic(){
+function basicRows(){
   const r = dpr(), mq = q => matchMedia(q).matches;
   const gamut = mq("(color-gamut: rec2020)") ? "rec2020" : mq("(color-gamut: p3)") ? "p3" : mq("(color-gamut: srgb)") ? "srgb" : "unknown";
-  $("basic").innerHTML = kv([
+  return [
     ["Screen (CSS px)", `${screen.width} x ${screen.height}`],
     ["Device pixel ratio", r],
     ["Screen (device px)", `${Math.round(screen.width * r)} x ${Math.round(screen.height * r)}`],
@@ -142,13 +149,18 @@ function showBasic(){
     ["Color gamut", gamut],
     ["Dynamic range", mq("(dynamic-range: high)") ? "high (HDR)" : "standard"],
     ["Window Management API", "getScreenDetails" in window ? "available" : "not available in this browser"],
-  ]);
+  ];
+}
+
+function showBasic(){
+  $("basic").innerHTML = kv(basicRows());
   $("btnScreens").disabled = !("getScreenDetails" in window);
 }
 
-let details = null;
+let details = null, screensErr = "";
 async function listScreens(){
   msg("screensMsg", "");
+  screensErr = "";
   try {
     if(!details){
       details = await window.getScreenDetails();
@@ -157,6 +169,7 @@ async function listScreens(){
     }
     renderScreens();
   } catch(e){
+    screensErr = `${e.name}: ${e.message}`;
     msg("screensMsg", e.name === "NotAllowedError"
       ? "Permission was denied. Allow window management for this site in the browser's site settings, then try again."
       : `Could not list displays: ${e.message}`, "warn");
@@ -343,7 +356,7 @@ function matchScreens(r){
 }
 
 const fmtT = t => `${t.hA} x ${t.vA}${t.interlaced ? "i" : ""} @ ${t.hz.toFixed(2)} Hz (${(t.clk / 1e6).toFixed(2)} MHz)`;
-const hex = b => Array.from(b, v => v.toString(16).padStart(2, "0").toUpperCase()).join(" ").replace(/((?:\S\S ){16})/g, "$1\n");
+const hex = b => Array.from(b, v => v.toString(16).padStart(2, "0").toUpperCase()).join(" ").replace(/((?:\S\S ){15}\S\S) /g, "$1\n");
 
 function summaryRows(r){
   const p = r.pitch;
@@ -372,7 +385,6 @@ function summaryRows(r){
 function renderEdids(list){
   lastParsed = list;
   $("edidCard").hidden = !list.length;
-  $("btnCopyOut").disabled = !list.length;
   $("edidOut").innerHTML = list.map((r, i) => {
     const m = matchScreens(r);
     const pill = r.warnings.length ? `<span class="pill warn">check</span>` : `<span class="pill ok">checksum ok</span>`;
@@ -387,21 +399,76 @@ function renderEdids(list){
   }).join("");
 }
 
-function asText(){
-  return lastParsed.map((r, i) => {
-    const rows = summaryRows(r).filter(([, v]) => v !== undefined && v !== "");
-    const w = Math.max(...rows.map(([k]) => k.length));
-    return [`Display ${i + 1}`, ...rows.map(([k, v]) => `  ${k.padEnd(w)}  ${v}`), ...r.warnings.map(x => `  ! ${x}`)].join("\n");
-  }).join("\n\n");
+/* ---------- report ---------- */
+
+const kvText = rows => {
+  rows = rows.filter(r => r && r[1] !== undefined && r[1] !== "");
+  const w = Math.max(...rows.map(([k]) => k.length));
+  return rows.map(([k, v]) => `  ${k.padEnd(w)}  ${v}`).join("\n");
+};
+
+/* Everything on the page, raw EDID bytes included, so a report can be decoded again later. */
+function buildReport(){
+  const out = ["pdweb display report", kvText([
+    ["Date", new Date().toString()],
+    ["Page", location.href],
+    ["User agent", navigator.userAgent],
+    ["Platform", navigator.userAgentData?.platform || navigator.platform],
+  ]), "", "== Browser ==", kvText(basicRows()), "", "== Window Management API (List displays) =="];
+
+  if(details){
+    const cur = details.currentScreen;
+    details.screens.forEach((s, i) => out.push(`Screen ${i + 1}`, kvText([
+      ["Label", s.label || "(no label)"],
+      ["Flags", [s === cur && "this window", s.isPrimary && "primary", s.isInternal && "internal"].filter(Boolean).join(", ") || "none"],
+      ["Size (CSS px)", `${s.width} x ${s.height}`],
+      ["Available (CSS px)", `${s.availWidth} x ${s.availHeight}`],
+      ["Device pixel ratio", s.devicePixelRatio],
+      ["Size (device px)", `${screenList[i].w} x ${screenList[i].h}`],
+      ["Color depth", `${s.colorDepth} bit`],
+      ["Position", `${s.left}, ${s.top}`],
+      ["Orientation", s.orientation?.type],
+    ])));
+  } else out.push(screensErr ? `  failed - ${screensErr}` : "  not run");
+
+  out.push("", "== EDID ==");
+  if(lastParsed.length){
+    lastParsed.forEach((r, i) => {
+      out.push(`Display ${i + 1}: ${r.name || `${r.vendor} ${r.product}`}`,
+        kvText([...summaryRows(r), ["Browser display", matchScreens(r)]]));
+      r.warnings.forEach(w => out.push(`  ! ${w}`));
+      if(r.timings.length) out.push("  Detailed timings:", ...r.timings.map(t =>
+        `    ${fmtT(t)}  ${t.src}${t.preferred ? ", preferred" : ""}${t.mmW ? `, ${t.mmW} x ${t.mmH} mm` : ""}`));
+      out.push(`  Raw EDID (${r.raw.length} bytes):`, hex(r.raw).split("\n").map(l => "    " + l).join("\n"), "");
+    });
+  } else {
+    const raw = $("edidIn").value.trim();
+    out.push(decodeErr ? `  decode failed - ${decodeErr}` : "  none pasted");
+    if(raw) out.push("  Pasted text:", raw);
+  }
+  return out.join("\n") + "\n";
 }
 
+function downloadReport(){
+  const d = new Date(), p = n => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([buildReport()], {type: "text/plain;charset=utf-8"}));
+  a.download = `display_report_${stamp}.txt`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+let decodeErr = "";
 function decode(){
   msg("edidMsg", "");
+  decodeErr = "";
   try {
     const list = decodeInput($("edidIn").value).map(parseEdid);
     renderEdids(list);
     if(list.length) msg("edidMsg", `Decoded ${list.length} display${list.length > 1 ? "s" : ""}.`, "ok");
   } catch(e){
+    decodeErr = e.message;
     renderEdids([]);
     msg("edidMsg", e.message, "err");
   }
@@ -418,8 +485,9 @@ $("psCmd").textContent = PS_CMD;
 $("btnCopyPs").onclick = e => copy(PS_CMD, e.currentTarget);
 $("btnScreens").onclick = listScreens;
 $("btnParse").onclick = decode;
-$("btnClear").onclick = () => { $("edidIn").value = ""; renderEdids([]); msg("edidMsg", ""); };
-$("btnCopyOut").onclick = e => copy(asText(), e.currentTarget);
+$("btnClear").onclick = () => { $("edidIn").value = ""; decodeErr = ""; renderEdids([]); msg("edidMsg", ""); };
+$("btnReport").onclick = downloadReport;
+$("btnCopyReport").onclick = e => copy(buildReport(), e.currentTarget);
 $("edidIn").addEventListener("paste", () => setTimeout(decode, 0));
 showBasic();
 matchMedia(`(resolution: ${dpr()}dppx)`).addEventListener("change", showBasic);
