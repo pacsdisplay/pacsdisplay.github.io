@@ -51,7 +51,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>pdweb</title>
-<link rel="icon" href="data:," />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cpath d='M0 0h16v16H0z'/%3E%3Cpath fill='%23333' d='M1 1h6v6H1z'/%3E%3Cpath fill='%23666' d='M9 1h6v6H9z'/%3E%3Cpath fill='%23999' d='M9 9h6v6H9z'/%3E%3Cpath fill='%23ccc' d='M1 9h6v6H1z'/%3E%3C/svg%3E">
 <style>
   :root{
     --bg:#16181b;--panel:#1e2024;--panel2:#191b1e;--edge:#2f333a;
@@ -79,7 +79,7 @@
     background:var(--bg);color:var(--text);line-height:1.45;font-size:.8125rem}
   header{position:sticky;top:0;z-index:10;padding:10px 20px;border-bottom:1px solid var(--edge);
     background:var(--panel2);display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
-  .brand{font-size:1.125rem;font-weight:700;letter-spacing:.2px}
+  .brand svg{display:block;height:2rem;width:auto}
   nav{grid-column:2;justify-self:center;display:flex;gap:8px}
   .modebtn{background:transparent;color:var(--muted);border:1px solid var(--edge);border-radius:6px;
     padding:6px 16px;font-weight:600;font-size:0.8125rem;cursor:pointer}
@@ -130,8 +130,8 @@
   code,.kbd{font-family:var(--mono);background:var(--field);padding:1px 5px;border-radius:4px;font-size:0.75rem}
   .modewrap{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
   /* Inline field: label beside its control; users add only their sizing. */
-  .quantwrap,.lambwrap,.dispwrap,.unihopt{display:flex;align-items:center;gap:7px}
-  .quantwrap label,.lambwrap label,.dispwrap label,.unihopt label{margin:0;white-space:nowrap}
+  .quantwrap,.lambwrap,.unihopt{display:flex;align-items:center;gap:7px}
+  .quantwrap label,.lambwrap label,.unihopt label{margin:0;white-space:nowrap}
   /* Meter quantity: wraps the label back above the select once the row runs out of room. */
   .quantwrap{flex-wrap:wrap;flex:1 1 20rem;max-width:29.375rem}
   .quantwrap select{flex:1 1 15rem;width:auto}
@@ -170,8 +170,8 @@
   .iconbtn{margin:0;padding:4px 10px;font-size:0.8125rem;line-height:1.2}
   .helpdoc h3{font-size:0.8125rem;margin:16px 0 5px;color:var(--text)}
   .helpdoc h3:first-child{margin-top:0}
-  .helpdoc p,.helpdoc ul{margin:0 0 8px;color:#c2c7cd}
-  .helpdoc ul{padding-left:18px}
+  .helpdoc p,.helpdoc ul,.helpdoc ol{margin:0 0 8px;color:#c2c7cd}
+  .helpdoc ul,.helpdoc ol{padding-left:18px}
   .helpdoc li{margin:3px 0}
   .helpdoc b{color:var(--text)}
   .helpdoc code{border:1px solid var(--edge)}
@@ -190,8 +190,10 @@
   .cfgdock .lbl{color:var(--faint);font-size:0.6875rem;font-weight:700;letter-spacing:.3px;
     text-transform:uppercase;padding:0 2px}
   /* Reports a setting rather than asking for attention; warn only when nothing is declared. */
-  .cfgdock #btnPitch{font-family:var(--mono);font-weight:400;color:var(--muted);white-space:nowrap}
-  .cfgdock #btnPitch.unset{color:var(--warn)}
+  .cfgdock #btnPitch,.cfgdock #btnDisp{font-family:var(--mono);font-weight:400;color:var(--muted);white-space:nowrap}
+  .cfgdock #btnPitch.unset,.cfgdock #btnDisp.unset{color:var(--warn)}
+  /* Long IDs are clipped in the dock; the card shows them whole. */
+  .cfgdock #btnDisp{max-width:16rem;overflow:hidden;text-overflow:ellipsis}
   /* ---- tiles: display calibration presets and the pattern list ----
      The minmax floor is the second line's width, so a label never wraps mid-phrase. */
   .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:8px}
@@ -209,6 +211,44 @@
   /* An out-of-range pitch leaves the last good scale in force, so it has to look rejected. */
   .pitchrow input.bad{border-color:var(--err);color:var(--err)}
   .pitchnow.bad{color:var(--err)}
+  /* ---- display card and the EDID modal ---- */
+  .idrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .idrow label{margin:0;white-space:nowrap}
+  .idrow input{flex:1 1 14rem;width:auto;font-family:var(--mono)}
+  .idrow button{margin:0}
+  details.dispdet{margin-top:12px}
+  .detgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin-bottom:6px}
+  .detgrid input{font-family:var(--mono)}
+  .detgrid input.bad{border-color:var(--err);color:var(--err)}
+  @media (max-width:520px){ .detgrid{grid-template-columns:1fr} }
+  .dispdet p.hint{margin:0}
+  summary.cardhead .hint{text-transform:none;letter-spacing:0}
+  .detectrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .detectrow button{margin:0}
+  /* Analysis cards: which ID their exports will carry, and the way to change it. */
+  .displine{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:0.75rem;color:var(--muted)}
+  /* Offset underline: a flush one hides the "_" in model_serial IDs. */
+  .displine .linkbtn{font-family:var(--mono);color:var(--text);text-underline-offset:4px}
+  .displine .linkbtn.unset{color:var(--warn)}
+  pre.cmd{font-family:var(--mono);font-size:0.75rem;background:var(--field);border:1px solid var(--edge);
+    border-radius:6px;padding:10px;margin:0 0 8px;white-space:pre-wrap;word-break:break-all;color:var(--text)}
+  textarea{background:var(--field);border:1px solid var(--edge);color:var(--text);border-radius:6px;padding:8px 10px;
+    width:100%;font-family:var(--mono);font-size:0.75rem;min-height:5.5rem;resize:vertical}
+  textarea+.hint{margin-top:6px}
+  /* One physical display per row: a wide tile, name and serial on top, then maker and geometry. */
+  .cands{display:grid;gap:8px;margin-top:10px}
+  .cand{width:100%;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:start}
+  .cand .nm{font-family:var(--mono);font-size:0.9375rem;font-weight:700}
+  .cand .geo{grid-column:1;font-family:var(--mono);font-size:0.75rem;color:var(--muted)}
+  .cand .tags{grid-row:1/4;grid-column:2;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+  .userow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px}
+  .userow button{margin:0}
+  details.explain{margin-top:18px;border-top:1px solid var(--edge);padding-top:12px}
+  /* Command walk-through: the piece of the command, then what it does. */
+  .walk{display:grid;grid-template-columns:minmax(0,15rem) 1fr;gap:8px 14px;margin:0 0 10px}
+  .walk>code{display:block;align-self:start;white-space:pre-wrap;word-break:break-all;padding:4px 6px}
+  .walk p{margin:0}
+  @media (max-width:600px){ .walk{grid-template-columns:1fr} .walk p{margin-bottom:6px} }
   /* Footer clearance from the dock at narrow widths. */
   @media (max-width:900px){ .cfgdock{right:8px;bottom:8px} .sitefoot{padding-bottom:64px} }
   .sitefoot{max-width:45rem;margin:0 auto;padding:0 20px 26px;color:var(--faint);font-size:0.71875rem;
@@ -238,8 +278,6 @@
   .legend i{width:15px;height:2px;display:inline-block;border-radius:1px;flex:none}
   /* Analysis toolbar, under the card heading. */
   .anlbar{display:flex;flex-direction:column;gap:9px;margin-bottom:12px}
-  .dispwrap{flex-wrap:wrap}
-  .dispwrap input{width:13.125rem}
   .hint{color:var(--faint);font-weight:400;font-size:0.75rem}
   .exportrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .expbtns{display:flex;gap:6px;flex-wrap:wrap}
@@ -348,7 +386,8 @@
 </head>
 <body>
 <header>
-  <div class="brand">pdweb</div>
+  <!-- Logo and favicon: images/pdweb.svg and images/pdweb_ico.svg, inline so the page stays one file. -->
+  <div class="brand"><svg role="img" aria-label="pdweb" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 43.725 7"><path fill="#333" d="M1 1h5v5h-5z"/><path fill="#666" d="M7 1h5v5h-5z"/><path fill="#999" d="M13 1h5v5h-5z"/><path fill="#ccc" d="M19 1h5v5h-5z"/><path fill="#fff" d="M28.945 3.68c0-.835-.58-1.44-1.38-1.44-.375 0-.695.14-.91.39V2.305h-.61V6h.665V4.815c.25.225.51.325.85.325.8 0 1.385-.62 1.385-1.46zm-.67.015c0 .47-.345.835-.785.835-.47 0-.82-.36-.82-.845 0-.475.35-.835.81-.835.45 0 .795.365.795.845zM32.14 5.075V1.38h-.665v1.17c-.195-.215-.515-.345-.865-.345-.775 0-1.385.65-1.385 1.48 0 .82.605 1.455 1.39 1.455.375 0 .65-.125.915-.425v.36zm-.615-1.4c0 .48-.355.855-.805.855-.465 0-.825-.385-.825-.875 0-.47.355-.84.81-.84.465 0 .82.375.82.86zM36.3 2.305h-.71l-.505 1.69-.455-1.69h-.53l-.465 1.69-.495-1.69h-.715l.99 2.77h.41l.535-1.795.525 1.795h.415zM39.265 3.73c0-.86-.605-1.49-1.43-1.49-.815 0-1.46.645-1.46 1.46 0 .81.655 1.44 1.5 1.44.56 0 1.135-.315 1.32-.885h-.725c-.17.2-.335.275-.61.275-.395 0-.685-.21-.765-.545h2.145c.02-.095.025-.155.025-.255zm-.655-.33h-1.535c.105-.355.375-.55.77-.55.41 0 .68.195.765.55zM42.615 3.67c0-.835-.6-1.465-1.395-1.465-.36 0-.605.1-.86.355V1.38h-.665v3.695h.61V4.72c.285.305.55.42.96.42.78 0 1.35-.635 1.35-1.47zm-.67.005c0 .505-.33.855-.805.855-.48 0-.82-.355-.82-.86 0-.5.34-.855.805-.855.475 0 .82.365.82.86z"/></svg></div>
   <nav>
     <button class="modebtn active" data-mode="meter">meter</button>
     <button class="modebtn" data-mode="sequence">lumResponse</button>
@@ -470,8 +509,9 @@
           <li>Put the display in the preset you intend to test (i.e., DICOM GSDF).</li>
           <li>Set the ambient light level to match clinical usage. Measure the ambient contribution and enter
           it as <b>L<sub>amb</sub></b> (see below).</li>
-          <li>Optionally, fill in <b>Display ID</b>. It goes in the export header and the filename. If left
-          blank, it'll be blank in the export.</li>
+          <li>Optionally, set the <b>Display</b> in the Settings dock (bottom right). Its ID goes in the export
+          header and the filename; <b>Read EDID</b> there fills in the model, serial number and manufacture
+          date from the display itself. If left blank, it'll be blank in the export.</li>
         </ul>
 
         <h3>Collecting data</h3>
@@ -633,6 +673,8 @@
           <li>Measure the ambient contribution and enter it as <b>L<sub>amb</sub></b>. It is added to every
           reading inside the LUDM and MLD calculation. The matrices, the exports and the Luni file all report
           measured luminance L.</li>
+          <li>Optionally, set the <b>Display</b> in the Settings dock (bottom right). Its ID goes in the export
+          header and the filename, with the model, serial number and manufacture date when they are set.</li>
         </ul>
 
         <h3>Collecting data</h3>
@@ -1325,7 +1367,99 @@ Public License instead of this License.</pre>
   </div>
 </div>
 
+<!-- ===== EDID ===== opened from the Display card. The command only reads; the paste is decoded here. -->
+<div class="modal" id="edidModal" role="dialog" aria-modal="true" aria-labelledby="edidTitle" hidden>
+  <div class="modal-back" data-close></div>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="edidTitle">Access the EDID (Extended Display Identification Data)</h2>
+      <button class="iconbtn" data-close aria-label="Close">Close</button>
+    </div>
+    <div class="modal-body helpdoc">
+      <p class="lead">Every connected display sends the workstation an identification record, its EDID, holding the
+      model, serial number, physical size, manufacturing date, and other details. This command copies the EDID so pdweb
+      can read it. <b>Explain this command</b>, at the bottom, describes the process in detail.</p>
+      <ol>
+        <li>Open <b>Windows PowerShell</b> from the Start menu.</li>
+        <li>Copy the command, paste it into PowerShell and press Enter. Nothing is shown; the result goes right to
+          the clipboard.</li>
+        <li>Paste the result (a bunch of hexadecimal characters) into the box below.</li>
+      </ol>
+      <pre class="cmd" id="psCmd"></pre>
+      <button id="btnCopyPs">Copy command</button>
+
+      <h3>Result</h3>
+      <textarea id="edidIn" placeholder="Paste the result here" spellcheck="false" autocomplete="off"></textarea>
+      <p class="hint">The EDID of any display in hexadecimal also works here, for example from another EDID tool or,
+        on Linux, from <code>cat /sys/class/drm/*/edid | xxd -p</code>. Base64 works too, one display per line.</p>
+      <div class="msg" id="edidMsg"></div>
+      <div class="cands" id="cands"></div>
+      <div class="userow" id="useRow" hidden>
+        <button id="btnUse" disabled>Use this display</button>
+        <label class="chk"><input type="checkbox" id="chkPitch" checked> <span id="chkPitchTxt">Also set pixel pitch</span></label>
+      </div>
+
+      <details class="explain">
+      <summary class="cardhead">Explain this command</summary>
+      <p>It only reads. It needs no administrator rights, changes no settings or files, does not connect to
+        the internet, and runs no other program or code. The result is decoded in this page; nothing is
+        uploaded. Each piece:</p>
+      <div class="walk">
+        <code>Get-CimInstance -Namespace root\wmi WmiMonitorID</code>
+        <p>Asks Windows for the displays connected right now. <code>WmiMonitorID</code> is the name Windows
+          gives this list. Each entry carries the display's device name.</p>
+        <code>| % { … }</code>
+        <p>Runs the part in braces once for each display in the list. <code>%</code> is PowerShell's
+          shorthand for <code>ForEach-Object</code>.</p>
+        <code>$_.InstanceName -replace '_\d+$'</code>
+        <p>Takes that display's device name and removes the <code>_0</code> at its end, which leaves the
+          name of the registry key where Windows keeps the display's details.</p>
+        <code>(Get-ItemProperty ('HKLM:\SYSTEM\CurrentControlSet\Enum\' + … + '\Device Parameters')).EDID</code>
+        <p>Reads the <code>EDID</code> value in that key, saved by Windows when the display was connected.
+          Reading it needs no administrator rights.</p>
+        <code>-join ( … | % { $_.ToString('X2') })</code>
+        <p>Writes each byte of the EDID as two hexadecimal characters and joins them into one line of text
+          per display.</p>
+        <code>| Set-Clipboard</code>
+        <p>Puts the text on the clipboard, ready to paste here.</p>
+      </div>
+      </details>
+    </div>
+  </div>
+</div>
+
 <main>
+  <!-- shared: the tested display, opened from the dock. Edit buffer, like the pitch: applies on Set or
+       Enter only. autocomplete off, so a reload cannot restore half an identity behind a cleared dock. -->
+  <section class="card" id="dispCard" hidden>
+    <h2>Display</h2>
+    <p class="placeholder">The tested display. Its ID labels the lumResponse and uniformity exports and
+      their filenames. Type an ID, or read one from the display.</p>
+    <div class="idrow">
+      <label for="uiDispId">Display ID</label>
+      <input id="uiDispId" placeholder="not set" spellcheck="false" autocomplete="off">
+      <button id="btnDispSet">Set</button>
+    </div>
+    <details class="dispdet">
+      <summary class="cardhead">Details <span class="hint">make, model, serial, manufacture date</span></summary>
+      <div class="detgrid">
+        <div><label for="uiMake">Make</label><input id="uiMake" placeholder="e.g. Barco" spellcheck="false" autocomplete="off"></div>
+        <div><label for="uiModel">Model</label><input id="uiModel" placeholder="e.g. MDCC-6530" spellcheck="false" autocomplete="off"></div>
+        <div><label for="uiSerial">Serial number</label><input id="uiSerial" spellcheck="false" autocomplete="off"></div>
+        <div><label for="uiDom">Manufactured</label><input id="uiDom" placeholder="YYYY-MM-DD" spellcheck="false" autocomplete="off"></div>
+      </div>
+      <p class="hint">Recorded in the reports as separate fields. Read EDID fills them in, or type them from
+        the label on the display. The EDID gives the week of manufacture; the date is Monday of that week.
+        Manufactured takes YYYY-MM-DD, YYYY-MM or YYYY. With the Display ID left empty, Set makes it from
+        the model and serial.</p>
+    </details>
+    <div class="detectrow">
+      <button id="btnDetect" title="Name of the display this window is on (Chrome and Edge)">Detect from browser</button>
+      <button id="btnEdid" title="Model, serial and size from the display itself">Read EDID</button>
+    </div>
+    <div class="msg" id="dispMsg"></div>
+  </section>
+
   <!-- shared: display calibration, opened from the dock. Large buttons: before a pitch is set the
        interface may render small. Percentages from labelPitchOptions. -->
   <section class="card" id="pitchCard" hidden>
@@ -1503,11 +1637,8 @@ Public License instead of this License.</pre>
 
     <!-- import / export toolbar (buttons enabled once a run has produced points) -->
     <div class="anlbar">
-      <div class="dispwrap">
-        <label for="dispId">Display ID</label>
-        <input id="dispId" placeholder="displayID">
-        <span class="hint">(used in the export header and filename)</span>
-      </div>
+      <div class="displine">Display ID <button class="linkbtn dispref"></button>
+        <span class="hint">(used in the export header and filename)</span></div>
       <div class="exportrow">
         <!-- left: brings a run in. right: takes one out. -->
         <div class="expbtns">
@@ -1637,11 +1768,8 @@ Public License instead of this License.</pre>
     <h2>Analysis</h2>
 
     <div class="anlbar">
-      <div class="dispwrap">
-        <label for="uniDispId">Display ID</label>
-        <input id="uniDispId" placeholder="displayID">
-        <span class="hint">(used in the export header and filename)</span>
-      </div>
+      <div class="displine">Display ID <button class="linkbtn dispref"></button>
+        <span class="hint">(used in the export header and filename)</span></div>
       <div class="exportrow">
         <!-- left: brings a run in. right: takes one out. -->
         <div class="expbtns">
@@ -1719,11 +1847,13 @@ Public License instead of this License.</pre>
   specifications.</div>
 </footer>
 
-<!-- Settings for every mode, as one file: no readings or display identity. -->
+<!-- The display and its pitch, then Export/Import of every mode's settings as one file (no readings or
+     display identity). -->
 <div class="cfgdock">
   <span class="lbl">Settings</span>
-  <!-- The pitch in force; opens the card that sets it (one control per setting). -->
-  <button id="btnPitch" title="Pixel pitch of the display under test - click to change"></button>
+  <!-- The display and the pitch in force; each opens the card that sets it (one control per setting). -->
+  <button id="btnDisp" title="Display ID - click to change"></button>
+  <button id="btnPitch" title="Pixel pitch of the tested display - click to change"></button>
   <button id="btnCfgExport" title="Save the settings of every mode to a JSON file">Export</button>
   <button id="btnCfgImport" title="Load settings saved from a previous session">Import</button>
   <input type="file" id="cfgFileImport" accept=".json,application/json" hidden>
@@ -1830,7 +1960,8 @@ function wireImport(btnId,inputId,onJSON,onErr){
     try{ await onJSON(JSON.parse(await f.text()),f.name); }catch(err){ onErr(err); }
   };
 }
-const fileStamp=iso=>(iso||new Date().toISOString()).replace(/[:.]/g,"-").replace("T","_").slice(0,19);
+/* Download names: YYYYMMDD_HHMMSS (UTC), the same in every file a run produces. */
+const fileStamp=iso=>(iso||new Date().toISOString()).replace(/[-:]/g,"").replace("T","_").slice(0,15);
 /* MM/DD/YY HH:MM:SS, as the pacsDisplay text formats write it. */
 function hdrStamp(iso){
   const d=new Date(iso), t2=n=>String(n).padStart(2,"0");
@@ -3060,10 +3191,33 @@ function envInfo(){
   };
 }
 
-/* Each analysis card has its own Display ID, so importing one run cannot rename the other. File names
-   join with "_" as pacsDisplay does, minus anything a filesystem would refuse. */
-const dispName=id=>$(id).value.trim();
-const dispFile=id=>dispName(id).replace(/\s+/g,"_").replace(/[^\w.\-]/g,"");
+/* Leaving the page loses a run in progress, or one measured here and never saved (a file, or Copy data).
+   Only then does the browser ask; an imported run is already a file. A WeakSet, so nothing rides into
+   the JSON. */
+const savedRuns=new WeakSet();
+const unsavedRun=r=>!!r && !r.meta.imported && r.points.length>0 && !savedRuns.has(r);
+addEventListener("beforeunload",e=>{
+  if(seq.on||uni.on||unsavedRun(seq.lastRun)||unsavedRun(uni.lastRun)){ e.preventDefault(); e.returnValue=""; }
+});
+
+/* One display for every mode (see DISPLAY), read at export time so a Set after the run takes effect.
+   File names join with "_" as pacsDisplay does, minus anything a filesystem would refuse. */
+const dispName=()=>display.id;
+const dispFile=()=>display.id.replace(/\s+/g,"_").replace(/[^\w.\-]/g,"");
+/* The details for the text headers, "SN=... Make=..." with only the fields that are set. One line, and
+   no Tcl list syntax ({ } " \): evalQClr reads cLR line 2 with lindex, which fails on an unbalanced one. */
+function dispTags(modelKey){
+  const v=k=>String(display[k]).replace(/[\x00-\x1f\x7f{}"\\]/g," ").replace(/\s+/g," ").trim();
+  return [display.model && (modelKey?`Model=${v("model")}`:v("model")), display.serial && `SN=${v("serial")}`,
+          display.make && `Make=${v("make")}`, display.manufactured && `DOM=${v("manufactured")}`]
+    .filter(Boolean).join(" ");
+}
+/* JSON: the details as separate fields, always written, so empty differs from "file predates this". */
+const dispInfo=()=>({make:display.make, model:display.model, serial:display.serial,
+                     manufactured:display.manufactured, source:display.source});
+/* Copy-data tables: under the display line, only when there are details. */
+const dispTsvLine=()=>{ const t=dispTags(true);
+  return t ? [`# display details: ${t}${display.source?`   (from ${display.source})`:""}`] : []; };
 
 const joinEOL=lines=>lines.join("\r\n")+"\r\n";
 
@@ -3094,7 +3248,10 @@ function buildCLR(run){
   const P=[...points].sort((a,b)=>a.ddl-b.ddl);
   const out=[];
   out.push(`#  ${CLR_TITLE} - ${hdrStamp(meta.started)}`);
-  out.push(`#  Display ID: ${dispName("dispId")}`);
+  /* evalQClr takes the ID as token 3 and names its QC report after it, so the ID is written as one
+     token (the filename form). The details follow; evalQClr ignores them. */
+  const tags=dispTags(true);
+  out.push(`#  Display ID: ${dispFile()}${tags?`  ${tags}`:""}`);
   /* iLdelay is the run's recorded settle time. LUTmode must stay the LAST token: evalQClr reads it with
      [lindex $line end]. The legacy ILlimit pair is dropped - pdweb applies no limits. */
   out.push(`#  iLdelay=${((meta.settleMs??SETTLE_MS)/1000).toFixed(2)}  avgN=${meta.navg}  `+
@@ -3120,7 +3277,8 @@ function buildTSV(run){
   const P=[...points].sort((a,b)=>a.ddl-b.ddl);
   const head=[
     `# pdweb lumResponse - ${meta.started}`,
-    `# display: ${dispName("dispId")}   meter: ${meta.product||"i1d3"} ${meta.serial||""}`.trimEnd(),
+    `# display: ${dispName()}   meter: ${meta.product||"i1d3"} ${meta.serial||""}`.trimEnd(),
+    ...dispTsvLine(),
     `# points requested: ${meta.points}   measured: ${P.length}   complete: ${meta.complete}`+
       `   navg: ${meta.navg}   scale: ${meta.scale}   L_amb: ${meta.Lamb} cd/m2`,
     /* How they were acquired affects trust, so it travels with the points. */
@@ -3145,26 +3303,27 @@ function tsvTable(head,cols,rows){
           ...rows.map(r=>r.join("\t"))].join("\n")+"\n";
 }
 
-$("btnCopyData").onclick=()=>{ if(seq.lastRun) copyText(buildTSV(seq.lastRun),"measurement table"); };
+$("btnCopyData").onclick=()=>{ if(!seq.lastRun) return; copyText(buildTSV(seq.lastRun),"measurement table"); savedRuns.add(seq.lastRun); };
 /* Export field whitelists: u'v' only (every metric uses it), so a hand-edited file cannot disagree with itself. */
 const expPoint=p=>({ddl:p.ddl, Y:p.Y, up:p.up, vp:p.vp});
 const expBg   =b=>({Y:b.Y, up:b.up, vp:b.vp});
 
 $("btnExpJson").onclick=()=>{
   if(!seq.lastRun) return;
-  /* Summary metrics only (series/intervals derive from points). display comes from the field, so a
+  /* Summary metrics only (series/intervals derive from points). display comes from the setting, so a
      Display ID edit takes effect. env stays in meta from capture - re-deriving it here would describe
      the exporting machine after an import. */
-  const {analysis, display:_prior, points, background, ...rest}=seq.lastRun;
+  const {analysis, display:_prior, displayInfo:_priorInfo, points, background, ...rest}=seq.lastRun;
   const payload={ format:"pdweb-lumresponse/1", exported:new Date().toISOString(),
                   ...rest,
                   background:(background||[]).map(expBg), points:points.map(expPoint),
-                  display:dispName("dispId"),
+                  display:dispName(), displayInfo:dispInfo(),
   /* tg's internal insufficient flag becomes tg: null. */
                   analysis: analysis ? (({series,intervals,tg,...keep})=>
                     ({...keep, tg: (tg && !tg.insufficient) ? (({insufficient,...t})=>t)(tg) : null}))(analysis) : null };
-  download(`pdweb_${dispFile("dispId")}_${fileStamp(seq.lastRun?.meta.started)}_lumresponse.json`,
+  download(`pdweb_${dispFile()}_${fileStamp(seq.lastRun?.meta.started)}_lumresponse.json`,
            JSON.stringify(payload,null,2),"application/json");
+  savedRuns.add(seq.lastRun);
   log("run exported as JSON","ok");
 };
 /* ==========================================================================
@@ -3487,6 +3646,20 @@ function buildChartSVG(chart,scale=EXPORT_SCALE){
   sEl("text",{x:PAD,y:PAD+15,fill:EXPORT_INK,"font-size":15,"font-weight":700},root)
     .textContent=title;
 
+  /* The light logo (images/pdweb_light.svg), made from the header's: squares reversed, black lettering.
+     Lettering ends at the plot's right edge, its baseline (5.075 of 7) on the title's. Left out if the
+     title leaves no room. */
+  const LOGO_H=14, u=LOGO_H/7;
+  if(textW(title,F_TITLE)+12+42.615*u<=vw){
+    const logo=document.querySelector(".brand svg").cloneNode(true);
+    const LIGHT={"#333":"#ccc","#666":"#999","#999":"#666","#ccc":"#333","#fff":"#000"};
+    for(const p of logo.querySelectorAll("path")) p.setAttribute("fill",LIGHT[p.getAttribute("fill")]);
+    logo.removeAttribute("role"); logo.removeAttribute("aria-label");
+    logo.setAttribute("x",PAD+vw-42.615*u); logo.setAttribute("y",PAD+15-5.075*u);
+    logo.setAttribute("width",43.725*u); logo.setAttribute("height",LOGO_H);
+    root.appendChild(logo);
+  }
+
   legLines.forEach((line,li)=>{
     const base=legTop+li*LEG_LINE+11;
     for(const it of line){
@@ -3543,9 +3716,9 @@ async function copyChartImage(chart){
 }
 async function saveChartPNG(chart){
   const blob=await chartPNG(chart);
-  /* chartMeta.uni: the uniformity card's Display ID and timestamp, read at click time. */
+  /* chartMeta.uni: the uniformity run's timestamp, read at click time. */
   const u=chart.chartMeta.uni;
-  download(`pdweb_${dispFile(u?"uniDispId":"dispId")}_${fileStamp((u?uni:seq).lastRun?.meta.started)}_`+
+  download(`pdweb_${dispFile()}_${fileStamp((u?uni:seq).lastRun?.meta.started)}_`+
            `${chart.chartMeta.slug}.png`, blob,"image/png");
   log(`${chart.chartMeta.title} written as PNG`,"ok");
   return "Saved";
@@ -3579,8 +3752,10 @@ $("btnExpClr").onclick=()=>{
   /* Complete runs only: downstream reads a cLR as a full ramp. */
   if(!seq.lastRun || !seq.lastRun.meta.complete) return;
   const nbg=(seq.lastRun.background||[]).length;
-  download(`cLR_${dispFile("dispId")}.txt`, buildCLR(seq.lastRun), "text/plain;charset=utf-8");
-  log(`cLR written for ${dispName("dispId")} (${nbg} background, ${seq.lastRun.points.length} points)`,"ok");
+  download(`cLR_${dispFile()}_${fileStamp(seq.lastRun.meta.started)}.txt`, buildCLR(seq.lastRun),
+           "text/plain;charset=utf-8");
+  savedRuns.add(seq.lastRun);
+  log(`cLR written for ${dispName()||"(no display ID)"} (${nbg} background, ${seq.lastRun.points.length} points)`,"ok");
   const notes=[];
   if(nbg!==BG_READS) notes.push(
     `This run carries ${nbg} background read(s) instead of ${BG_READS}, so the cLR was written `+
@@ -3620,7 +3795,12 @@ function importBase(o,fmt,what){
   if(!Array.isArray(o.points)) throw new Error(`no ${what} array`);
   const m=(o.meta&&typeof o.meta==="object")?o.meta:{};
   const md=finiteOrNull(m.moveDelayMs);
-  return { m, display: typeof o.display==="string"?o.display.slice(0,120):"", meta:{
+  /* Older files have no displayInfo: the details read as empty. */
+  const di=(o.displayInfo&&typeof o.displayInfo==="object")?o.displayInfo:{};
+  const str=(v,n)=>typeof v==="string"?v.slice(0,n):"";
+  return { m, display: str(o.display,120),
+    displayInfo:{make:str(di.make,64), model:str(di.model,64), serial:str(di.serial,64),
+                 manufactured:str(di.manufactured,32), source:str(di.source,64)}, meta:{
     started: typeof m.started==="string"?m.started.slice(0,40):new Date().toISOString(),
     navg:numOr(m.navg,1), scale:numOr(m.scale,1), Lamb:numOr(m.Lamb,0), floor:numOr(m.floor,5),
     /* D65 when absent (older files). */
@@ -3639,7 +3819,7 @@ function importBase(o,fmt,what){
 }
 
 function validateRun(o){
-  const {m,meta,display}=importBase(o,"pdweb-lumresponse/","points");
+  const {m,meta,display,displayInfo}=importBase(o,"pdweb-lumresponse/","points");
   const points=objs(o.points,"point",(p,t)=>({ddl:num(p.ddl,`${t} DDL`,{min:0,max:255}),...readYuv(p,t)}));
   if(points.length<2) throw new Error("need at least two points");
   /* Capped at BG_READS for the cLR; short is tolerated (the cLR writer reports it). */
@@ -3659,13 +3839,18 @@ function validateRun(o){
     fullscreen:!!m.fullscreen,
   });
   return { meta, requested: requested.length?requested:points.map(p=>p.ddl),
-           background, points, analysis:null, display };
+           background, points, analysis:null, display, displayInfo };
 }
 
 /* Import: restore the capture settings first, so the initial re-analysis reproduces the original
    result; they stay editable for Re-analyze afterwards. */
-function restoreRunSettings(p,dispId,run){
-  if(run.display) $(dispId).value=run.display;
+function restoreRunSettings(p,run){
+  /* One display for every mode: the run's becomes the setting, unless the file names none. */
+  const v={...run.displayInfo, id:run.display};
+  if((v.id || detailKey(v).trim()) && (v.id!==display.id || detailKey(v)!==detailKey(display))){
+    setDisplay(v,{close:false});
+    log(`display set to ${v.id||"(no ID)"} from the imported file`,"m");
+  }
   $(`${p}Lamb`).value=run.meta.Lamb;
   $(`${p}Floor`).value=run.meta.floor;
   applyRef(p,run.meta.refUV);
@@ -3697,7 +3882,7 @@ wireImport("btnImport","fileImport",(o,name)=>{
   const run=validateRun(o);
   run.meta.sourceFile=name.slice(0,120);
   seq.lastRun=run;
-  restoreRunSettings("seq","dispId",run);
+  restoreRunSettings("seq",run);
   setMode("sequence");
   log(`imported ${name}: ${run.points.length} points, ${run.background.length} background, `+
       `${run.meta.complete?"complete":"incomplete"}`, "ok");
@@ -4252,7 +4437,7 @@ function renderUniMap(a){
   const host=$("uniMapHost"); host.replaceChildren();
   if(!a || !a.byLevel.length) return;
 
-  /* uni: this card's Display ID and timestamp. */
+  /* uni: the PNG name takes the uniformity run's timestamp. */
   const {wrap,h3}=chartShell({title:"Deviation from median",slug:"uniformity-map",legend:null,note:"",uni:true});
 
   const bar=document.createElement("div"); bar.className="unimapbar";
@@ -4374,7 +4559,9 @@ const LUNI_TITLE="pdweb uniformity 1.0";
 function buildLuni(run,a){
   const m=run.meta, out=[];
   out.push(`#\t${LUNI_TITLE} - ${hdrStamp(m.started)}`);
-  out.push(`#\tDisplay ID: ${dispName("uniDispId")}`);
+  out.push(`#\tDisplay ID: ${dispName()}`);
+  /* Laid out like the Meter line; only when there are details. */
+  if(dispTags(false)) out.push(`#\tDisplay = ${dispTags(false)}`);
   out.push(`#\tAverage # of Readings = ${m.navg}`);
   out.push(`#\tLamb = ${m.Lamb} cd/m^2`);
   out.push(`#\tMeter = ${m.product||"i1d3"} SN=${m.serial||""}`);
@@ -4408,7 +4595,8 @@ function buildUniTSV(run){
   const m=run.meta;
   const head=[
     `# pdweb uniformity - ${m.started}`,
-    `# display: ${dispName("uniDispId")}   meter: ${m.product||"i1d3"} ${m.serial||""}`.trimEnd(),
+    `# display: ${dispName()}   meter: ${m.product||"i1d3"} ${m.serial||""}`.trimEnd(),
+    ...dispTsvLine(),
     `# mode: ${UNI_MODE_TEXT[m.mode]||m.mode}   positions: ${UNI_N}   complete: ${m.complete}`+
       `   navg: ${m.navg}   scale: ${m.scale}   L_amb: ${m.Lamb} cd/m2`,
     `# chromaticity reference: u' ${m.refUV?m.refUV[0]:"n/a"}   v' ${m.refUV?m.refUV[1]:"n/a"}`,
@@ -4439,25 +4627,28 @@ $("btnUniExpLuni").onclick=()=>{
   const run=uni.lastRun;
   /* Needs a complete, analyzed run: the header carries the metrics. */
   if(!run||!run.meta.complete||!run.analysis) return;
-  download(`Luni_${dispFile("uniDispId")}.txt`, buildLuni(run,run.analysis), "text/plain;charset=utf-8");
-  log(`Luni written for ${dispName("uniDispId")} (${run.analysis.levels.length} level(s), `+
+  download(`Luni_${dispFile()}_${fileStamp(run.meta.started)}.txt`, buildLuni(run,run.analysis),
+           "text/plain;charset=utf-8");
+  savedRuns.add(run);
+  log(`Luni written for ${dispName()||"(no display ID)"} (${run.analysis.levels.length} level(s), `+
       `${run.points.length} readings)`,"ok");
 };
-$("btnUniCopyData").onclick=()=>{ if(uni.lastRun) copyText(buildUniTSV(uni.lastRun),"uniformity table"); };
+$("btnUniCopyData").onclick=()=>{ if(!uni.lastRun) return; copyText(buildUniTSV(uni.lastRun),"uniformity table"); savedRuns.add(uni.lastRun); };
 /* pos is the capture index; label rides along so other readers need not know the serpentine order. */
 const uniExpPoint=p=>({pos:p.pos, label:p.label, ddl:p.ddl, Y:p.Y, up:p.up, vp:p.vp});
 $("btnUniExpJson").onclick=()=>{
   if(!uni.lastRun) return;
   /* Summary metrics only; Re-analyze rebuilds byLevel. env stays in meta (see the lumResponse export). */
-  const {analysis, display:_prior, points, ...rest}=uni.lastRun;
+  const {analysis, display:_prior, displayInfo:_priorInfo, points, ...rest}=uni.lastRun;
   const payload={ format:"pdweb-uniformity/1", exported:new Date().toISOString(), ...rest,
-                  points:points.map(uniExpPoint), display:dispName("uniDispId"),
+                  points:points.map(uniExpPoint), display:dispName(), displayInfo:dispInfo(),
                   analysis: analysis ? {Lamb:analysis.Lamb, floor:analysis.floor,
                     refUV:analysis.refUV, levels:analysis.levels, maxLUDM:analysis.maxLUDM,
                     maxMLD:analysis.maxMLD, maxDuv:analysis.maxDuv,
                     maxDuvRef:analysis.maxDuvRef} : null };
-  download(`pdweb_${dispFile("uniDispId")}_${fileStamp(uni.lastRun?.meta.started)}_uniformity.json`,
+  download(`pdweb_${dispFile()}_${fileStamp(uni.lastRun?.meta.started)}_uniformity.json`,
            JSON.stringify(payload,null,2),"application/json");
+  savedRuns.add(uni.lastRun);
   log("uniformity run exported as JSON","ok");
 };
 $("btnUniCopyConf").onclick=()=>{
@@ -4484,7 +4675,7 @@ $("btnUniCopyConf").onclick=()=>{
 
 /* ---- import / re-analysis ---- untrusted, as validateRun. */
 function validateUniRun(o){
-  const {m,meta,display}=importBase(o,"pdweb-uniformity/","readings");
+  const {m,meta,display,displayInfo}=importBase(o,"pdweb-uniformity/","readings");
   /* At most one reading per position per level of the largest set. */
   const CAP=UNI_N*UNI_LEVELS[18].length;
   if(o.points.length>CAP) throw new Error(`too many readings (${o.points.length}, max ${CAP})`);
@@ -4517,7 +4708,7 @@ function validateUniRun(o){
       return {w, h, dpr, pitchMm:p, wMm:mm ? +(w*mm).toFixed(1) : null, hMm:mm ? +(h*mm).toFixed(1) : null};
     })() : null,
   });
-  return { meta, levels, positions:UNI_POS.map(p=>p.label), points, analysis:null, display };
+  return { meta, levels, positions:UNI_POS.map(p=>p.label), points, analysis:null, display, displayInfo };
 }
 
 /* Re-analyzes the loaded run with the current L_amb, color floor and white point. */
@@ -4546,7 +4737,7 @@ wireImport("btnUniImport","uniFileImport",(o,name)=>{
   const run=validateUniRun(o);
   run.meta.sourceFile=name.slice(0,120);
   uni.lastRun=run;
-  restoreRunSettings("uni","uniDispId",run);
+  restoreRunSettings("uni",run);
   setMode("uniformity");
   log(`imported ${name}: ${run.points.length} readings, ${run.levels.length} level(s), `+
       `${run.meta.complete?"complete":"incomplete"}`,"ok");
@@ -5233,8 +5424,9 @@ function applyPitch(){
   queueCenterPatchRoom();   /* both variables move the patch */
 }
 
-/* View state only, never persisted, and only ever opened from the dock readout. */
-let pitchCardOpen=false;
+/* The settings card open under the dock, one at a time: "disp" | "pitch" | null. View state only, never
+   persisted, and only ever opened from the dock readouts. */
+let openCard=null;
 
 /* From JS because the percentage is a function of dpr: 0.165 mm reads 160% until a Ctrl+=. */
 function labelPitchOptions(){
@@ -5269,7 +5461,7 @@ function renderPitch(err=false){
   /* Trimmed, not fixed at three places: 0.1704 must not read back as the 0.170 preset. */
   dock.textContent = pixelPitchMm===null ? "Pitch not set"
     : `${+pixelPitchMm.toFixed(4)} mm - ${Math.round(uiScaleFactor()*100)}%`;
-  $("pitchCard").hidden=!pitchCardOpen;
+  $("pitchCard").hidden=openCard!=="pitch";
 }
 
 /* The only writer of pixelPitchMm. A bad value is refused, not clamped, and changes nothing. */
@@ -5282,7 +5474,7 @@ function setPitch(v,{quiet=false,close=true}={}){
   }
   pixelPitchMm=n;
   $("uiPitchMm").value = n===null ? "" : String(+n.toFixed(4));
-  if(close) pitchCardOpen=false;
+  if(close && openCard==="pitch") openCard=null;
   applyPitch();
   renderPitch();
   if(quiet) return true;
@@ -5301,13 +5493,19 @@ $("pitchGrid").onclick=e=>{
 /* Nothing on input or change - only Set commits. Enter goes the same way. */
 $("btnPitchSet").onclick=()=>setPitch($("uiPitchMm").value);
 $("uiPitchMm").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); setPitch(e.target.value); } };
-$("btnPitch").onclick=()=>{
-  pitchCardOpen=!pitchCardOpen;
-  /* Discards an abandoned edit, so it never opens showing an uncommitted value. */
-  if(pitchCardOpen) $("uiPitchMm").value = pixelPitchMm===null ? "" : String(+pixelPitchMm.toFixed(4));
-  renderPitch();
-  if(pitchCardOpen){ $("pitchCard").scrollIntoView({block:"nearest"}); $("uiPitchMm").focus(); }
-};
+$("btnPitch").onclick=()=>toggleCard("pitch");
+
+/* Opening a card discards an abandoned edit, so it never opens showing an uncommitted value. */
+function toggleCard(which){
+  openCard = openCard===which ? null : which;
+  if(openCard==="pitch") $("uiPitchMm").value = pixelPitchMm===null ? "" : String(+pixelPitchMm.toFixed(4));
+  if(openCard==="disp"){ writeDispInputs(display); filled=null; markDom(false); clearMsg("dispMsg"); }
+  renderPitch(); renderDisplay();
+  if(openCard){
+    $(openCard==="disp"?"dispCard":"pitchCard").scrollIntoView({block:"nearest"});
+    $(openCard==="disp"?"uiDispId":"uiPitchMm").focus();
+  }
+}
 
 /* dpr changes (zoom, another monitor) change what the pitch implies. The media query matches one
    ratio, so it re-arms. */
@@ -5315,6 +5513,473 @@ $("btnPitch").onclick=()=>{
   matchMedia(`(resolution: ${window.devicePixelRatio||1}dppx)`)
     .addEventListener("change",()=>{ applyPitch(); renderPitch(); patDprChanged(); watchDpr(); },{once:true});
 })();
+
+/* ==========================================================================
+   DISPLAY - the tested display, one for every mode. id labels the exports; the details are recorded
+   beside it as separate fields. Read from the display's EDID (a PowerShell one-liner, pasted in) or the
+   browser's screen name. The EDID decoding is written from the public VESA E-EDID 1.4, CTA-861 and
+   DisplayID specifications.
+   ========================================================================== */
+
+/* source says where the details came from: EDID, browser, entered, or either of the first two edited. */
+const NO_DISPLAY={id:"", make:"", model:"", serial:"", manufactured:"", source:""};
+let display={...NO_DISPLAY};
+const DISP_INPUTS={id:"uiDispId", make:"uiMake", model:"uiModel", serial:"uiSerial", manufactured:"uiDom"};
+const readDispInputs=()=>Object.fromEntries(Object.entries(DISP_INPUTS).map(([k,id])=>[k,$(id).value.trim()]));
+const writeDispInputs=v=>{ for(const [k,id] of Object.entries(DISP_INPUTS)) $(id).value=v[k]||""; };
+const detailKey=v=>[v.make,v.model,v.serial,v.manufactured].join("\n");
+/* pacsDisplay's EDID-based ID: model and serial joined with "_", so it stays one token in a cLR. */
+const idOf=(...parts)=>parts.filter(Boolean).join(" ").trim().replace(/\s+/g,"_");
+let filled=null;   // details filled in by Detect and not yet Set: {vals, source}
+
+/* YYYY, YYYY-MM or YYYY-MM-DD, and a date that exists. */
+function validDom(s){
+  const m=/^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(s);
+  if(!m) return false;
+  const y=+m[1], mo=m[2]?+m[2]:1, d=m[3]?+m[3]:1, t=new Date(Date.UTC(y,mo-1,d));
+  return y>=1950 && t.getUTCMonth()===mo-1 && t.getUTCDate()===d;
+}
+const markDom=bad=>$("uiDom").classList.toggle("bad",bad);
+
+function renderDisplay(){
+  const id=display.id, b=$("btnDisp");
+  b.classList.toggle("unset",!id);
+  b.textContent=id||"Display not set";
+  b.title=(id?`Display ID: ${id}`:"Display ID not set")+" - click to change";
+  for(const r of document.querySelectorAll(".dispref")){ r.textContent=id||"not set"; r.classList.toggle("unset",!id); }
+  $("dispCard").hidden=openCard!=="disp";
+}
+
+/* The only writer of display. */
+function setDisplay(v,{close=true}={}){
+  display={...NO_DISPLAY,...v};
+  writeDispInputs(display);
+  if(close && openCard==="disp") openCard=null;
+  renderDisplay();
+}
+
+/* Set: the card's fields as they stand. An empty ID is made from model and serial. */
+function commitDisplay(){
+  const v=readDispInputs();
+  if(v.manufactured && !validDom(v.manufactured)){
+    markDom(true);
+    $("dispCard").querySelector(".dispdet").open=true;
+    showMsg("dispMsg","Manufactured must be YYYY-MM-DD, YYYY-MM or YYYY.","err");
+    return;
+  }
+  if(!v.id) v.id=idOf(v.model,v.serial);
+  const edited=s=>s.endsWith(", edited")||s==="entered" ? s : `${s}, edited`;
+  const k=detailKey(v);
+  v.source = !k.trim() ? ""
+    : filled ? (k===detailKey(filled.vals) ? filled.source : edited(filled.source))
+    : k===detailKey(display) ? display.source
+    : display.source ? edited(display.source) : "entered";
+  filled=null;
+  markDom(false);
+  clearMsg("dispMsg");
+  setDisplay(v);
+  log(display.id ? `display ${display.id}${display.source?` (details from ${display.source})`:""}`
+                 : "display not set", "ok");
+}
+
+/* ---- detect from the browser (Window Management API: Chrome and Edge) ---- */
+
+let scrDetails=null, screenList=[];
+async function screenDetails(){
+  if(!scrDetails){
+    scrDetails=await window.getScreenDetails();
+    scrDetails.addEventListener("screenschange",refreshScreens);
+    scrDetails.addEventListener("currentscreenchange",refreshScreens);
+  }
+  refreshScreens();
+  return scrDetails;
+}
+function refreshScreens(){
+  const cur=scrDetails.currentScreen;
+  screenList=scrDetails.screens.map(s=>({label:s.label||"", w:Math.round(s.width*s.devicePixelRatio),
+    h:Math.round(s.height*s.devicePixelRatio), current:s===cur}));
+}
+/* Without a prompt: only when permission was already given, so opening the EDID modal never asks. */
+async function screenDetailsIfAllowed(){
+  if(!("getScreenDetails" in window)) return;
+  try{
+    const p=await navigator.permissions.query({name:"window-management"});
+    if(p.state==="granted") await screenDetails();
+  }catch{}
+}
+
+async function detectFromBrowser(){
+  clearMsg("dispMsg");
+  try{
+    const d=await screenDetails(), s=d.currentScreen, n=d.screens.indexOf(s)+1;
+    if(!s.label){ showMsg("dispMsg","This display does not report a name. Use Read EDID, or type an ID.","warn"); return; }
+    /* Same model as the fields hold: keep what was typed. Another model: its details no longer apply. */
+    const cur=readDispInputs();
+    const vals=cur.model.toLowerCase()===s.label.toLowerCase() ? {...cur, id:cur.id||idOf(cur.model,cur.serial)}
+      : {id:idOf(s.label), make:"", model:s.label, serial:"", manufactured:""};
+    writeDispInputs(vals);
+    filled={vals, source:"browser (model only)"};
+    showMsg("dispMsg",`This window is on display ${n} of ${d.screens.length}: ${s.label}. The browser gives the `+
+      "model only; add the serial number under Details if you have several of this model. Click Set to use it.","ok");
+    $("uiDispId").focus();
+  }catch(e){
+    showMsg("dispMsg", e.name==="NotAllowedError"
+      ? "Permission was denied. Allow window management for this site in the browser's site settings."
+      : `Could not read the display: ${e.message}`, "warn");
+  }
+}
+
+/* ---- EDID decoder ---- */
+
+/* Hex text (any spacing, optional 0x, commas) is taken as one stream and split at EDID headers, so one
+   or several displays work with or without line breaks. Anything else is base64, one display per line. */
+function decodeInput(text){
+  const t = text.trim();
+  if(!t) return [];
+  const hexish = t.replace(/0x/gi, "").replace(/[\s,:]/g, "");
+  let streams;
+  if(/^[0-9a-f]+$/i.test(hexish)){
+    if(hexish.length % 2) throw new Error("The hexadecimal text has an odd number of digits.");
+    streams = [Uint8Array.from(hexish.match(/../g), h => parseInt(h, 16))];
+  } else {
+    streams = t.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+      try { return Uint8Array.from(atob(l.replace(/^.*[\s:]/, "")), c => c.charCodeAt(0)); }
+      catch { throw new Error("The text is neither hexadecimal nor base64."); }
+    });
+  }
+  const out = [];
+  const HDR = [0, 255, 255, 255, 255, 255, 255, 0];
+  for(const b of streams){
+    for(let i = 0; i + 128 <= b.length; ){
+      if(HDR.every((v, k) => b[i + k] === v)){
+        const len = 128 * (1 + b[i + 126]);
+        out.push(b.subarray(i, Math.min(i + len, b.length)));
+        i += len;
+      } else i++;   // registry EDIDs can carry zero padding past the declared extensions
+    }
+  }
+  if(!out.length) throw new Error("No EDID found. An EDID starts with 00 FF FF FF FF FF FF 00.");
+  return out;
+}
+
+/* ---- base block and extensions (VESA E-EDID 1.4, CTA-861, DisplayID) ---- */
+
+const pnp = (b0, b1) => { const v = b0 << 8 | b1; return [10, 5, 0].map(s => String.fromCharCode(64 + (v >> s & 31))).join(""); };
+const text13 = d => String.fromCharCode(...d.subarray(5, 18)).split("\n")[0].trim();
+const blockOk = blk => blk.length === 128 && blk.reduce((a, v) => a + v, 0) % 256 === 0;
+
+/* 18-byte detailed timing descriptor, used by the base block and the CTA-861 and VTB extensions. */
+function dtd(d){
+  const clk = (d[0] | d[1] << 8) * 10e3;
+  if(!clk) return null;
+  const hA = d[2] | (d[4] >> 4) << 8, hB = d[3] | (d[4] & 15) << 8;
+  const vA = d[5] | (d[7] >> 4) << 8, vB = d[6] | (d[7] & 15) << 8;
+  const interlaced = !!(d[17] & 0x80);
+  return {hA, vA: interlaced ? vA * 2 : vA, clk, hz: clk / ((hA + hB) * (vA + vB)) * (interlaced ? 2 : 1),
+    mmW: d[12] | (d[14] >> 4) << 8, mmH: d[13] | (d[14] & 15) << 8, interlaced};
+}
+
+/* DisplayID 1.x type I (10 kHz) and 2.x type VII (1 kHz) timings share a 20-byte layout, counts minus one. */
+function didTiming(d, unit){
+  const u16 = o => d[o] | d[o + 1] << 8;
+  const clk = ((d[0] | d[1] << 8 | d[2] << 16) + 1) * unit;
+  const hA = u16(4) + 1, hB = u16(6) + 1, vA = u16(12) + 1, vB = u16(14) + 1;
+  return {hA, vA, clk, hz: clk / ((hA + hB) * (vA + vB)), preferred: !!(d[3] & 0x80)};
+}
+
+function parseDisplayId(blk, res){
+  const ver = blk[1], end = Math.min(5 + blk[2], 127);
+  res.displayIdVersion = `${ver >> 4}.${ver & 15}`;
+  for(let i = 5; i + 3 <= end; ){
+    const tag = blk[i], rev = blk[i + 1], len = blk[i + 2], p = blk.subarray(i + 3, i + 3 + len);
+    if(tag === 0 && len === 0) break;   // padding
+    if(tag === 0x03 || tag === 0x22){
+      for(let k = 0; k + 20 <= p.length; k += 20)
+        res.timings.push({...didTiming(p.subarray(k, k + 20), tag === 0x03 ? 10e3 : 1e3), src: "DisplayID"});
+    } else if((tag === 0x0F || tag === 0x21) && p.length >= 8){
+      /* Display parameters: image size in 0.1 mm (1 mm when bit 7 of a 2.x block's revision is set) and the
+         native pixel count. Finer than the 1 mm sizes in timing descriptors. */
+      const u16 = o => p[o] | p[o + 1] << 8, mm = tag === 0x21 && rev & 0x80 ? 1 : 0.1;
+      if(u16(0) && u16(4)) res.displayParams = {mmW: u16(0) * mm, mmH: u16(2) * mm, w: u16(4), h: u16(6)};
+    } else if((tag === 0x12 || tag === 0x28) && p.length >= 22){
+      /* Tiled display topology: this EDID is one tile of a larger display. Counts and tile size are stored
+         minus one; the 9-byte topology ID (vendor, product, serial) is shared by every tile of the display. */
+      const t = p.subarray(1, 4);
+      res.tile = {
+        nH: ((t[0] >> 4) | (t[2] >> 2 & 0x30)) + 1, nV: ((t[0] & 15) | (t[2] & 0x30)) + 1,
+        col: (t[1] >> 4) | (t[2] >> 2 & 3) << 4, row: (t[1] & 15) | (t[2] & 3) << 4,
+        w: (p[4] | p[5] << 8) + 1, h: (p[6] | p[7] << 8) + 1,
+        group: Array.from(p.subarray(13, 22), v => v.toString(16).padStart(2, "0")).join(""),
+      };
+    }
+    i += 3 + len;
+  }
+}
+
+function parseEdid(b){
+  const res = {raw: b, warnings: [], timings: [], extensions: []};
+  const base = b.subarray(0, 128);
+  if(!blockOk(base)) res.warnings.push("Base block checksum is wrong. The EDID may be damaged or was copied incompletely.");
+  res.vendor = pnp(b[8], b[9]);
+  res.product = (b[10] | b[11] << 8).toString(16).toUpperCase().padStart(4, "0");
+  res.serialNum = (b[12] | b[13] << 8 | b[14] << 16 | b[15] << 24) >>> 0;
+  res.version = `${b[18]}.${b[19]}`;
+  if(b[16] === 0xFF) res.modelYear = b[17] + 1990;
+  else { res.year = b[17] + 1990; res.week = b[16]; }
+
+  const inp = b[20];
+  if(inp & 0x80){
+    res.input = "digital";
+    if(b[18] === 1 && b[19] >= 4){
+      res.bitDepth = [null, 6, 8, 10, 12, 14, 16][inp >> 4 & 7];
+      res.iface = [null, "DVI", "HDMI-a", "HDMI-b", "MDDI", "DisplayPort"][inp & 15];
+    }
+  } else res.input = "analog";
+  if(b[21] && b[22]) res.sizeCm = [b[21], b[22]];
+  if(b[23] !== 0xFF) res.gamma = (b[23] + 100) / 100;
+
+  const lo1 = b[25], lo2 = b[26], c = (hi, lo) => +(((hi << 2) | lo) / 1024).toFixed(4);
+  res.chroma = {r: [c(b[27], lo1 >> 6 & 3), c(b[28], lo1 >> 4 & 3)], g: [c(b[29], lo1 >> 2 & 3), c(b[30], lo1 & 3)],
+    b: [c(b[31], lo2 >> 6 & 3), c(b[32], lo2 >> 4 & 3)], w: [c(b[33], lo2 >> 2 & 3), c(b[34], lo2 & 3)]};
+
+  for(let o = 54; o < 126; o += 18){
+    const d = b.subarray(o, o + 18);
+    const t = dtd(d);
+    if(t){ res.timings.push({...t, src: "base", preferred: o === 54}); continue; }
+    if(d[3] === 0xFF) res.serialStr = text13(d);
+    else if(d[3] === 0xFC) res.name = text13(d);
+    else if(d[3] === 0xFE) (res.text ||= []).push(text13(d));
+  }
+
+  const nExt = b[126];
+  for(let e = 1; e <= nExt; e++){
+    const blk = b.subarray(128 * e, 128 * e + 128);
+    if(blk.length < 128){ res.warnings.push(`EDID declares ${nExt} extension block(s) but only ${e - 1} were supplied.`); break; }
+    if(!blockOk(blk)) res.warnings.push(`Extension block ${e} checksum is wrong.`);
+    const tag = blk[0];
+    if(tag === 0x02){
+      res.extensions.push("CTA-861");
+      for(let o = blk[2]; o >= 4 && o + 18 <= 127; o += 18){
+        const t = dtd(blk.subarray(o, o + 18));
+        if(!t) break;
+        res.timings.push({...t, src: "CTA-861"});
+      }
+    } else if(tag === 0x10){
+      /* VESA Video Timing Block: byte 2 counts the detailed timings, which start at byte 5. */
+      res.extensions.push("VTB-EXT");
+      for(let k = 0, o = 5; k < blk[2] && o + 18 <= 127; k++, o += 18){
+        const t = dtd(blk.subarray(o, o + 18));
+        if(t) res.timings.push({...t, src: "VTB-EXT"});
+      }
+    } else if(tag === 0x70){
+      res.extensions.push("DisplayID");
+      parseDisplayId(blk, res);
+    } else res.extensions.push(`tag 0x${tag.toString(16).padStart(2, "0")}`);
+  }
+
+  /* Native resolution and pixel pitch: DisplayID display parameters when present, else the preferred
+     timing (first base-block descriptor, or a DisplayID timing flagged preferred). */
+  const pref = res.timings.find(t => t.preferred) || res.timings[0];
+  res.preferredTiming = pref;
+  const dp = res.displayParams;
+  if(dp) res.pitch = {w: dp.w, h: dp.h, mmW: dp.mmW, mmH: dp.mmH, src: "DisplayID display parameters (0.1 mm)"};
+  else if(pref){
+    /* Timing descriptors in DisplayID carry no size; fall back to a base or CTA descriptor of the same resolution. */
+    const sized = [pref, ...res.timings].find(t => t.mmW && t.mmH && t.hA === pref.hA && t.vA === pref.vA);
+    if(sized) res.pitch = {w: pref.hA, h: pref.vA, mmW: sized.mmW, mmH: sized.mmH, src: "detailed timing (1 mm)"};
+  }
+  if(res.pitch){
+    const p = res.pitch;
+    p.pw = p.mmW / p.w; p.ph = p.mmH / p.h;
+    p.diagIn = Math.hypot(p.mmW, p.mmH) / 25.4;
+    if(Math.abs(p.pw - p.ph) / p.pw > 0.03) res.warnings.push("Horizontal and vertical pitch differ by more than 3%. Check the physical size.");
+  } else if(res.sizeCm) res.warnings.push("No size in millimeters. The centimeter size below is too coarse for pixel pitch.");
+  return res;
+}
+
+/* Physical displays made of several EDIDs. A tiled-display block names its group outright. Otherwise
+   EDIDs with the same manufacturer, product and serial are one display driven in parts (large
+   format); the parts are taken as side by side, which a whole-display timing in the EDID confirms. */
+function groupDisplays(list){
+  const key = r => r.tile ? `tile ${r.tile.group}`
+    : (r.serialStr || r.serialNum) ? `${r.vendor} ${r.product} ${r.serialStr || ""} ${r.serialNum}` : null;
+  const byKey = new Map();
+  list.forEach((r, i) => { const k = key(r); if(k) byKey.set(k, [...(byKey.get(k) || []), i]); });
+  return [...byKey.values()].filter(ix => ix.length > 1).map(ix => {
+    const parts = ix.map(i => list[i]), r0 = parts[0], p0 = r0.pitch, g = {ix, name: r0.name || `${r0.vendor} ${r0.product}`, warnings: []};
+    if(r0.tile){
+      const t = r0.tile;
+      Object.assign(g, {w: t.w * t.nH, h: t.h * t.nV, layout: `${t.nH} x ${t.nV} tiles`, how: "DisplayID tiled display block"});
+      if(p0){ g.mmW = p0.pw * g.w; g.mmH = p0.ph * g.h; }
+      if(parts.length !== t.nH * t.nV) g.warnings.push(`Only ${parts.length} of ${t.nH * t.nV} tiles were pasted.`);
+    } else if(p0 && parts.every(r => r.pitch?.h === p0.h)){
+      Object.assign(g, {w: parts.reduce((a, r) => a + r.pitch.w, 0), h: p0.h,
+        mmW: parts.reduce((a, r) => a + r.pitch.mmW, 0), mmH: p0.mmH,
+        layout: `${parts.length} parts side by side`, how: "same serial number on each part"});
+      const whole = parts.flatMap(r => r.timings).find(t => t.hA === g.w && t.vA === g.h && t.mmW && t.mmH);
+      if(whole){ g.mmW = whole.mmW; g.mmH = whole.mmH; g.how += "; whole-display timing in the EDID confirms the layout"; }
+      else g.how += "; side-by-side layout assumed";
+    } else {
+      g.how = "same serial number on each part";
+      g.warnings.push("The parts differ in height, so the whole-display size was not worked out.");
+    }
+    if(g.mmW){ g.pw = g.mmW / g.w; g.ph = g.mmH / g.h; g.diagIn = Math.hypot(g.mmW, g.mmH) / 25.4; }
+    return g;
+  });
+}
+
+/* ---- EDID modal ---- */
+
+/* Reads the EDID of the displays connected now. Hex rather than base64: Constrained Language Mode can
+   block the .NET call base64 needs. Needs no administrator rights. */
+const PS_CMD="Get-CimInstance -Namespace root\\wmi WmiMonitorID | % { -join ((Get-ItemProperty ('HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\' + ($_.InstanceName -replace '_\\d+$') + '\\Device Parameters')).EDID | % { $_.ToString('X2') }) } | Set-Clipboard";
+
+let cands=[], chosen=-1;
+
+function openEdid(){
+  if(!$("edidModal").hidden) return;
+  $("edidModal").hidden=false;
+  screenDetailsIfAllowed().then(()=>cands.length&&renderCands());
+  $("btnCopyPs").focus();
+  document.addEventListener("keydown",onEdidKey,true);
+}
+function closeEdid(){
+  if($("edidModal").hidden) return;
+  $("edidModal").hidden=true;
+  document.removeEventListener("keydown",onEdidKey,true);
+  $("btnEdid").focus();
+}
+/* Capture phase, as the help modal, so Esc closes the modal without reaching anything underneath. */
+function onEdidKey(e){ if(e.key==="Escape"){ e.stopPropagation(); e.preventDefault(); closeEdid(); } }
+
+/* EDID names the maker by its three-letter PnP ID. Makers of medical and common office displays;
+   any other shows as the code. */
+const PNP_MAKERS={BDS:"Barco", EIZ:"EIZO", ENC:"EIZO", NEC:"NEC", DEL:"Dell", HWP:"HP", LEN:"Lenovo",
+  GSM:"LG", LGD:"LG Display", SAM:"Samsung", PHL:"Philips", ACI:"ASUS", AUS:"ASUS", BNQ:"BenQ",
+  VSC:"ViewSonic", APP:"Apple", SNY:"Sony", AUO:"AU Optronics", BOE:"BOE", CMN:"Innolux",
+  SDC:"Samsung Display"};
+const makerOf=code=>PNP_MAKERS[code] ? `${PNP_MAKERS[code]} (${code})` : code;
+/* EDID gives the week of manufacture; the date is the Monday of that ISO week (week 1 holds January 4).
+   Week 0 means the maker gave the year only; 0xFF means a model year rather than a date. Either way the
+   date is the year alone, which Manufactured accepts; the note says which. */
+function weekMonday(year,week){
+  const jan4=Date.UTC(year,0,4), back=(new Date(jan4).getUTCDay()+6)%7;
+  return new Date(jan4+((week-1)*7-back)*864e5).toISOString().slice(0,10);
+}
+const domOf=r=>r.modelYear ? {date:String(r.modelYear), note:" (model year)", modelYear:true}
+  : r.week ? {date:weekMonday(r.year,r.week), note:` (week ${r.week})`} : {date:String(r.year), note:" (year only)"};
+
+/* One entry per physical display: a group of EDIDs (large format, tiles) counts once. */
+function buildCands(list){
+  const groups=groupDisplays(list), inGroup=new Set(groups.flatMap(g=>g.ix));
+  const serialOf=r=>r.serialStr || (r.serialNum ? String(r.serialNum) : "");
+  const who=r=>({make:makerOf(r.vendor), model:r.name||r.product, serial:serialOf(r), dom:domOf(r)});
+  const out=groups.map(g=>{
+    const r0=list[g.ix[0]];
+    return {...who(r0), name:g.name, w:g.w, h:g.h, mmW:g.mmW, mmH:g.mmH, pitch:g.pw, diag:g.diagIn,
+      parts:g.ix.length, partRes:r0.pitch, warnings:g.warnings, first:Math.min(...g.ix)};
+  });
+  list.forEach((r,i)=>{
+    if(inGroup.has(i)) return;
+    const p=r.pitch;
+    out.push({...who(r), name:r.name||`${r.vendor} ${r.product}`, w:p?.w, h:p?.h, mmW:p?.mmW, mmH:p?.mmH,
+      pitch:p?.pw, diag:p?.diagIn, parts:1, partRes:p, warnings:r.warnings, first:i});
+  });
+  return out.sort((a,b)=>a.first-b.first);   // Windows' order, as pasted
+}
+
+/* Does this display hold the screen this window is on? Name, or one part's resolution either way round. */
+function onThisWindow(c){
+  const cur=screenList.find(s=>s.current);
+  if(!cur || !c.partRes) return false;
+  const nameOk=cur.label && c.name && cur.label.toLowerCase()===c.name.toLowerCase();
+  const {w,h}=c.partRes, sizeOk=(cur.w===w && cur.h===h) || (cur.w===h && cur.h===w);
+  return cur.label ? nameOk && sizeOk : sizeOk;
+}
+
+/* Built with textContent: the names come from pasted text. */
+function renderCands(){
+  const here=cands.map(onThisWindow), nHere=here.filter(Boolean).length;
+  /* Preselect only when exactly one display fits; two of the same model are the user's call. */
+  if(chosen<0 && nHere===1) chosen=here.indexOf(true);
+  const mk=(tag,cls,text)=>{ const e=document.createElement(tag); e.className=cls; if(text!=null) e.textContent=text; return e; };
+  $("cands").replaceChildren(...cands.map((c,i)=>{
+    const b=mk("button",`tile cand${i===chosen?" on":""}`); b.dataset.i=i;
+    const nm=mk("span","nm",c.name);
+    if(c.serial) nm.append(" ",mk("span","hint",`SN ${c.serial}`));
+    const tags=mk("span","tags");
+    if(here[i]) tags.append(mk("span","pill ok",nHere>1?"this window?":"this window"));
+    if(c.parts>1) tags.append(mk("span","pill info",`${c.parts} parts, one display`));
+    if(c.warnings.length){ const w=mk("span","pill warn","check"); w.title=c.warnings.join(" "); tags.append(w); }
+    const geo=!c.w ? "size not in EDID" : `${c.w} x ${c.h}`+(c.mmW
+      ? ` · ${c.mmW.toFixed(0)} x ${c.mmH.toFixed(0)} mm (${c.diag.toFixed(1)}") · pitch ${c.pitch.toFixed(4)} mm`
+      : " · size not in EDID");
+    b.append(nm,tags,mk("span","geo",`${c.make}, manufactured ${c.dom.date}${c.dom.note}`),mk("span","geo",geo));
+    return b;
+  }));
+  $("useRow").hidden=!cands.length;
+  const c=cands[chosen];
+  $("btnUse").disabled=!c;
+  const pOk=c && c.pitch && validPitch(c.pitch)!==undefined;
+  $("chkPitch").disabled=!pOk;
+  $("chkPitchTxt").textContent=pOk ? `Also set pixel pitch to ${+c.pitch.toFixed(4)} mm` : "Also set pixel pitch";
+}
+
+function decodePaste(){
+  clearMsg("edidMsg");
+  chosen=-1;
+  try{
+    cands=buildCands(decodeInput($("edidIn").value).map(parseEdid));
+    const nHere=cands.filter(onThisWindow).length;
+    if(nHere>1) showMsg("edidMsg",`${nHere} displays of the same model could be the one this window is on. `+
+      "Choose by the serial number on the label on the back of the display.","warn");
+    else if(cands.length>1 && !nHere) showMsg("edidMsg",
+      "Choose the display. The serial number is on the label on the back of the display.","ok");
+  }catch(e){
+    cands=[];
+    showMsg("edidMsg",e.message,"err");
+  }
+  renderCands();
+}
+
+function useChosen(){
+  const c=cands[chosen];
+  if(!c) return;
+  filled=null;
+  markDom(false);
+  clearMsg("dispMsg");
+  setDisplay({id:idOf(c.name,c.serial), make:c.make, model:c.model, serial:c.serial, manufactured:c.dom.date,
+    source:`EDID${c.parts>1?`, ${c.parts} parts, one display`:""}${c.dom.modelYear?", model year":""}`});
+  log(`display ${display.id} (details from ${display.source})`,"ok");
+  if(!$("chkPitch").disabled && $("chkPitch").checked) setPitch(+c.pitch.toFixed(4));
+  closeEdid();
+}
+
+$("psCmd").textContent=PS_CMD;
+$("btnDisp").onclick=()=>toggleCard("disp");
+/* The analysis cards' readouts open the card; they never close it. */
+for(const r of document.querySelectorAll(".dispref"))
+  r.onclick=()=>openCard==="disp" ? $("dispCard").scrollIntoView({block:"nearest"}) : toggleCard("disp");
+/* Nothing on input or change - only Set commits. Enter in any field goes the same way. */
+$("btnDispSet").onclick=commitDisplay;
+for(const id of Object.values(DISP_INPUTS))
+  $(id).onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); commitDisplay(); } };
+$("btnDetect").onclick=detectFromBrowser;
+if(!("getScreenDetails" in window)){ $("btnDetect").disabled=true; $("btnDetect").title="Needs Chrome or Edge"; }
+$("btnEdid").onclick=openEdid;
+$("btnCopyPs").onclick=async e=>{
+  const b=e.currentTarget, old=b.textContent;
+  try{ await navigator.clipboard.writeText(PS_CMD); b.textContent="Copied"; }
+  catch{ b.textContent="Copy failed - select and copy by hand"; }
+  setTimeout(()=>{ b.textContent=old; },1500);
+};
+/* A paste decodes once it has landed; typing decodes as it goes. */
+$("edidIn").addEventListener("paste",()=>setTimeout(decodePaste,0));
+$("edidIn").addEventListener("input",e=>{ if(e.inputType!=="insertFromPaste") decodePaste(); });
+$("cands").onclick=e=>{ const b=e.target.closest(".cand"); if(b){ chosen=+b.dataset.i; renderCands(); } };
+$("btnUse").onclick=useChosen;
+$("edidModal").addEventListener("click",e=>{ if(e.target.closest("[data-close]")) closeEdid(); });
+setDisplay(NO_DISPLAY,{close:false});
 
 /* A reload can restore the box without a change event, so commit it. */
 setPitch($("uiPitchMm").value,{quiet:true,close:false});
