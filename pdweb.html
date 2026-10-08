@@ -1402,17 +1402,15 @@ Public License instead of this License.</pre>
         the internet, and runs no other program or code. The result is decoded in this page; nothing is
         uploaded. Each piece:</p>
       <div class="walk">
-        <code>Get-CimInstance -Namespace root\wmi WmiMonitorID</code>
-        <p>Asks Windows for the displays connected right now. <code>WmiMonitorID</code> is the name Windows
-          gives this list. Each entry carries the display's device name.</p>
+        <code>Get-PnpDevice -Class Monitor -PresentOnly</code>
+        <p>Asks Windows' device list for the displays connected right now. <code>-PresentOnly</code> leaves
+          out displays that were connected once but are not now.</p>
         <code>| % { … }</code>
         <p>Runs the part in braces once for each display in the list. <code>%</code> is PowerShell's
           shorthand for <code>ForEach-Object</code>.</p>
-        <code>$_.InstanceName -replace '_\d+$'</code>
-        <p>Takes that display's device name and removes the <code>_0</code> at its end, which leaves the
-          name of the registry key where Windows keeps the display's details.</p>
-        <code>(Get-ItemProperty ('HKLM:\SYSTEM\CurrentControlSet\Enum\' + … + '\Device Parameters')).EDID</code>
-        <p>Reads the <code>EDID</code> value in that key, saved by Windows when the display was connected.
+        <code>(Get-ItemProperty ('HKLM:\SYSTEM\CurrentControlSet\Enum\' + $_.InstanceId + '\Device Parameters')).EDID</code>
+        <p>Each display's device ID is also the name of the registry key where Windows keeps its details.
+          This reads the <code>EDID</code> value in that key, saved by Windows when the display was connected.
           Reading it needs no administrator rights.</p>
         <code>-join ( … | % { $_.ToString('X2') })</code>
         <p>Writes each byte of the EDID as two hexadecimal characters and joins them into one line of text
@@ -5836,8 +5834,9 @@ function groupDisplays(list){
 /* ---- EDID modal ---- */
 
 /* Reads the EDID of the displays connected now. Hex rather than base64: Constrained Language Mode can
-   block the .NET call base64 needs. Needs no administrator rights. */
-const PS_CMD="Get-CimInstance -Namespace root\\wmi WmiMonitorID | % { -join ((Get-ItemProperty ('HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\' + ($_.InstanceName -replace '_\\d+$') + '\\Device Parameters')).EDID | % { $_.ToString('X2') }) } | Set-Clipboard";
+   block the .NET call base64 needs. Needs no administrator rights. Get-PnpDevice, not WmiMonitorID:
+   root\wmi can be locked down on managed PCs (0x80041003, access denied) where the device list is not. */
+const PS_CMD="Get-PnpDevice -Class Monitor -PresentOnly | % { -join ((Get-ItemProperty ('HKLM:\\SYSTEM\\CurrentControlSet\\Enum\\' + $_.InstanceId + '\\Device Parameters')).EDID | % { $_.ToString('X2') }) } | Set-Clipboard";
 
 let cands=[], chosen=-1;
 
