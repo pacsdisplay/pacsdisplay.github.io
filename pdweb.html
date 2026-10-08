@@ -9,15 +9,12 @@
   verbatim copy of the License are in the License section of the page, so both travel with the program
   wherever this file is copied.
 
-  PORTED CODE. The instrument driver in this file is a port of the i1Display 3 driver from
-  the Argyll Color Management System by Graeme W. Gill:
+  PORTED CODE. The instrument driver in this file is a port of the i1Display 3 driver from the
+  Argyll Color Management System by Graeme W. Gill:
       i1d3.c   Copyright (C) 2006 - 2014, Graeme W. Gill
       i1d3.h   Copyright (C) 2006 - 2013, Graeme W. Gill
-  Both are licensed under the GNU General Public License v2 or later. That code was translated from C to
-  JavaScript against the WebHID API in 2026 and modified in the process: the transport layer was rewritten
-  for WebHID, the measurement and EEPROM decode paths were reimplemented, and the parts of the original driver
-  not needed here were omitted. Everything else in this file is original work by the copyright holder named at
-  the top. See the License section of the page for the full statement.
+  Both are licensed under GPL v2 or later. They were translated to JavaScript for WebHID and modified
+  in 2026. Everything else in this file is original work by the copyright holder named at the top.
 
   TEST PATTERNS. The pattern drawing code (TG270-pQC, TG270-sQC, TG18-OIQ, gray levels, uniformity
   scan, ambient test) is original work by the copyright holder, under the same v2 or later terms. The
@@ -25,19 +22,12 @@
   No. 3); they are redrawn here from the published specifications. No AAPM pattern files or report
   text are included, and pdweb is not affiliated with AAPM.
 
-  LICENSE LEVEL. pdweb is v2 or later while pacsDisplay is v3. That is deliberate: pdweb is a separate
-  program - no pacsDisplay code, no Argyll, no Tcl - so hosting the two together is aggregation, not
-  combination, and "or later" already permits a merge into v3 if one is ever wanted. Offering v2 as an option
-  costs nothing and is available only because the Argyll files above carry a per-file "Version 2 or later"
-  grant.
-
-  DO NOT REFRESH THE DRIVER AGAINST A CURRENT ARGYLL RELEASE. Argyll as a whole moved to the AGPL years ago;
-  3.5.0 and its neighbors ship under AGPL v3. The i1d3 files ported here carry their own "Version 2 or later"
-  header pointing at Argyll's License2.txt, and that per-file grant is what this port relies on. AGPL section
-  13 obliges the operator of network-delivered software to offer source to every user who interacts with it -
-  a question desktop software never has to answer and a hosted page does. If the driver needs updating, use a
-  release whose i1d3.c still carries the Version 2 or later header, or reimplement from the instrument
-  protocol.
+  LICENSE NOTE. pdweb is a separate program from pacsDisplay and shares no code with it. The v2-or-later
+  option depends on the per-file "Version 2 or later" header in the ported i1d3 files. Current Argyll
+  releases are AGPL v3, which adds source-offer obligations for hosted software. Do not refresh the driver
+  from a current Argyll release; use one whose i1d3.c still carries the v2-or-later header, or write a new
+  driver from scratch, working from a description of the instrument protocol rather than from Argyll's
+  source.
 
   Argyll instrument driver notice, carried forward from i1d3.c and lightly edited for readability:
     If you make use of the instrument driver code here, please note that it is the authors
@@ -79,7 +69,7 @@
     background:var(--bg);color:var(--text);line-height:1.45;font-size:.8125rem}
   header{position:sticky;top:0;z-index:10;padding:10px 20px;border-bottom:1px solid var(--edge);
     background:var(--panel2);display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
-  .brand svg{display:block;height:2rem;width:auto}
+  .brand svg{display:block;height:1.5rem;width:auto}
   nav{grid-column:2;justify-self:center;display:flex;gap:8px}
   .modebtn{background:transparent;color:var(--muted);border:1px solid var(--edge);border-radius:6px;
     padding:6px 16px;font-weight:600;font-size:0.8125rem;cursor:pointer}
@@ -98,7 +88,7 @@
   details:not([open])>summary.cardhead::before{transform:rotate(-90deg)}
   /* One button appearance throughout.*/
   button{background:var(--btn);color:var(--text);border:1px solid var(--edge);border-radius:6px;padding:8px 14px;
-    font-weight:700;cursor:pointer;font-size:0.875rem;margin:0 6px 0 0}
+    font-family:inherit;font-weight:700;cursor:pointer;font-size:0.875rem;margin:0 6px 0 0}
   button:disabled{opacity:.4;cursor:not-allowed}
   #btnCont{min-width:7rem}   /* label toggles Continuous/Stop - pin it so the row can't reflow */
   /* Line box matched to a card heading's, so a pill in a .cardtop does not make the title row taller. */
@@ -115,7 +105,14 @@
   .msg.ok  {background:rgba(var(--ok-rgb),.12);border:1px solid rgba(var(--ok-rgb),.35);color:#7fd3a6}
   .msg ul{margin:5px 0 0;padding-left:18px}.msg li{margin:2px 0}
   label{display:block;font-size:0.75rem;color:var(--muted);margin-bottom:4px}
+  /* Typed values are mono; selects and buttons take the page font. */
   input,select{background:var(--field);border:1px solid var(--edge);color:var(--text);border-radius:6px;padding:8px 10px;font-size:0.8125rem;width:100%}
+  input{font-family:var(--mono)}
+  select{font-family:inherit}
+  /* Focus in the page's grays, not the browser ring, which follows the OS accent color: a ring for
+     buttons and other controls, a lighter edge for fields. */
+  :focus-visible{outline:2px solid var(--edge-hi);outline-offset:2px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--edge-hi)}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.row>div{flex:1;min-width:6.875rem}
   .readout{display:flex;align-items:baseline;gap:9px;margin:10px 0}
   .big{font-family:var(--mono);font-size:2.75rem;font-weight:700;letter-spacing:-1px}
@@ -205,7 +202,7 @@
   .tile.on i{color:var(--text)}
   .pitchrow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
   .pitchrow label{margin:0;white-space:nowrap}
-  .pitchrow input{width:6.5rem;font-family:var(--mono);text-align:right}
+  .pitchrow input{width:6.5rem;text-align:right}
   .pitchunit{color:var(--muted);font-size:0.75rem}
   .pitchnow{font-family:var(--mono);font-size:0.75rem;color:var(--muted);margin-left:auto}
   /* An out-of-range pitch leaves the last good scale in force, so it has to look rejected. */
@@ -214,11 +211,10 @@
   /* ---- display card and the EDID modal ---- */
   .idrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .idrow label{margin:0;white-space:nowrap}
-  .idrow input{flex:1 1 14rem;width:auto;font-family:var(--mono)}
+  .idrow input{flex:1 1 14rem;width:auto}
   .idrow button{margin:0}
   details.dispdet{margin-top:12px}
   .detgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin-bottom:6px}
-  .detgrid input{font-family:var(--mono)}
   .detgrid input.bad{border-color:var(--err);color:var(--err)}
   @media (max-width:520px){ .detgrid{grid-template-columns:1fr} }
   .dispdet p.hint{margin:0}
@@ -228,7 +224,7 @@
   /* Analysis cards: which ID their exports will carry, and the way to change it. */
   .displine{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:0.75rem;color:var(--muted)}
   /* Offset underline: a flush one hides the "_" in model_serial IDs. */
-  .displine .linkbtn{font-family:var(--mono);color:var(--text);text-underline-offset:4px}
+  .displine .linkbtn{font-family:var(--mono);font-weight:400;color:var(--text);text-underline-offset:4px}
   .displine .linkbtn.unset{color:var(--warn)}
   pre.cmd{font-family:var(--mono);font-size:0.75rem;background:var(--field);border:1px solid var(--edge);
     border-radius:6px;padding:10px;margin:0 0 8px;white-space:pre-wrap;word-break:break-all;color:var(--text)}
@@ -373,6 +369,7 @@
   .patbar,.patctl{position:absolute;top:8px;display:flex;align-items:center;gap:6px;user-select:none}
   .patbar{left:8px}
   .patctl{right:10px;gap:10px}
+  #patStage.barlow .patbar,#patStage.barlow .patctl{top:auto;bottom:8px}   /* patBarDodge */
   .patbar button,.patctl .pb{background:none;border:0;padding:2px 6px;margin:0;cursor:pointer;
     color:var(--patink,#666);font:700 16px var(--mono)}
   .patctl .pb{font-size:13px}
@@ -505,7 +502,7 @@
           <li>Allow sufficient display <b>warm up</b>. Check the manufacturer's specifications for necessary time. If
           unavailable, use 20-30 minutes for LED backlights and 45-60 minutes for CCFL backlights.</li>
           <li><b>Turn off</b> anything that changes luminance on its own: ambient light sensors, automatic
-          brightness, local dimming where it can be disabled, power saving and screen blanking.</li>
+          brightness, local dimming where it can be disabled, power saving, and screen blanking.</li>
           <li>Put the display in the preset you intend to test (i.e., DICOM GSDF).</li>
           <li>Set the ambient light level to match clinical usage. Measure the ambient contribution and enter
           it as <b>L<sub>amb</sub></b> (see below).</li>
@@ -667,14 +664,14 @@
           <li>Allow sufficient display <b>warm up</b>. Check the manufacturer's specifications for necessary
           time. If unavailable, use 20-30 minutes for LED backlights and 45-60 minutes for CCFL backlights.</li>
           <li><b>Turn off</b> anything that changes luminance on its own: ambient light sensors, automatic
-          brightness, local dimming where it can be disabled, power saving and screen blanking. Local dimming
+          brightness, local dimming where it can be disabled, power saving, and screen blanking. Local dimming
           matters more here than anywhere else in this page - it is designed to make the display
           non-uniform.</li>
           <li>Measure the ambient contribution and enter it as <b>L<sub>amb</sub></b>. It is added to every
           reading inside the LUDM and MLD calculation. The matrices, the exports and the Luni file all report
           measured luminance L.</li>
           <li>Optionally, set the <b>Display</b> in the Settings dock (bottom right). Its ID goes in the export
-          header and the filename, with the model, serial number and manufacture date when they are set.</li>
+          header and the filename, with the model, serial number, and manufacture date when they are set.</li>
         </ul>
 
         <h3>Collecting data</h3>
@@ -799,7 +796,7 @@
           on physical pixels at any operating system scaling, and pixel sizes such as the scan box are
           physical pixels, too.</li>
           <li>That needs the canvas size in exact device pixels. A browser that cannot report it at a
-          fractional scaling (125%, 150%) gets a notice when TG270-pQC, TG270-sQC, TG18-OIQ or the ambient
+          fractional scaling (125%, 150%) gets a notice when TG270-pQC, TG270-sQC, TG18-OIQ, or the ambient
           test opens; browser zoom at 100% and display scaling at 100% or 200% avoid it.</li>
           <li>macOS: use the display's default resolution. The "scaled" resolutions resample the whole
           screen after the browser has drawn it, which no web page can detect or undo.</li>
@@ -822,8 +819,8 @@
         <h3>Features</h3>
         <ul>
           <li><b>18 horizontal gray bars</b>, 0 to 255 in steps of 15.</li>
-          <li><b>Modulation columns.</b> Left: horizontal modulation at 18, 12, 6 and 4 pixel periods;
-          right: vertical modulation at 4, 6, 12 and 18 pixels. Outer columns are 8 gray levels of
+          <li><b>Modulation columns.</b> Left: horizontal modulation at 18, 12, 6, and 4 pixel periods;
+          right: vertical modulation at 4, 6, 12, and 18 pixels. Outer columns are 8 gray levels of
           contrast, inner columns 2.</li>
           <li><b>Line pairs</b> in the top and bottom bars at 2, 4 and 6 pixel periods, high contrast
           (0/128 top, 128/255 bottom), for spatial resolution.</li>
@@ -915,7 +912,7 @@
       <!-- ---------- uniformity scan ---------- -->
       <div class="helpdoc" id="help-scan" hidden>
         <p class="lead">A single box on black, stepped across the whole display in a serpentine path, for
-        finding mura, bad pixels and non-uniformity.</p>
+        finding mura, bad pixels, and non-uniformity.</p>
         <h3>Controls</h3>
         <ul>
           <li>Wheel down or <code>→</code> (hold to keep going): move forward. Wheel up or
@@ -1433,25 +1430,24 @@ Public License instead of this License.</pre>
        Enter only. autocomplete off, so a reload cannot restore half an identity behind a cleared dock. -->
   <section class="card" id="dispCard" hidden>
     <h2>Display</h2>
-    <p class="placeholder">The tested display. Its ID labels the lumResponse and uniformity exports and
-      their filenames. Type an ID, or read one from the display.</p>
+    <p class="placeholder">The Display ID labels the exported reports. Type an ID, or read one from the
+    display.</p>
     <div class="idrow">
       <label for="uiDispId">Display ID</label>
       <input id="uiDispId" placeholder="not set" spellcheck="false" autocomplete="off">
       <button id="btnDispSet">Set</button>
     </div>
     <details class="dispdet">
-      <summary class="cardhead">Details <span class="hint">make, model, serial, manufacture date</span></summary>
+      <summary class="cardhead">Details <span class="hint">manufacturer, model, serial, manufacture date</span></summary>
       <div class="detgrid">
-        <div><label for="uiMake">Make</label><input id="uiMake" placeholder="e.g. Barco" spellcheck="false" autocomplete="off"></div>
-        <div><label for="uiModel">Model</label><input id="uiModel" placeholder="e.g. MDCC-6530" spellcheck="false" autocomplete="off"></div>
+        <div><label for="uiMake">Manufacturer</label><input id="uiMake" spellcheck="false" autocomplete="off"></div>
+        <div><label for="uiModel">Model</label><input id="uiModel" spellcheck="false" autocomplete="off"></div>
         <div><label for="uiSerial">Serial number</label><input id="uiSerial" spellcheck="false" autocomplete="off"></div>
-        <div><label for="uiDom">Manufactured</label><input id="uiDom" placeholder="YYYY-MM-DD" spellcheck="false" autocomplete="off"></div>
+        <div><label for="uiDom">Manufactured</label><input id="uiDom" placeholder="YYYY-MM-DD, YYYY-MM, or YYYY" spellcheck="false" autocomplete="off"></div>
       </div>
-      <p class="hint">Recorded in the reports as separate fields. Read EDID fills them in, or type them from
-        the label on the display. The EDID gives the week of manufacture; the date is Monday of that week.
-        Manufactured takes YYYY-MM-DD, YYYY-MM or YYYY. With the Display ID left empty, Set makes it from
-        the model and serial.</p>
+      <p class="hint">Recorded in the reports as separate fields. Use the EDID or manually enter. The EDID
+      gives the week of manufacture; the date is Monday of that week. If Display ID is blank, clicking Set
+      generates it from the model and serial.</p>
     </details>
     <div class="detectrow">
       <button id="btnDetect" title="Name of the display this window is on (Chrome and Edge)">Detect from browser</button>
@@ -3235,7 +3231,7 @@ function download(name,text,mime){
                      index, luminance, patch RGB, major phase, minor phase, dL/L to the previous point, u', v'
    <RGB> is lowercase "#rrggbb". dL/L is ΔL over the pair mean on raw L (autoLumVal), no ambient, 0 first.
    One reading per level, so numPhases = 1: major = point index, minor = 1.
-   Header line 1 is positional: evalQClr takes version, date and time as tokens 3, 5 and 6, so the title is
+   Header line 1 is positional: evalQClr takes version, date, and time as tokens 3, 5, and 6, so the title is
    exactly three tokens ending in the version, then "-". */
 const CLR_VERS="1.0";
 const CLR_TITLE=`pdweb lumResponse ${CLR_VERS}`;
@@ -3946,7 +3942,7 @@ const UNI_POS=[{label:"UL",col:0,row:0},{label:"UC",col:1,row:0},{label:"UR",col
                {label:"LL",col:0,row:2},{label:"LC",col:1,row:2},{label:"LR",col:2,row:2}];
 const UNI_N=UNI_POS.length;
 /* Capture indices in reading order. Getting the middle row wrong gives plausible numbers, so every
-   matrix, map, table and file orders through this. */
+   matrix, map, table, and file orders through this. */
 const UNI_READ=UNI_POS.map((_,k)=>k)
   .sort((a,b)=>(UNI_POS[a].row-UNI_POS[b].row)||(UNI_POS[a].col-UNI_POS[b].col));
 
@@ -4534,7 +4530,7 @@ function renderUniMap(a){
 
 /* ---- export ---- */
 
-/* The Luni "Mode" field names the level set: 1, 3, 18 or External. */
+/* The Luni "Mode" field names the level set: 1, 3, 18, or External. */
 const UNI_MODE_TEXT={"1":"1 step(s)","3":"3 step(s)","18":"18 step(s)",ext:"External step(s)"};
 const uniGl3=g=>String(g).padStart(3,"0");        // gray levels are written three digits wide
 const f3=v=>v==null?"n/a":v.toFixed(3);
@@ -4779,6 +4775,13 @@ function patBarInk(grayAt){
     b.style.color=grayCss(inkOff(grayAt((r.left+r.width/2-c.left)*k,(r.top+r.height/2-c.top)*k)));
   }
 }
+/* Toolbars to the bottom edge while a box spanning y0..y1 (device pixels) sits under them at the top,
+   unless it would sit under them there too. Before patBarInk, which reads where the buttons are. */
+function patBarDodge(y0,y1){
+  const k=pat.W/patCv.getBoundingClientRect().width;
+  const band=(8+Math.max($("patCtl").offsetHeight,document.querySelector(".patbar").offsetHeight))*k;
+  $("patStage").classList.toggle("barlow", y0<band && y1<=pat.H-band);
+}
 /* R: zoom and pan for the zoomable patterns, the opening settings for the rest. */
 function patReset(){
   const P=PAT[pat.key];
@@ -4872,6 +4875,7 @@ function closePattern(){
   if(!pat.key) return;
   pat.key=pat.st=pat.q=pat.drag=null;
   $("patStage").hidden=$("patDlg").hidden=true;
+  $("patStage").classList.remove("barlow");
   $("patCtl").replaceChildren();
   if(document.fullscreenElement===document.documentElement) exitStageFullscreen();
   pat.opener?.focus?.();
@@ -4957,7 +4961,7 @@ function drawPQC(c,W,H,v){
   };
   [18,12,6,4].forEach((p,i)=>{ col(i,p,4,false); col(i+4,p,1,false); });
   [4,6,12,18].forEach((p,i)=>{ col(i+9,p,1,true); col(i+13,p,4,true); });
-  /* Top (64) and bottom (191) bars, each carrying square line-pair cells at 6, 4 and 2 px periods
+  /* Top (64) and bottom (191) bars, each carrying square line-pair cells at 6, 4, and 2 px periods
      - horizontal on the left, vertical on the right; 128/0 on top, 128/255 below. */
   fillG(64,L,T,Rt-L,barY(0)-T);
   fillG(191,L,barY(18),Rt-L,B-barY(18));
@@ -5115,7 +5119,7 @@ function drawOIQ(c,W,H,v){
   for(const [a,b] of [[cl,rt],[cr,rt],[cl,rb],[cr,rb]]) oiqRes(a,b,s,cx,cy);
 }
 
-/* ---- Gray levels: one uniform field, stepped by click, wheel or arrow keys ---- */
+/* ---- Gray levels: one uniform field, stepped by click, wheel, or arrow keys ---- */
 const GRAYS={title:"Gray levels",
   init:q=>({g:clampInt(q.get("gray"),0,255,120), step:[1,5,15].includes(+q.get("step"))?+q.get("step"):15,
             grid:q.get("grid")==="true"}),
@@ -5161,6 +5165,7 @@ const SCAN={title:"Uniformity scan",
   /* Each toolbar button follows what is under it: the box or the black field. */
   draw(c,W,H,v,st){
     fillG(0,0,0,W,H); fillG(st.g,st.x,st.y,st.size,st.size);
+    patBarDodge(st.y,st.y+st.size);
     patBarInk((x,y)=>x>=st.x&&x<st.x+st.size&&y>=st.y&&y<st.y+st.size ? st.g : 0);
   },
   /* A new size returns the box to the start; gen ends any glide in flight. */
@@ -5385,7 +5390,7 @@ function applyConfig(o){
     if(setPitch(p,{quiet:true,close:false})) applied.push(where);
     else skip(where,p);
   }
-  /* Through applyRef, so selector, values and disabled state agree. */
+  /* Through applyRef, so selector, values, and disabled state agree. */
   for(const [group,p] of [["lumresponse","seq"],["uniformity","uni"]]){
     const ref=o[group]?.referenceUV;
     if(ref===undefined) continue;
@@ -5564,7 +5569,7 @@ function commitDisplay(){
   if(v.manufactured && !validDom(v.manufactured)){
     markDom(true);
     $("dispCard").querySelector(".dispdet").open=true;
-    showMsg("dispMsg","Manufactured must be YYYY-MM-DD, YYYY-MM or YYYY.","err");
+    showMsg("dispMsg","Manufactured must be YYYY-MM-DD, YYYY-MM, or YYYY.","err");
     return;
   }
   if(!v.id) v.id=idOf(v.model,v.serial);

@@ -322,7 +322,7 @@ On a DICOM-conformant display, each frequency/contrast pair should be equally vi
           };
           [18,12,6,4].forEach((p,i)=>{ col(i,p,4,false); col(i+4,p,1,false); });
           [4,6,12,18].forEach((p,i)=>{ col(i+9,p,1,true); col(i+13,p,4,true); });
-          /* Top (64) and bottom (191) bars, each carrying square line-pair cells at 6, 4 and 2 px periods
+          /* Top (64) and bottom (191) bars, each carrying square line-pair cells at 6, 4, and 2 px periods
              - horizontal on the left, vertical on the right; 128/0 on top, 128/255 below. */
           fillG(64,L,T,Rt-L,barY(0)-T);
           fillG(191,L,barY(18),Rt-L,B-barY(18));
